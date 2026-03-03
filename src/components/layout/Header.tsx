@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Heart, Menu, X, Globe, LogOut, User, TrendingUp } from "lucide-react";
+import { Home, Heart, Menu, X, Globe, LogOut, User, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -86,8 +86,8 @@ const Header = () => {
               <Link to="/login" className="hidden md:inline-flex">
                 <Button variant="outline" size="sm">{t.nav.login}</Button>
               </Link>
-              <Link to="/cadastro" className="hidden md:inline-flex">
-                <Button size="sm">{t.nav.signup}</Button>
+              <Link to="/planos" className="hidden md:inline-flex">
+                <Button size="sm"><Crown className="h-4 w-4 mr-1" /> {locale === "pt-BR" ? "Planos" : "Plans"}</Button>
               </Link>
             </>
           )}
@@ -138,8 +138,8 @@ const Header = () => {
                 <Link to="/login" onClick={() => setMobileOpen(false)}>
                   <Button variant="outline" className="w-full">{t.nav.login}</Button>
                 </Link>
-                <Link to="/cadastro" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full">{t.nav.signup}</Button>
+                <Link to="/planos" onClick={() => setMobileOpen(false)}>
+                  <Button className="w-full"><Crown className="h-4 w-4 mr-1" /> {locale === "pt-BR" ? "Planos" : "Plans"}</Button>
                 </Link>
               </>
             )}
