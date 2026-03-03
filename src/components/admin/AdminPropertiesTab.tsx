@@ -83,14 +83,24 @@ const AdminPropertiesTab = () => {
   };
 
   const handleDeleteProperty = async (prop: Property) => {
-    // Delete images, then property
-    await supabase.from("property_images").delete().eq("property_id", prop.id);
-    const { error } = await supabase.from("properties").delete().eq("id", prop.id);
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Imóvel excluído com sucesso" });
-      await fetchProperties();
+    try {
+      // Delete related data first
+      await supabase.from("property_images").delete().eq("property_id", prop.id);
+      await supabase.from("property_private_data").delete().eq("property_id", prop.id);
+      await supabase.from("property_documents").delete().eq("property_id", prop.id);
+      await supabase.from("contact_requests").delete().eq("property_id", prop.id);
+      await supabase.from("favorites").delete().eq("property_id", prop.id);
+      await supabase.from("property_group_members").delete().eq("property_id", prop.id);
+      // Delete property
+      const { error } = await supabase.from("properties").delete().eq("id", prop.id);
+      if (error) {
+        toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Imóvel excluído com sucesso" });
+        await fetchProperties();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro inesperado", description: err?.message || "Falha ao excluir", variant: "destructive" });
     }
     setDeleteTarget(null);
   };

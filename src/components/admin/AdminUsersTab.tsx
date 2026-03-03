@@ -84,16 +84,24 @@ const AdminUsersTab = () => {
   };
 
   const handleDeleteUser = async (user: Profile & { roles: Role[] }) => {
-    // Remove all roles first, then delete profile
-    for (const r of user.roles) {
-      await supabase.from("user_roles").delete().eq("id", r.id);
-    }
-    const { error } = await supabase.from("profiles").delete().eq("id", user.id);
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Perfil excluído com sucesso" });
-      await fetchUsers();
+    try {
+      // Remove all roles first
+      for (const r of user.roles) {
+        await supabase.from("user_roles").delete().eq("id", r.id);
+      }
+      // Remove related data
+      await supabase.from("favorites").delete().eq("user_id", user.user_id);
+      await supabase.from("saved_searches").delete().eq("user_id", user.user_id);
+      // Delete profile
+      const { error } = await supabase.from("profiles").delete().eq("id", user.id);
+      if (error) {
+        toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Perfil excluído com sucesso" });
+        await fetchUsers();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro inesperado", description: err?.message || "Falha ao excluir", variant: "destructive" });
     }
     setDeleteTarget(null);
   };
