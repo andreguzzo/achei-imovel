@@ -29,6 +29,7 @@ const filtersToParams = (f: SearchFiltersState, showMap: boolean): URLSearchPara
   if (f.maxArea) p.set("area_max", f.maxArea);
   if (f.parkingSpots) p.set("vagas", f.parkingSpots);
   if (f.maxCondo) p.set("condo_max", f.maxCondo);
+  if (f.keywords.length) p.set("keywords", f.keywords.join(","));
   if (f.sortBy !== "newest") p.set("ordenar", f.sortBy);
   if (showMap) p.set("mapa", "true");
   return p;
@@ -47,6 +48,7 @@ const paramsToFilters = (sp: URLSearchParams): SearchFiltersState => ({
   maxArea: sp.get("area_max") ?? "",
   parkingSpots: sp.get("vagas") ?? "",
   maxCondo: sp.get("condo_max") ?? "",
+  keywords: sp.get("keywords")?.split(",").filter(Boolean) ?? [],
   sortBy: (sp.get("ordenar") as SearchFiltersState["sortBy"]) ?? "newest",
 });
 
@@ -95,6 +97,9 @@ const Search = () => {
     if (f.maxArea) q = q.lte("area", Number(f.maxArea));
     if (f.parkingSpots) q = q.gte("parking_spots", Number(f.parkingSpots));
     if (f.maxCondo) q = q.lte("condo_fee", Number(f.maxCondo));
+    if (f.keywords.length) {
+      q = q.overlaps("features", f.keywords);
+    }
 
     const { data } = await q.limit(100);
     setProperties((data as PropertyWithImages[]) ?? []);

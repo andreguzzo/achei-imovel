@@ -45,6 +45,7 @@ export const ptBR = {
     maxCondo: "Condomínio máx.",
     parkingSpots: "Vagas de garagem",
     features: "Características",
+    keywords: "Palavras-chave",
     sortBy: "Ordenar por",
     sortNewest: "Mais recentes",
     sortPriceAsc: "Menor preço",

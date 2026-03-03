@@ -45,6 +45,7 @@ export const en = {
     maxCondo: "Max condo fee",
     parkingSpots: "Parking spots",
     features: "Features",
+    keywords: "Keywords",
     sortBy: "Sort by",
     sortNewest: "Newest",
     sortPriceAsc: "Lowest price",

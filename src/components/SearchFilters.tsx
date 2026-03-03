@@ -27,6 +27,7 @@ export interface SearchFiltersState {
   maxArea: string;
   parkingSpots: string;
   maxCondo: string;
+  keywords: string[];
   sortBy: "newest" | "price_asc" | "price_desc" | "area_desc";
 }
 
@@ -42,8 +43,16 @@ export const defaultFilters: SearchFiltersState = {
   maxArea: "",
   parkingSpots: "",
   maxCondo: "",
+  keywords: [],
   sortBy: "newest",
 };
+
+const KEYWORD_SUGGESTIONS = [
+  "elevador", "piscina", "academia", "churrasqueira", "portaria 24h",
+  "playground", "salão de festas", "sauna", "varanda", "suíte",
+  "ar condicionado", "jardim", "quadra", "coworking", "pet friendly",
+  "vista mar", "mobiliado", "lavabo", "closet", "depósito",
+];
 
 interface SearchFiltersProps {
   filters: SearchFiltersState;
@@ -198,6 +207,14 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
       clear: () => update({ maxCondo: "" }),
     });
   }
+  if (filters.keywords.length > 0) {
+    filters.keywords.forEach((kw) =>
+      chips.push({
+        label: kw,
+        clear: () => update({ keywords: filters.keywords.filter((x) => x !== kw) }),
+      })
+    );
+  }
 
   const propertyTypeOptions = [
     { value: "apartment", label: t.filters.apartment },
@@ -212,7 +229,8 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
   const moreCount =
     (filters.minArea || filters.maxArea ? 1 : 0) +
     (filters.parkingSpots ? 1 : 0) +
-    (filters.maxCondo ? 1 : 0);
+    (filters.maxCondo ? 1 : 0) +
+    filters.keywords.length;
 
   return (
     <div className="space-y-2">
@@ -362,6 +380,29 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
                 onChange={(e) => update({ maxCondo: e.target.value })}
                 placeholder="∞"
               />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">{t.filters.keywords}</label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {KEYWORD_SUGGESTIONS.map((kw) => (
+                  <button
+                    key={kw}
+                    onClick={() => {
+                      const next = filters.keywords.includes(kw)
+                        ? filters.keywords.filter((x) => x !== kw)
+                        : [...filters.keywords, kw];
+                      update({ keywords: next });
+                    }}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      filters.keywords.includes(kw)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input bg-background text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {kw}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </FilterButton>
