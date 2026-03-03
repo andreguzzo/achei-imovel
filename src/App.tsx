@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import MainLayout from "@/components/layout/MainLayout";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
+import PropertyDetail from "./pages/PropertyDetail";
+import BrokerSales from "./pages/BrokerSales";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -26,6 +28,8 @@ const App = () => (
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/busca" element={<Search />} />
+                <Route path="/imovel/:id" element={<PropertyDetail />} />
+                <Route path="/corretor/vendas" element={<BrokerSales />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Signup />} />

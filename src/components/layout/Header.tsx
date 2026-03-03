@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Heart, Menu, X, Globe, LogOut, User } from "lucide-react";
+import { Home, Heart, Menu, X, Globe, LogOut, User, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +11,14 @@ const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isBroker, setIsBroker] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setIsBroker(false); return; }
+    supabase.rpc("has_role", { _user_id: user.id, _role: "broker" }).then(({ data }) => {
+      setIsBroker(!!data);
+    });
+  }, [user]);
 
   const navLinks = [
     { label: t.nav.buy, href: "/busca?tipo=comprar" },
@@ -65,6 +74,11 @@ const Header = () => {
 
           {user ? (
             <>
+              {isBroker && (
+                <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1 text-muted-foreground" onClick={() => navigate("/corretor/vendas")}>
+                  <TrendingUp className="h-4 w-4" /> {locale === "pt-BR" ? "Vendas" : "Sales"}
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1 text-muted-foreground" onClick={() => navigate("/painel")}>
                 <User className="h-4 w-4" /> {t.nav.myAccount}
               </Button>

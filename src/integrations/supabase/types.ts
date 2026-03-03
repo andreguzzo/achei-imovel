@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      broker_partnerships: {
+        Row: {
+          broker_a_id: string
+          broker_b_id: string
+          commission_split: number | null
+          created_at: string
+          group_id: string
+          id: string
+          status: Database["public"]["Enums"]["partnership_status"]
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          broker_a_id: string
+          broker_b_id: string
+          commission_split?: number | null
+          created_at?: string
+          group_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["partnership_status"]
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          broker_a_id?: string
+          broker_b_id?: string
+          commission_split?: number | null
+          created_at?: string
+          group_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["partnership_status"]
+          terms?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broker_partnerships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "property_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_requests: {
         Row: {
           created_at: string
@@ -207,6 +251,78 @@ export type Database = {
         }
         Relationships: []
       }
+      property_group_members: {
+        Row: {
+          broker_id: string
+          group_id: string
+          id: string
+          joined_at: string
+          property_id: string
+        }
+        Insert: {
+          broker_id: string
+          group_id: string
+          id?: string
+          joined_at?: string
+          property_id: string
+        }
+        Update: {
+          broker_id?: string
+          group_id?: string
+          id?: string
+          joined_at?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "property_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_group_members_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_groups: {
+        Row: {
+          area_approx: number | null
+          canonical_address: string
+          city: string
+          created_at: string
+          id: string
+          neighborhood: string | null
+          property_type: Database["public"]["Enums"]["property_type"]
+          state: string
+        }
+        Insert: {
+          area_approx?: number | null
+          canonical_address: string
+          city: string
+          created_at?: string
+          id?: string
+          neighborhood?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"]
+          state: string
+        }
+        Update: {
+          area_approx?: number | null
+          canonical_address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          neighborhood?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"]
+          state?: string
+        }
+        Relationships: []
+      }
       property_images: {
         Row: {
           created_at: string
@@ -232,6 +348,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "property_images_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_documents: {
+        Row: {
+          document_type: string | null
+          file_url: string
+          id: string
+          name: string
+          pipeline_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          document_type?: string | null
+          file_url: string
+          id?: string
+          name: string
+          pipeline_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          document_type?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          pipeline_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_documents_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "sales_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_pipeline: {
+        Row: {
+          actual_close_date: string | null
+          broker_id: string
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          commission_value: number | null
+          created_at: string
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          property_id: string | null
+          stage: Database["public"]["Enums"]["pipeline_stage"]
+          updated_at: string
+        }
+        Insert: {
+          actual_close_date?: string | null
+          broker_id: string
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          commission_value?: number | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          stage?: Database["public"]["Enums"]["pipeline_stage"]
+          updated_at?: string
+        }
+        Update: {
+          actual_close_date?: string | null
+          broker_id?: string
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          commission_value?: number | null
+          created_at?: string
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          stage?: Database["public"]["Enums"]["pipeline_stage"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_pipeline_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -297,6 +504,16 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "broker" | "user"
       listing_type: "sale" | "rent"
+      partnership_status: "pending" | "active" | "declined" | "completed"
+      pipeline_stage:
+        | "lead"
+        | "visit_scheduled"
+        | "visited"
+        | "proposal"
+        | "negotiation"
+        | "documentation"
+        | "closed_won"
+        | "closed_lost"
       property_status: "active" | "inactive" | "sold" | "rented"
       property_type: "apartment" | "house" | "land" | "commercial"
     }
@@ -428,6 +645,17 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "broker", "user"],
       listing_type: ["sale", "rent"],
+      partnership_status: ["pending", "active", "declined", "completed"],
+      pipeline_stage: [
+        "lead",
+        "visit_scheduled",
+        "visited",
+        "proposal",
+        "negotiation",
+        "documentation",
+        "closed_won",
+        "closed_lost",
+      ],
       property_status: ["active", "inactive", "sold", "rented"],
       property_type: ["apartment", "house", "land", "commercial"],
     },
