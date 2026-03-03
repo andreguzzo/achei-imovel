@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Search from "./pages/Search";
 import PropertyDetail from "./pages/PropertyDetail";
 import BrokerSales from "./pages/BrokerSales";
+import BrokerProfile from "./pages/BrokerProfile";
 import Financing from "./pages/Financing";
 import CreateProperty from "./pages/CreateProperty";
 import Plans from "./pages/Plans";
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/busca" element={<Search />} />
                 <Route path="/imovel/:id" element={<PropertyDetail />} />
                 <Route path="/corretor/vendas" element={<BrokerSales />} />
+                <Route path="/corretor/:username" element={<BrokerProfile />} />
                 <Route path="/financiamento" element={<Financing />} />
                 <Route path="/anunciar" element={<CreateProperty />} />
                 <Route path="/planos" element={<Plans />} />

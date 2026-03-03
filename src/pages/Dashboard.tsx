@@ -41,7 +41,10 @@ const Dashboard = () => {
 
   // Profile form
   const [fullName, setFullName] = useState("");
+  const [commercialName, setCommercialName] = useState("");
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [creci, setCreci] = useState("");
   const [bio, setBio] = useState("");
 
@@ -73,7 +76,10 @@ const Dashboard = () => {
       if (profileRes.data) {
         setProfile(profileRes.data);
         setFullName(profileRes.data.full_name ?? "");
+        setCommercialName((profileRes.data as any).commercial_name ?? "");
+        setUsername((profileRes.data as any).username ?? "");
         setPhone(profileRes.data.phone ?? "");
+        setEmail(user.email ?? "");
         setCreci(profileRes.data.creci ?? "");
         setBio(profileRes.data.bio ?? "");
       }
@@ -91,14 +97,37 @@ const Dashboard = () => {
       toast({ title: pt ? "CRECI é obrigatório" : "CRECI is required", variant: "destructive" });
       return;
     }
+    if (!phone.trim()) {
+      toast({ title: pt ? "Telefone é obrigatório" : "Phone is required", variant: "destructive" });
+      return;
+    }
+    if (!fullName.trim()) {
+      toast({ title: pt ? "Nome completo é obrigatório" : "Full name is required", variant: "destructive" });
+      return;
+    }
+    if (username.trim() && !/^[a-zA-Z0-9._-]{3,30}$/.test(username.trim())) {
+      toast({ title: pt ? "Username inválido (3-30 caracteres, letras, números, . _ -)" : "Invalid username (3-30 chars, letters, numbers, . _ -)", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, phone, creci, bio })
+      .update({ 
+        full_name: fullName, 
+        commercial_name: commercialName || null,
+        username: username.trim().toLowerCase() || null,
+        phone, 
+        creci, 
+        bio 
+      } as any)
       .eq("user_id", user.id);
 
     if (error) {
-      toast({ title: pt ? "Erro ao salvar" : "Error saving", description: error.message, variant: "destructive" });
+      if (error.message?.includes("profiles_username_unique")) {
+        toast({ title: pt ? "Username já em uso" : "Username already taken", variant: "destructive" });
+      } else {
+        toast({ title: pt ? "Erro ao salvar" : "Error saving", description: error.message, variant: "destructive" });
+      }
     } else {
       toast({ title: pt ? "Perfil atualizado!" : "Profile updated!" });
     }
@@ -333,12 +362,33 @@ const Dashboard = () => {
               <CardHeader><CardTitle>{pt ? "Dados Pessoais" : "Personal Info"}</CardTitle></CardHeader>
               <CardContent className="space-y-4 max-w-lg">
                 <div>
-                  <label className="text-sm font-medium">{pt ? "Nome completo" : "Full name"}</label>
-                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  <label className="text-sm font-medium">{pt ? "Nome completo *" : "Full name *"}</label>
+                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">{pt ? "Telefone" : "Phone"}</label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+                  <label className="text-sm font-medium">{pt ? "Nome comercial" : "Commercial name"}</label>
+                  <Input value={commercialName} onChange={(e) => setCommercialName(e.target.value)} placeholder={pt ? "Como deseja ser conhecido" : "How you want to be known"} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Username</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">@</span>
+                    <Input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} placeholder="seu.username" />
+                  </div>
+                  {username.trim() && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {pt ? "Seu perfil público: " : "Your public profile: "}{window.location.origin}/corretor/{username.trim().toLowerCase()}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{pt ? "E-mail *" : "Email *"}</label>
+                  <Input value={email} disabled className="bg-muted" />
+                  <p className="mt-1 text-xs text-muted-foreground">{pt ? "E-mail da conta, não pode ser alterado aqui" : "Account email, cannot be changed here"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{pt ? "Telefone *" : "Phone *"}</label>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" required />
                 </div>
                 <div>
                   <label className="text-sm font-medium">CRECI *</label>
