@@ -133,7 +133,7 @@ const FilterButton = ({
         <ChevronDown className="h-3 w-3" />
       </Button>
     </PopoverTrigger>
-    <PopoverContent align="start" className="w-72">
+    <PopoverContent align="start" className="w-72 z-[1000]">
       {children}
     </PopoverContent>
   </Popover>
@@ -429,7 +429,7 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
               <ChevronDown className="h-3 w-3" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-48">
+          <PopoverContent align="end" className="w-48 z-[1000]">
             <div className="space-y-1">
               {(
                 [
