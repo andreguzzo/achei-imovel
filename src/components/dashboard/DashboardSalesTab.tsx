@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2, Plus, Users, TrendingUp, Calendar, DollarSign, FileText, Handshake,
-  CalendarDays, Mail, UserPlus, Search, BarChart3,
+  CalendarDays, Mail, UserPlus, Search, BarChart3, Phone, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -42,14 +42,14 @@ interface BrokerProfile {
 }
 
 const STAGES = [
-  { key: "lead", label: "Leads", color: "bg-blue-100 text-blue-800" },
-  { key: "visit_scheduled", label: "Visita Agendada", color: "bg-yellow-100 text-yellow-800" },
-  { key: "visited", label: "Visitado", color: "bg-orange-100 text-orange-800" },
-  { key: "proposal", label: "Proposta", color: "bg-purple-100 text-purple-800" },
-  { key: "negotiation", label: "Negociação", color: "bg-indigo-100 text-indigo-800" },
-  { key: "documentation", label: "Documentação", color: "bg-cyan-100 text-cyan-800" },
-  { key: "closed_won", label: "Fechado ✓", color: "bg-green-100 text-green-800" },
-  { key: "closed_lost", label: "Perdido", color: "bg-red-100 text-red-800" },
+  { key: "lead", label: "Leads", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300", border: "border-l-blue-500", dot: "bg-blue-500" },
+  { key: "visit_scheduled", label: "Visita Agendada", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300", border: "border-l-yellow-500", dot: "bg-yellow-500" },
+  { key: "visited", label: "Visitado", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300", border: "border-l-orange-500", dot: "bg-orange-500" },
+  { key: "proposal", label: "Proposta", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300", border: "border-l-purple-500", dot: "bg-purple-500" },
+  { key: "negotiation", label: "Negociação", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300", border: "border-l-indigo-500", dot: "bg-indigo-500" },
+  { key: "documentation", label: "Documentação", color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300", border: "border-l-cyan-500", dot: "bg-cyan-500" },
+  { key: "closed_won", label: "Fechado ✓", color: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", border: "border-l-green-500", dot: "bg-green-500" },
+  { key: "closed_lost", label: "Perdido", color: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", border: "border-l-red-500", dot: "bg-red-500" },
 ] as const;
 
 interface DashboardSalesTabProps {
@@ -260,50 +260,55 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
         {/* Pipeline Tab */}
         <TabsContent value="pipeline" className="space-y-6">
           {/* KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
             {[
-              { label: "Leads", value: totalLeads, icon: Users, color: "text-primary" },
-              { label: pt ? "Visitas" : "Visits", value: visitsScheduled, icon: Calendar, color: "text-primary" },
-              { label: pt ? "Propostas" : "Proposals", value: activeProposals, icon: FileText, color: "text-primary" },
-              { label: pt ? "Fechados" : "Closed", value: closedWon, icon: TrendingUp, color: "text-primary" },
-              { label: pt ? "Comissão" : "Commission", value: `R$ ${totalCommission.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-primary" },
+              { label: "Leads", value: totalLeads, icon: Users, gradient: "from-blue-500/10 to-blue-600/5", iconColor: "text-blue-500" },
+              { label: pt ? "Visitas" : "Visits", value: visitsScheduled, icon: Calendar, gradient: "from-yellow-500/10 to-yellow-600/5", iconColor: "text-yellow-500" },
+              { label: pt ? "Propostas" : "Proposals", value: activeProposals, icon: FileText, gradient: "from-purple-500/10 to-purple-600/5", iconColor: "text-purple-500" },
+              { label: pt ? "Fechados" : "Closed", value: closedWon, icon: TrendingUp, gradient: "from-green-500/10 to-green-600/5", iconColor: "text-green-500" },
+              { label: pt ? "Comissão" : "Commission", value: `R$ ${totalCommission.toLocaleString("pt-BR")}`, icon: DollarSign, gradient: "from-emerald-500/10 to-emerald-600/5", iconColor: "text-emerald-500" },
             ].map((kpi) => (
-              <Card key={kpi.label}>
+              <Card key={kpi.label} className={`bg-gradient-to-br ${kpi.gradient} border-none shadow-sm`}>
                 <CardContent className="flex items-center gap-3 p-4">
-                  <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
+                  <div className={`rounded-lg p-2 bg-background/80 shadow-sm`}>
+                    <kpi.icon className={`h-5 w-5 ${kpi.iconColor}`} />
+                  </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                    <p className="text-xl font-bold">{kpi.value}</p>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">{kpi.label}</p>
+                    <p className="text-lg font-bold">{kpi.value}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {/* Funnel */}
+          {/* Funnel Chart */}
           {items.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{pt ? "Funil de Conversão" : "Conversion Funnel"}</CardTitle>
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{pt ? "Funil de Conversão" : "Conversion Funnel"}</CardTitle>
               </CardHeader>
-              <CardContent className="h-64">
+              <CardContent className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={funnelData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <BarChart data={funnelData} layout="vertical" barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))" }}
+                      labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
+                    />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           )}
 
-          {/* New deal */}
+          {/* New lead button */}
           <Dialog open={showNewDeal} onOpenChange={setShowNewDeal}>
             <DialogTrigger asChild>
-              <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo Lead" : "New Lead"}</Button>
+              <Button className="gap-1.5 shadow-sm"><Plus className="h-4 w-4" /> {pt ? "Novo Lead" : "New Lead"}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -322,40 +327,111 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
             </DialogContent>
           </Dialog>
 
-          {/* Kanban */}
-          <div className="overflow-x-auto pb-4">
-            <div className="flex gap-4" style={{ minWidth: STAGES.length * 240 }}>
-              {STAGES.map((stage) => (
-                <div key={stage.key} className="w-60 shrink-0">
-                  <div className="mb-2 flex items-center justify-between">
-                    <Badge className={stage.color}>{stage.label}</Badge>
-                    <span className="text-xs text-muted-foreground">{byStage[stage.key]?.length ?? 0}</span>
+          {/* Kanban Board */}
+          <div className="overflow-x-auto pb-4 -mx-2 px-2">
+            <div className="flex gap-3" style={{ minWidth: STAGES.length * 250 }}>
+              {STAGES.map((stage) => {
+                const stageItems = byStage[stage.key] ?? [];
+                const stageCommission = stageItems.reduce((s, i) => s + (i.commission_value ?? 0), 0);
+                return (
+                  <div key={stage.key} className="w-[240px] shrink-0 flex flex-col">
+                    {/* Column header */}
+                    <div className="mb-3 rounded-lg bg-muted/50 p-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2.5 w-2.5 rounded-full ${stage.dot}`} />
+                          <span className="text-xs font-semibold">{stage.label}</span>
+                        </div>
+                        <span className="text-xs font-bold bg-background rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
+                          {stageItems.length}
+                        </span>
+                      </div>
+                      {stageCommission > 0 && (
+                        <p className="text-[10px] text-muted-foreground mt-1 pl-[18px]">
+                          R$ {stageCommission.toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Cards */}
+                    <div className="space-y-2 flex-1 min-h-[100px]">
+                      {stageItems.length === 0 && (
+                        <div className="flex items-center justify-center h-20 border-2 border-dashed border-muted rounded-lg">
+                          <p className="text-[10px] text-muted-foreground">{pt ? "Nenhum item" : "No items"}</p>
+                        </div>
+                      )}
+                      {stageItems.map((item) => (
+                        <Card
+                          key={item.id}
+                          className={`cursor-pointer hover:shadow-md transition-all border-l-[3px] ${stage.border} group`}
+                        >
+                          <CardContent className="p-3 space-y-2">
+                            <div className="flex items-start justify-between">
+                              <p className="font-semibold text-sm leading-tight">{item.client_name}</p>
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                            </div>
+
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
+                              {item.client_phone && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <Phone className="h-3 w-3" /> {item.client_phone}
+                                </span>
+                              )}
+                              {item.client_email && (
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                  <Mail className="h-3 w-3" /> {item.client_email.split("@")[0]}…
+                                </span>
+                              )}
+                            </div>
+
+                            {item.commission_value != null && item.commission_value > 0 && (
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3 text-emerald-500" />
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                  R$ {item.commission_value.toLocaleString("pt-BR")}
+                                </span>
+                              </div>
+                            )}
+
+                            {item.expected_close_date && (
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {pt ? "Prev:" : "Exp:"} {new Date(item.expected_close_date).toLocaleDateString("pt-BR")}
+                              </p>
+                            )}
+
+                            {item.notes && (
+                              <p className="text-[10px] text-muted-foreground truncate border-t border-muted pt-1.5 mt-1">{item.notes}</p>
+                            )}
+
+                            {/* Stage selector */}
+                            <div className="pt-1">
+                              <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
+                                <SelectTrigger className="h-7 text-[11px] bg-muted/50 border-none">
+                                  <div className="flex items-center gap-1.5">
+                                    <ArrowRight className="h-3 w-3" />
+                                    <SelectValue />
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {STAGES.map((s) => (
+                                    <SelectItem key={s.key} value={s.key}>
+                                      <div className="flex items-center gap-2">
+                                        <div className={`h-2 w-2 rounded-full ${s.dot}`} />
+                                        {s.label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {(byStage[stage.key] ?? []).map((item) => (
-                      <Card key={item.id} className="cursor-pointer">
-                        <CardContent className="p-3 space-y-2">
-                          <p className="font-medium text-sm">{item.client_name}</p>
-                          {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
-                          {item.commission_value != null && item.commission_value > 0 && (
-                            <p className="text-xs font-medium text-primary">R$ {item.commission_value.toLocaleString("pt-BR")}</p>
-                          )}
-                          <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
-                            <SelectTrigger className="h-7 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STAGES.map((s) => (
-                                <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </TabsContent>
