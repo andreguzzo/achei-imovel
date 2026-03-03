@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Handshake } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ContactForm from "@/components/ContactForm";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -312,16 +313,9 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t.property.contact}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{locale === "pt-BR" ? "Entre em contato para mais informações." : "Get in touch for more details."}</p>
-                <Button className="mt-4 w-full">{t.property.schedule}</Button>
-              </CardContent>
-            </Card>
+            <ContactForm propertyId={property.id} />
           )}
+          {groupBrokers.length > 1 && <ContactForm propertyId={property.id} />}
         </div>
       </div>
     </div>
