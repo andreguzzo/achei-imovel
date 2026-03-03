@@ -286,8 +286,12 @@ export type Database = {
           parking_spots: number | null
           price: number
           property_type: Database["public"]["Enums"]["property_type"]
+          sold_by_other_price: number | null
+          sold_commission: number | null
+          sold_price: number | null
           state: string
           status: Database["public"]["Enums"]["property_status"]
+          suites: number | null
           title: string
           updated_at: string
           user_id: string
@@ -314,8 +318,12 @@ export type Database = {
           parking_spots?: number | null
           price: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          sold_by_other_price?: number | null
+          sold_commission?: number | null
+          sold_price?: number | null
           state: string
           status?: Database["public"]["Enums"]["property_status"]
+          suites?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -342,8 +350,12 @@ export type Database = {
           parking_spots?: number | null
           price?: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          sold_by_other_price?: number | null
+          sold_commission?: number | null
+          sold_price?: number | null
           state?: string
           status?: Database["public"]["Enums"]["property_status"]
+          suites?: number | null
           title?: string
           updated_at?: string
           user_id?: string
