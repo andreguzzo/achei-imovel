@@ -11,6 +11,7 @@ import {
   Loader2, Eye, Upload, X, Plus, Users, Handshake, Camera, Search,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import BrokerAnalytics from "./BrokerAnalytics";
 
 interface BrokerTabProps {
   userId: string;
@@ -345,6 +346,9 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
           </p>
         </CardContent>
       </Card>
+
+      {/* Analytics & Reports */}
+      <BrokerAnalytics userId={userId} />
 
       {/* Partner Brokers */}
       <Card>
