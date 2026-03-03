@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Building2, Mail, Trash2, Edit, Plus } from "lucide-react";
+import { Loader2, User, Building2, Mail, Trash2, Edit, Plus, Briefcase } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import BrokerTab from "@/components/dashboard/BrokerTab";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const [contacts, setContacts] = useState<(Tables<"contact_requests"> & { properties?: { title: string } | null })[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isBroker, setIsBroker] = useState(false);
 
   // Profile form
   const [fullName, setFullName] = useState("");
@@ -38,10 +40,11 @@ const Dashboard = () => {
 
     const fetchAll = async () => {
       setLoading(true);
-      const [profileRes, propsRes, contactsRes] = await Promise.all([
+      const [profileRes, propsRes, contactsRes, brokerRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", user.id).single(),
         supabase.from("properties").select("*, property_images(*)").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("contact_requests").select("*, properties:property_id(title)").order("created_at", { ascending: false }).limit(50),
+        supabase.rpc("has_role", { _user_id: user.id, _role: "broker" }),
       ]);
 
       if (profileRes.data) {
@@ -53,6 +56,7 @@ const Dashboard = () => {
       }
       setProperties((propsRes.data as PropertyWithImages[]) ?? []);
       setContacts((contactsRes.data as any) ?? []);
+      setIsBroker(!!brokerRes.data);
       setLoading(false);
     };
     fetchAll();
@@ -60,6 +64,10 @@ const Dashboard = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    if (!creci.trim()) {
+      toast({ title: pt ? "CRECI é obrigatório" : "CRECI is required", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -98,6 +106,9 @@ const Dashboard = () => {
           <TabsTrigger value="profile" className="gap-1"><User className="h-4 w-4" /> {pt ? "Perfil" : "Profile"}</TabsTrigger>
           <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> {pt ? "Imóveis" : "Properties"}</TabsTrigger>
           <TabsTrigger value="contacts" className="gap-1"><Mail className="h-4 w-4" /> {pt ? "Contatos" : "Contacts"}</TabsTrigger>
+          {isBroker && (
+            <TabsTrigger value="broker" className="gap-1"><Briefcase className="h-4 w-4" /> {pt ? "Corretor" : "Broker"}</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Profile Tab */}
@@ -114,8 +125,8 @@ const Dashboard = () => {
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
               </div>
               <div>
-                <label className="text-sm font-medium">CRECI</label>
-                <Input value={creci} onChange={(e) => setCreci(e.target.value)} placeholder={pt ? "Opcional" : "Optional"} />
+                <label className="text-sm font-medium">CRECI *</label>
+                <Input value={creci} onChange={(e) => setCreci(e.target.value)} placeholder={pt ? "Obrigatório" : "Required"} required />
               </div>
               <div>
                 <label className="text-sm font-medium">Bio</label>
@@ -197,6 +208,13 @@ const Dashboard = () => {
             </div>
           )}
         </TabsContent>
+
+        {/* Broker Tab */}
+        {isBroker && user && (
+          <TabsContent value="broker">
+            <BrokerTab userId={user.id} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

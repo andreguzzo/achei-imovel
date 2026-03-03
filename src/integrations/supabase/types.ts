@@ -58,6 +58,33 @@ export type Database = {
           },
         ]
       }
+      broker_photos: {
+        Row: {
+          created_at: string
+          id: string
+          is_cover: boolean | null
+          position: number | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_cover?: boolean | null
+          position?: number | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_cover?: boolean | null
+          position?: number | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           created_at: string
@@ -192,6 +219,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          video_url: string | null
           view_count: number | null
           zip_code: string | null
         }
@@ -219,6 +247,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          video_url?: string | null
           view_count?: number | null
           zip_code?: string | null
         }
@@ -246,6 +275,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          video_url?: string | null
           view_count?: number | null
           zip_code?: string | null
         }
