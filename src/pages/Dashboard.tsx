@@ -360,7 +360,7 @@ const Dashboard = () => {
                           <Button size="sm" variant="outline" onClick={() => handleOpenStatusDialog(p)}>
                             {pt ? "Status" : "Status"}
                           </Button>
-                          <Link to={`/imovel/${p.id}`}>
+                          <Link to={`/editar/${p.id}`}>
                             <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
                           </Link>
                           <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDeleteProperty(p.id)}>

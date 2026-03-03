@@ -137,7 +137,7 @@ const BrokerProposals = ({ userId }: BrokerProposalsProps) => {
       client_name: formClientName,
       client_email: formClientEmail || null,
       client_phone: formClientPhone || null,
-      property_id: formPropertyId || null,
+      property_id: formPropertyId && formPropertyId !== "none" ? formPropertyId : null,
       stage: formStage,
       commission_value: formCommission ? Number(formCommission) : null,
       expected_close_date: formExpectedClose || null,
