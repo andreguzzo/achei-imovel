@@ -39,6 +39,7 @@ const App = () => (
                 <Route path="/corretor/:username" element={<BrokerProfile />} />
                 <Route path="/financiamento" element={<Financing />} />
                 <Route path="/anunciar" element={<CreateProperty />} />
+                <Route path="/editar/:id" element={<CreateProperty />} />
                 <Route path="/planos" element={<Plans />} />
                 <Route path="/favoritos" element={<Favorites />} />
                 <Route path="/painel" element={<Dashboard />} />

@@ -96,7 +96,8 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
         .order("created_at", { ascending: false }),
       supabase
         .from("contact_requests")
-        .select("*, properties:property_id(title)")
+        .select("*, properties:property_id(title, user_id)")
+        .neq("sender_id", userId)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
@@ -192,20 +193,17 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
   const handleSendPartnership = async () => {
     if (!selectedBroker) return;
     setSendingProposal(true);
-    const { data: group } = await supabase
-      .from("property_groups")
-      .insert({ canonical_address: `partnership-${userId}-${selectedBroker.user_id}`, city: "N/A", state: "N/A" })
-      .select()
-      .single();
+    const { data: groupId, error: groupError } = await supabase
+      .rpc("create_partnership_group", { _broker_a: userId, _broker_b: selectedBroker.user_id });
 
-    if (!group) {
+    if (groupError || !groupId) {
       toast({ title: pt ? "Erro" : "Error", variant: "destructive" });
       setSendingProposal(false);
       return;
     }
 
     const { error } = await supabase.from("broker_partnerships").insert({
-      group_id: group.id,
+      group_id: groupId,
       broker_a_id: userId,
       broker_b_id: selectedBroker.user_id,
       commission_split: Number(commSplit),

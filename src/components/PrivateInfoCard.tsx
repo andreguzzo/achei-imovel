@@ -424,11 +424,7 @@ export async function uploadPrivateDocuments(
       continue;
     }
 
-    const { data: signedData } = await supabase.storage
-      .from("property-documents")
-      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-
-    const url = signedData?.signedUrl ?? path;
+    // Store the storage path (not a signed URL) so we can generate URLs on demand
     const docType = guessDocType(file.name);
 
     await supabase.from("property_documents").insert({
@@ -436,7 +432,7 @@ export async function uploadPrivateDocuments(
       user_id: userId,
       name: file.name,
       document_type: docType,
-      file_url: url,
+      file_url: path,
     } as any);
   }
 }

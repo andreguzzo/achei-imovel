@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Handshake, Video } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ContactForm from "@/components/ContactForm";
+import PropertyMap from "@/components/PropertyMap";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -64,6 +65,12 @@ const PropertyDetail = () => {
   const [terms, setTerms] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Increment view count
+  useEffect(() => {
+    if (!id) return;
+    supabase.rpc("increment_view_count", { _property_id: id });
+  }, [id]);
+
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
@@ -84,7 +91,6 @@ const PropertyDetail = () => {
           .eq("property_id", id);
 
         if (members && members.length > 0) {
-          // Get group_id
           const { data: memberWithGroup } = await supabase
             .from("property_group_members")
             .select("group_id")
@@ -98,7 +104,6 @@ const PropertyDetail = () => {
               .eq("group_id", memberWithGroup.group_id);
 
             if (allMembers && allMembers.length > 1) {
-              // Get properties and profiles for each broker
               const brokers: GroupBroker[] = [];
               for (const m of allMembers) {
                 const { data: brokerProp } = await supabase
@@ -258,6 +263,9 @@ const PropertyDetail = () => {
             {property.bedrooms != null && property.bedrooms > 0 && (
               <div className="flex items-center gap-2 text-sm"><Bed className="h-5 w-5 text-muted-foreground" /> {property.bedrooms} {t.property.bedrooms}</div>
             )}
+            {property.suites != null && property.suites > 0 && (
+              <div className="flex items-center gap-2 text-sm"><Bed className="h-5 w-5 text-muted-foreground" /> {property.suites} {locale === "pt-BR" ? "Suítes" : "Suites"}</div>
+            )}
             {property.bathrooms != null && property.bathrooms > 0 && (
               <div className="flex items-center gap-2 text-sm"><Bath className="h-5 w-5 text-muted-foreground" /> {property.bathrooms} {t.property.bathrooms}</div>
             )}
@@ -301,6 +309,30 @@ const PropertyDetail = () => {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Map */}
+          {property.latitude != null && property.longitude != null && (
+            <div>
+              <h2 className="font-display text-lg font-semibold flex items-center gap-2">
+                <MapPin className="h-5 w-5" /> {locale === "pt-BR" ? "Localização" : "Location"}
+              </h2>
+              <div className="mt-2 h-64 rounded-lg overflow-hidden border">
+                <PropertyMap
+                  properties={[property as any]}
+                  center={[Number(property.latitude), Number(property.longitude)]}
+                  zoom={15}
+                />
+              </div>
+              <a
+                href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <MapPin className="h-3 w-3" /> {locale === "pt-BR" ? "Abrir no Google Maps" : "Open in Google Maps"}
+              </a>
             </div>
           )}
 

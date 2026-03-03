@@ -101,6 +101,9 @@ const PropertyCard = ({ property, initialFavorited }: { property: Property; init
           {property.bedrooms != null && property.bedrooms > 0 && (
             <span className="flex items-center gap-1"><Bed className="h-3.5 w-3.5" /> {property.bedrooms}</span>
           )}
+          {property.suites != null && property.suites > 0 && (
+            <span className="flex items-center gap-1" title="Suítes"><Bed className="h-3.5 w-3.5" /> {property.suites}s</span>
+          )}
           {property.bathrooms != null && property.bathrooms > 0 && (
             <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5" /> {property.bathrooms}</span>
           )}

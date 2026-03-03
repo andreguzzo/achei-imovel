@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, getMaxProperties } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -202,21 +202,25 @@ const CreateProperty = () => {
   const { user, tier } = useAuth();
   const { locale } = useLanguage();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const pt = locale === "pt-BR";
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<{ id: string; url: string; position: number }[]>([]);
   const [propertyCount, setPropertyCount] = useState<number | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
   const maxProperties = getMaxProperties(tier);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isEditMode) return;
     supabase
       .from("properties")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .then(({ count }) => setPropertyCount(count ?? 0));
-  }, [user]);
+  }, [user, isEditMode]);
   // Form fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -253,6 +257,84 @@ const CreateProperty = () => {
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
   const [propertyStatus, setPropertyStatus] = useState<string>("active");
 
+  // Load existing property data in edit mode
+  useEffect(() => {
+    if (!editId || !user) return;
+    const loadProperty = async () => {
+      setEditLoading(true);
+      const { data: prop } = await supabase
+        .from("properties")
+        .select("*, property_images(*)")
+        .eq("id", editId)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!prop) {
+        toast({ title: pt ? "Imóvel não encontrado" : "Property not found", variant: "destructive" });
+        navigate("/painel");
+        return;
+      }
+
+      setTitle(prop.title);
+      setDescription(prop.description ?? "");
+      setPropertyType(prop.property_type);
+      setListingType(prop.listing_type);
+      setPrice(prop.price?.toString() ?? "");
+      setArea(prop.area?.toString() ?? "");
+      setBedrooms(prop.bedrooms?.toString() ?? "");
+      setSuites(prop.suites?.toString() ?? "");
+      setBathrooms(prop.bathrooms?.toString() ?? "");
+      setParkingSpots(prop.parking_spots?.toString() ?? "");
+      setAddress(prop.address ?? "");
+      setNeighborhood(prop.neighborhood ?? "");
+      setCity(prop.city);
+      setState(prop.state);
+      setZipCode(prop.zip_code ?? "");
+      setCondoFee(prop.condo_fee?.toString() ?? "");
+      setIptu(prop.iptu?.toString() ?? "");
+      setFeatures(prop.features?.join(", ") ?? "");
+      setVideoUrl(prop.video_url ?? "");
+      setLatitude(prop.latitude?.toString() ?? "");
+      setLongitude(prop.longitude?.toString() ?? "");
+      setPropertyStatus(prop.status);
+      setStatusAction(prop.status);
+
+      // Load existing images
+      const imgs = (prop.property_images ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+      setExistingImages(imgs.map((img: any) => ({ id: img.id, url: img.url, position: img.position ?? 0 })));
+
+      // Load private data
+      const { data: privateData } = await supabase
+        .from("property_private_data")
+        .select("*")
+        .eq("property_id", editId)
+        .maybeSingle();
+      
+      if (privateData) {
+        setPrivateNotes(privateData.notes ?? "");
+        const ownersData = privateData.owners as any[];
+        if (ownersData && ownersData.length > 0) {
+          setOwners(ownersData);
+        } else if (privateData.owner_name) {
+          setOwners([{
+            name: privateData.owner_name ?? "",
+            phone: privateData.owner_phone ?? "",
+            cpf: privateData.owner_cpf ?? "",
+            address: privateData.owner_address ?? "",
+            rg: "",
+            nationality: "",
+            profession: "",
+            marital_status: "",
+            is_spouse: false,
+          }]);
+        }
+      }
+
+      setEditLoading(false);
+    };
+    loadProperty();
+  }, [editId, user]);
+
   if (!user) {
     return (
       <div className="container py-20 text-center">
@@ -264,7 +346,7 @@ const CreateProperty = () => {
     );
   }
 
-  if (propertyCount !== null && propertyCount >= maxProperties) {
+  if (!isEditMode && propertyCount !== null && propertyCount >= maxProperties) {
     return (
       <div className="container max-w-lg py-20 text-center">
         <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
@@ -328,46 +410,66 @@ const CreateProperty = () => {
     const isSoldByOther = statusAction === "sold_by_other";
     const finalStatus = isSoldByOther ? "sold" : propertyStatus;
 
-    const { data: prop, error } = await supabase
-      .from("properties")
-      .insert({
-        user_id: user.id,
-        title,
-        description: description || null,
-        property_type: propertyType as "apartment" | "house" | "land" | "commercial",
-        listing_type: listingType as "sale" | "rent",
-        price: Number(price),
-        area: area ? Number(area) : null,
-        bedrooms: bedrooms ? Number(bedrooms) : 0,
-        suites: suites ? Number(suites) : 0,
-        bathrooms: bathrooms ? Number(bathrooms) : 0,
-        parking_spots: parkingSpots ? Number(parkingSpots) : 0,
-        address: address || null,
-        neighborhood: neighborhood || null,
-        city,
-        state,
-        zip_code: zipCode || null,
-        condo_fee: condoFee ? Number(condoFee) : null,
-        iptu: iptu ? Number(iptu) : null,
-        features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
-        video_url: videoUrl || null,
-        latitude: latitude ? Number(latitude) : null,
-        longitude: longitude ? Number(longitude) : null,
-        status: finalStatus as "active" | "inactive" | "sold" | "rented",
-        sold_price: statusAction === "sold" ? Number(soldPrice) : isSoldByOther ? null : null,
-        sold_commission: statusAction === "sold" ? Number(soldCommission) : null,
-        sold_by_other_price: isSoldByOther && soldByOtherPrice ? Number(soldByOtherPrice) : null,
-      } as any)
-      .select()
-      .single();
+    const propertyData = {
+      title,
+      description: description || null,
+      property_type: propertyType as "apartment" | "house" | "land" | "commercial",
+      listing_type: listingType as "sale" | "rent",
+      price: Number(price),
+      area: area ? Number(area) : null,
+      bedrooms: bedrooms ? Number(bedrooms) : 0,
+      suites: suites ? Number(suites) : 0,
+      bathrooms: bathrooms ? Number(bathrooms) : 0,
+      parking_spots: parkingSpots ? Number(parkingSpots) : 0,
+      address: address || null,
+      neighborhood: neighborhood || null,
+      city,
+      state,
+      zip_code: zipCode || null,
+      condo_fee: condoFee ? Number(condoFee) : null,
+      iptu: iptu ? Number(iptu) : null,
+      features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
+      video_url: videoUrl || null,
+      latitude: latitude ? Number(latitude) : null,
+      longitude: longitude ? Number(longitude) : null,
+      status: finalStatus as "active" | "inactive" | "sold" | "rented",
+      sold_price: statusAction === "sold" ? Number(soldPrice) : null,
+      sold_commission: statusAction === "sold" ? Number(soldCommission) : null,
+      sold_by_other_price: isSoldByOther && soldByOtherPrice ? Number(soldByOtherPrice) : null,
+    };
 
-    if (error || !prop) {
-      toast({ title: "Erro ao criar anúncio", description: error?.message, variant: "destructive" });
-      setSubmitting(false);
-      return;
+    let propId: string;
+
+    if (isEditMode && editId) {
+      // Update existing property
+      const { error } = await supabase
+        .from("properties")
+        .update(propertyData as any)
+        .eq("id", editId);
+
+      if (error) {
+        toast({ title: pt ? "Erro ao atualizar" : "Error updating", description: error.message, variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
+      propId = editId;
+    } else {
+      // Insert new property
+      const { data: prop, error } = await supabase
+        .from("properties")
+        .insert({ ...propertyData, user_id: user.id } as any)
+        .select()
+        .single();
+
+      if (error || !prop) {
+        toast({ title: "Erro ao criar anúncio", description: error?.message, variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
+      propId = prop.id;
     }
 
-    // If sold by broker, also close any matching pipeline entries to avoid duplicity
+    // If sold by broker, also close any matching pipeline entries
     if (statusAction === "sold" && soldPrice) {
       await supabase
         .from("sales_pipeline")
@@ -377,51 +479,70 @@ const CreateProperty = () => {
           commission_value: Number(soldCommission),
         })
         .eq("broker_id", user.id)
-        .eq("property_id", prop.id);
+        .eq("property_id", propId);
     }
 
-    // Upload images
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      const ext = file.name.split(".").pop();
-      const path = `${prop.id}/${i}.${ext}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("property-images")
-        .upload(path, file, { upsert: true });
+    // Upload new images
+    if (imageFiles.length > 0) {
+      const startPos = existingImages.length;
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const ext = file.name.split(".").pop();
+        const path = `${propId}/${Date.now()}-${i}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("property-images")
+          .upload(path, file, { upsert: true });
 
-      if (!uploadErr) {
-        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-        await supabase.from("property_images").insert({
-          property_id: prop.id,
-          url: urlData.publicUrl,
-          position: i,
-        });
+        if (!uploadErr) {
+          const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+          await supabase.from("property_images").insert({
+            property_id: propId,
+            url: urlData.publicUrl,
+            position: startPos + i,
+          });
+        }
       }
     }
 
-    // Save private data
+    // Save private data (upsert)
     const hasOwnerData = owners.some(o => o.name || o.cpf);
     const hasPrivateData = hasOwnerData || privateNotes;
     if (hasPrivateData) {
       const firstOwner = owners[0] || emptyOwner();
-      await supabase.from("property_private_data").insert({
-        property_id: prop.id,
+      const privatePayload = {
+        property_id: propId,
         owner_name: firstOwner.name || null,
         owner_phone: firstOwner.phone || null,
         owner_cpf: firstOwner.cpf || null,
         owner_address: firstOwner.address || null,
         notes: privateNotes || null,
         owners: JSON.parse(JSON.stringify(owners)),
-      } as any);
+      };
+      
+      if (isEditMode) {
+        const { data: existing } = await supabase
+          .from("property_private_data")
+          .select("id")
+          .eq("property_id", propId)
+          .maybeSingle();
+        
+        if (existing) {
+          await supabase.from("property_private_data").update(privatePayload as any).eq("id", existing.id);
+        } else {
+          await supabase.from("property_private_data").insert(privatePayload as any);
+        }
+      } else {
+        await supabase.from("property_private_data").insert(privatePayload as any);
+      }
     }
 
     // Upload private documents
     if (pendingDocs.length > 0) {
-      await uploadPrivateDocuments(user.id, prop.id, pendingDocs);
+      await uploadPrivateDocuments(user.id, propId, pendingDocs);
     }
 
-    toast({ title: pt ? "Anúncio criado com sucesso!" : "Listing created!" });
-    navigate(`/imovel/${prop.id}`);
+    toast({ title: isEditMode ? (pt ? "Anúncio atualizado!" : "Listing updated!") : (pt ? "Anúncio criado com sucesso!" : "Listing created!") });
+    navigate(`/imovel/${propId}`);
     setSubmitting(false);
   };
 
@@ -429,10 +550,14 @@ const CreateProperty = () => {
     ? { active: "Ativo", sold: "Vendido", inactive: "Fora de negociação" }
     : { active: "Active", sold: "Sold", inactive: "Withdrawn" };
 
+  if (editLoading) {
+    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
   return (
     <div className="container max-w-3xl py-8">
       <h1 className="font-display text-2xl font-bold text-foreground mb-6">
-        {pt ? "Anunciar Imóvel" : "List a Property"}
+        {isEditMode ? (pt ? "Editar Imóvel" : "Edit Property") : (pt ? "Anunciar Imóvel" : "List a Property")}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -568,8 +693,34 @@ const CreateProperty = () => {
         <Button type="submit" size="lg" className="w-full gap-2" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
           <Upload className="h-4 w-4" />
-          {pt ? "Publicar Anúncio" : "Publish Listing"}
+          {isEditMode ? (pt ? "Salvar Alterações" : "Save Changes") : (pt ? "Publicar Anúncio" : "Publish Listing")}
         </Button>
+
+        {/* Show existing images in edit mode */}
+        {isEditMode && existingImages.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-base">{pt ? "Fotos atuais" : "Current Photos"}</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative h-24 w-32 overflow-hidden rounded-lg border">
+                    <img src={img.url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await supabase.from("property_images").delete().eq("id", img.id);
+                        setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
+                      }}
+                      className="absolute right-1 top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </form>
     </div>
   );
