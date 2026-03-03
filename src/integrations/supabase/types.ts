@@ -395,6 +395,44 @@ export type Database = {
         }
         Relationships: []
       }
+      property_documents: {
+        Row: {
+          created_at: string
+          document_type: string | null
+          file_url: string
+          id: string
+          name: string
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type?: string | null
+          file_url: string
+          id?: string
+          name: string
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_documents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_group_members: {
         Row: {
           broker_id: string
@@ -494,6 +532,50 @@ export type Database = {
             foreignKeyName: "property_images_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_private_data: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          owner_address: string | null
+          owner_cpf: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          property_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_address?: string | null
+          owner_cpf?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_address?: string | null
+          owner_cpf?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_private_data_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
+import PrivateInfoCard, { uploadPrivateDocuments } from "@/components/PrivateInfoCard";
 import { z } from "zod";
 
 const propertySchema = z.object({
@@ -239,6 +240,14 @@ const CreateProperty = () => {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
+  // Private info
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
+  const [ownerCpf, setOwnerCpf] = useState("");
+  const [ownerAddress, setOwnerAddress] = useState("");
+  const [privateNotes, setPrivateNotes] = useState("");
+  const [pendingDocs, setPendingDocs] = useState<File[]>([]);
+
   // Status dialog
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [statusAction, setStatusAction] = useState("active");
@@ -393,6 +402,24 @@ const CreateProperty = () => {
       }
     }
 
+    // Save private data
+    const hasPrivateData = ownerName || ownerPhone || ownerCpf || ownerAddress || privateNotes;
+    if (hasPrivateData) {
+      await supabase.from("property_private_data").insert({
+        property_id: prop.id,
+        owner_name: ownerName || null,
+        owner_phone: ownerPhone || null,
+        owner_cpf: ownerCpf || null,
+        owner_address: ownerAddress || null,
+        notes: privateNotes || null,
+      } as any);
+    }
+
+    // Upload private documents
+    if (pendingDocs.length > 0) {
+      await uploadPrivateDocuments(user.id, prop.id, pendingDocs);
+    }
+
     toast({ title: pt ? "Anúncio criado com sucesso!" : "Listing created!" });
     navigate(`/imovel/${prop.id}`);
     setSubmitting(false);
@@ -489,6 +516,24 @@ const CreateProperty = () => {
             <p className="mt-1 text-xs text-muted-foreground">{pt ? "Opcional. Cole o link do YouTube ou Vimeo." : "Optional. Paste a YouTube or Vimeo link."}</p>
           </CardContent>
         </Card>
+
+        {/* Private / Confidential Info */}
+        <PrivateInfoCard
+          pt={pt}
+          userId={user.id}
+          ownerName={ownerName}
+          setOwnerName={setOwnerName}
+          ownerPhone={ownerPhone}
+          setOwnerPhone={setOwnerPhone}
+          ownerCpf={ownerCpf}
+          setOwnerCpf={setOwnerCpf}
+          ownerAddress={ownerAddress}
+          setOwnerAddress={setOwnerAddress}
+          privateNotes={privateNotes}
+          setPrivateNotes={setPrivateNotes}
+          pendingFiles={pendingDocs}
+          setPendingFiles={setPendingDocs}
+        />
 
         {/* Status */}
         <Card>
