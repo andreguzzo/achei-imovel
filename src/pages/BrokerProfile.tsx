@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BrokerData {
@@ -20,6 +20,11 @@ interface BrokerData {
   whatsapp: string | null;
   bio: string | null;
   creci: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  youtube: string | null;
+  tiktok: string | null;
+  linkedin: string | null;
 }
 
 interface BrokerPhoto {
@@ -75,7 +80,7 @@ const BrokerProfile = () => {
       setLoading(true);
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp" as any)
+        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp, instagram, facebook, youtube, tiktok, linkedin" as any)
         .eq("username", username.toLowerCase())
         .single();
 
@@ -201,6 +206,50 @@ const BrokerProfile = () => {
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{broker.bio}</p>
               </CardContent>
             </Card>
+          </motion.div>
+        )}
+
+        {/* Social Media Links */}
+        {(broker.instagram || broker.facebook || broker.youtube || broker.tiktok || broker.linkedin) && (
+          <motion.div initial="hidden" animate="visible" custom={1.5} variants={fadeUp}>
+            <div className="flex flex-wrap gap-2">
+              {broker.instagram && (
+                <a href={broker.instagram.startsWith("http") ? broker.instagram : `https://instagram.com/${broker.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Instagram className="h-4 w-4" /> Instagram
+                  </Button>
+                </a>
+              )}
+              {broker.facebook && (
+                <a href={broker.facebook.startsWith("http") ? broker.facebook : `https://facebook.com/${broker.facebook}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Facebook className="h-4 w-4" /> Facebook
+                  </Button>
+                </a>
+              )}
+              {broker.youtube && (
+                <a href={broker.youtube.startsWith("http") ? broker.youtube : `https://youtube.com/${broker.youtube}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Youtube className="h-4 w-4" /> YouTube
+                  </Button>
+                </a>
+              )}
+              {broker.tiktok && (
+                <a href={broker.tiktok.startsWith("http") ? broker.tiktok : `https://tiktok.com/@${broker.tiktok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1 0-5.78 2.92 2.92 0 0 1 .88.13v-3.5a6.37 6.37 0 0 0-.88-.07 6.26 6.26 0 0 0 0 12.52 6.27 6.27 0 0 0 6.26-6.27V8.87a8.16 8.16 0 0 0 3.84.96V6.69Z"/></svg>
+                    TikTok
+                  </Button>
+                </a>
+              )}
+              {broker.linkedin && (
+                <a href={broker.linkedin.startsWith("http") ? broker.linkedin : `https://linkedin.com/in/${broker.linkedin}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Linkedin className="h-4 w-4" /> LinkedIn
+                  </Button>
+                </a>
+              )}
+            </div>
           </motion.div>
         )}
 

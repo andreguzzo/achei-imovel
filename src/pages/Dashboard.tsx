@@ -50,6 +50,11 @@ const Dashboard = () => {
   const [creci, setCreci] = useState("");
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [youtube, setYoutube] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [linkedin, setLinkedin] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   // Broker photos
   const [photos, setPhotos] = useState<BrokerPhoto[]>([]);
@@ -86,6 +91,11 @@ const Dashboard = () => {
         setCreci(profileRes.data.creci ?? "");
         setBio(profileRes.data.bio ?? "");
         setWhatsapp((profileRes.data as any).whatsapp ?? "");
+        setInstagram((profileRes.data as any).instagram ?? "");
+        setFacebook((profileRes.data as any).facebook ?? "");
+        setYoutube((profileRes.data as any).youtube ?? "");
+        setTiktok((profileRes.data as any).tiktok ?? "");
+        setLinkedin((profileRes.data as any).linkedin ?? "");
         setEmailVerified((profileRes.data as any).email_verified ?? false);
       }
       setProperties((propsRes.data as PropertyWithImages[]) ?? []);
@@ -123,6 +133,11 @@ const Dashboard = () => {
         username: username.trim().toLowerCase() || null,
         phone, 
         whatsapp: whatsapp || null,
+        instagram: instagram || null,
+        facebook: facebook || null,
+        youtube: youtube || null,
+        tiktok: tiktok || null,
+        linkedin: linkedin || null,
         creci, 
         bio 
       } as any)
@@ -414,6 +429,33 @@ const Dashboard = () => {
                 <div>
                   <label className="text-sm font-medium">Bio</label>
                   <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder={pt ? "Fale sobre você..." : "Tell us about yourself..."} />
+                </div>
+
+                {/* Social Media */}
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{pt ? "Redes Sociais" : "Social Media"}</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium">Instagram</label>
+                      <Input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuusuario" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Facebook</label>
+                      <Input value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="https://facebook.com/seuperfil" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">YouTube</label>
+                      <Input value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="https://youtube.com/@seucanal" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">TikTok</label>
+                      <Input value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@seuusuario" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">LinkedIn</label>
+                      <Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/seuperfil" />
+                    </div>
+                  </div>
                 </div>
                 <Button onClick={handleSaveProfile} disabled={saving}>
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
