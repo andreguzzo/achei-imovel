@@ -74,11 +74,6 @@ const Header = () => {
 
           {user ? (
             <>
-              {isBroker && (
-                <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1 text-muted-foreground" onClick={() => navigate("/corretor/vendas")}>
-                  <TrendingUp className="h-4 w-4" /> {locale === "pt-BR" ? "Vendas" : "Sales"}
-                </Button>
-              )}
               <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1 text-muted-foreground" onClick={() => navigate("/painel")}>
                 <User className="h-4 w-4" /> {t.nav.myAccount}
               </Button>
