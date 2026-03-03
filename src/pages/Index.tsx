@@ -1,25 +1,38 @@
-import { Search } from "lucide-react";
+import { Search, MapPin, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import PropertyCard from "@/components/PropertyCard";
 import { Loader2 } from "lucide-react";
+import { useUserLocation, getStateImage } from "@/hooks/useUserLocation";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
 };
 
+const POPULAR_CITIES = [
+  { name: "São Paulo", state: "SP", image: "/images/states/sp.jpg" },
+  { name: "Rio de Janeiro", state: "RJ", image: "/images/states/rj.jpg" },
+  { name: "Belo Horizonte", state: "MG", image: "/images/states/mg.jpg" },
+  { name: "Salvador", state: "BA", image: "/images/states/ba.jpg" },
+  { name: "Florianópolis", state: "SC", image: "/images/states/sc.jpg" },
+  { name: "Vitória", state: "ES", image: "/images/states/es.jpg" },
+];
+
 const Index = () => {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const navigate = useNavigate();
+  const { location } = useUserLocation();
   const [query, setQuery] = useState("");
   const [featured, setFeatured] = useState<PropertyWithImages[]>([]);
   const [recent, setRecent] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const stateInfo = getStateImage(location?.state ?? "SP");
 
   useEffect(() => {
     const fetch = async () => {
@@ -54,68 +67,139 @@ const Index = () => {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+      {/* Hero Section with location-based background */}
+      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img
+            src={stateInfo.image}
+            alt={stateInfo.landmark}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/60 via-foreground/40 to-foreground/80" />
+        </div>
 
         <div className="container relative z-10 text-center">
-          <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            {t.hero.title}
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            {t.hero.subtitle}
-          </p>
+          <div className="mx-auto max-w-3xl">
+            <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-lg">
+              {t.hero.title}
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-white/85 drop-shadow">
+              {t.hero.subtitle}
+            </p>
 
-          <form
-            onSubmit={handleSearch}
-            className="mx-auto mt-8 flex max-w-2xl items-center gap-2 rounded-xl border bg-card p-2 shadow-elevated"
-          >
-            <div className="flex flex-1 items-center gap-2 px-3">
-              <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t.hero.searchPlaceholder}
-                className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-              />
-            </div>
-            <Button type="submit" size="lg" className="shrink-0 rounded-lg px-6">
-              {t.hero.searchButton}
-            </Button>
-          </form>
+            <form
+              onSubmit={handleSearch}
+              className="mx-auto mt-8 flex max-w-2xl items-center gap-2 rounded-2xl bg-card p-2 shadow-2xl"
+            >
+              <div className="flex flex-1 items-center gap-2 px-3">
+                <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t.hero.searchPlaceholder}
+                  className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+                />
+              </div>
+              <Button type="submit" size="lg" className="shrink-0 rounded-xl px-6">
+                {t.hero.searchButton}
+              </Button>
+            </form>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {[
-              { label: t.filters.apartment, type: "apartment" },
-              { label: t.filters.house, type: "house" },
-              { label: t.filters.land, type: "land" },
-              { label: t.filters.commercial, type: "commercial" },
-            ].map((item) => (
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {[
+                { label: t.filters.apartment, type: "apartment" },
+                { label: t.filters.house, type: "house" },
+                { label: t.filters.land, type: "land" },
+                { label: t.filters.commercial, type: "commercial" },
+              ].map((item) => (
+                <Button
+                  key={item.type}
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full bg-white/20 text-white backdrop-blur-sm border border-white/30 hover:bg-white/30"
+                  onClick={() => navigate(`/busca?tipo_imovel=${item.type}`)}
+                >
+                  {item.label}
+                </Button>
+              ))}
               <Button
-                key={item.type}
                 variant="secondary"
                 size="sm"
-                className="rounded-full"
-                onClick={() => navigate(`/busca?tipo_imovel=${item.type}`)}
+                className="rounded-full bg-white/20 text-white backdrop-blur-sm border border-white/30 hover:bg-white/30 gap-1"
+                onClick={() => navigate("/busca?mapa=true")}
               >
-                {item.label}
+                <MapPin className="h-3.5 w-3.5" />
+                {locale === "pt-BR" ? "Buscar no mapa" : "Search on map"}
               </Button>
-            ))}
+            </div>
+
+            {/* Location badge */}
+            {location && (
+              <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm text-white backdrop-blur-sm border border-white/20">
+                <MapPin className="h-4 w-4" />
+                <span>{stateInfo.landmark}</span>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Featured */}
+      {/* Popular Cities */}
       <section className="container py-16">
-        <h2 className="font-display text-2xl font-semibold text-foreground">{t.common.featured}</h2>
-        <p className="mt-1 text-muted-foreground">{t.common.mostViewed}</p>
+        <h2 className="font-display text-2xl font-semibold text-foreground">
+          {locale === "pt-BR" ? "Explore por cidade" : "Explore by city"}
+        </h2>
+        <p className="mt-1 text-muted-foreground">
+          {locale === "pt-BR" ? "Descubra imóveis nas principais cidades do Brasil" : "Discover properties in Brazil's top cities"}
+        </p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {POPULAR_CITIES.map((city) => (
+            <Link
+              key={city.name}
+              to={`/busca?q=${encodeURIComponent(city.name)}`}
+              className="group relative h-48 overflow-hidden rounded-2xl"
+            >
+              <img
+                src={city.image}
+                alt={city.name}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                <div>
+                  <h3 className="font-display text-xl font-bold text-white drop-shadow">{city.name}</h3>
+                  <p className="text-sm text-white/80">{city.state}</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured */}
+      <section className="container py-16 border-t border-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-foreground">{t.common.featured}</h2>
+            <p className="mt-1 text-muted-foreground">{t.common.mostViewed}</p>
+          </div>
+          <Link to="/busca">
+            <Button variant="outline" size="sm" className="gap-1">
+              {t.common.seeMore} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : featured.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">Nenhum imóvel disponível no momento.</p>
+          <p className="py-12 text-center text-muted-foreground">
+            {locale === "pt-BR" ? "Nenhum imóvel disponível no momento." : "No properties available at the moment."}
+          </p>
         ) : (
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((p) => (
@@ -128,7 +212,14 @@ const Index = () => {
       {/* Recently added */}
       {recent.length > 0 && (
         <section className="container pb-16">
-          <h2 className="font-display text-2xl font-semibold text-foreground">{t.common.recentlyAdded}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-2xl font-semibold text-foreground">{t.common.recentlyAdded}</h2>
+            <Link to="/busca">
+              <Button variant="outline" size="sm" className="gap-1">
+                {t.common.seeMore} <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {recent.map((p) => (
               <PropertyCard key={p.id} property={p} />
@@ -136,6 +227,41 @@ const Index = () => {
           </div>
         </section>
       )}
+
+      {/* CTA bottom with location image */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={stateInfo.image}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-primary/85" />
+        </div>
+        <div className="container relative z-10 py-20 text-center">
+          <h2 className="font-display text-3xl font-bold text-white md:text-4xl">
+            {locale === "pt-BR" ? "Quer anunciar seu imóvel?" : "Want to list your property?"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg text-white/85">
+            {locale === "pt-BR"
+              ? "Cadastre seu imóvel gratuitamente e alcance milhares de compradores interessados."
+              : "List your property for free and reach thousands of interested buyers."}
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link to="/anunciar">
+              <Button size="lg" className="rounded-xl bg-white text-primary hover:bg-white/90 font-semibold px-8">
+                {locale === "pt-BR" ? "Anunciar grátis" : "List for free"}
+              </Button>
+            </Link>
+            <Link to="/busca?mapa=true">
+              <Button size="lg" variant="outline" className="rounded-xl border-white/40 text-white hover:bg-white/10 px-8 gap-2">
+                <MapPin className="h-5 w-5" />
+                {locale === "pt-BR" ? "Explorar no mapa" : "Explore on map"}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </>
   );
 };
