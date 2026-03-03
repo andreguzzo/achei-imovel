@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
-import PrivateInfoCard, { uploadPrivateDocuments } from "@/components/PrivateInfoCard";
+import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { z } from "zod";
 
 const propertySchema = z.object({
@@ -241,10 +241,7 @@ const CreateProperty = () => {
   const [longitude, setLongitude] = useState("");
 
   // Private info
-  const [ownerName, setOwnerName] = useState("");
-  const [ownerPhone, setOwnerPhone] = useState("");
-  const [ownerCpf, setOwnerCpf] = useState("");
-  const [ownerAddress, setOwnerAddress] = useState("");
+  const [owners, setOwners] = useState<OwnerEntry[]>([emptyOwner()]);
   const [privateNotes, setPrivateNotes] = useState("");
   const [pendingDocs, setPendingDocs] = useState<File[]>([]);
 
@@ -403,15 +400,18 @@ const CreateProperty = () => {
     }
 
     // Save private data
-    const hasPrivateData = ownerName || ownerPhone || ownerCpf || ownerAddress || privateNotes;
+    const hasOwnerData = owners.some(o => o.name || o.cpf);
+    const hasPrivateData = hasOwnerData || privateNotes;
     if (hasPrivateData) {
+      const firstOwner = owners[0] || emptyOwner();
       await supabase.from("property_private_data").insert({
         property_id: prop.id,
-        owner_name: ownerName || null,
-        owner_phone: ownerPhone || null,
-        owner_cpf: ownerCpf || null,
-        owner_address: ownerAddress || null,
+        owner_name: firstOwner.name || null,
+        owner_phone: firstOwner.phone || null,
+        owner_cpf: firstOwner.cpf || null,
+        owner_address: firstOwner.address || null,
         notes: privateNotes || null,
+        owners: JSON.parse(JSON.stringify(owners)),
       } as any);
     }
 
@@ -521,14 +521,8 @@ const CreateProperty = () => {
         <PrivateInfoCard
           pt={pt}
           userId={user.id}
-          ownerName={ownerName}
-          setOwnerName={setOwnerName}
-          ownerPhone={ownerPhone}
-          setOwnerPhone={setOwnerPhone}
-          ownerCpf={ownerCpf}
-          setOwnerCpf={setOwnerCpf}
-          ownerAddress={ownerAddress}
-          setOwnerAddress={setOwnerAddress}
+          owners={owners}
+          setOwners={setOwners}
           privateNotes={privateNotes}
           setPrivateNotes={setPrivateNotes}
           pendingFiles={pendingDocs}
