@@ -1,53 +1,106 @@
 
 
-# LarBrasil — Plano Atualizado com Agentes de IA
+# Plano: Agrupamento de Anuncios + Painel de Gestão do Corretor
 
-## Tudo que já estava planejado permanece (Home, Busca, Detalhes, Auth, Dashboards, Simulador, i18n, etc.)
+## 1. Agrupamento de Imóveis Duplicados (Anuncio Coletivo + Parcerias)
 
-## Novas Funcionalidades: Agentes de IA
+### Conceito
+Quando dois ou mais corretores anunciam o mesmo imóvel (identificado por endereço + tipo + area similar), o sistema agrupa automaticamente em um "anuncio coletivo". O comprador vê um unico card com a lista de corretores disponíveis. Corretores podem formalizar parcerias de venda entre si.
 
-### 10. Assistente IA para Criação de Anúncios (Corretor/Anunciante)
-No painel do corretor, ao cadastrar um imóvel, um assistente de IA ajuda a elaborar o anúncio:
-- O corretor preenche dados básicos (tipo, área, quartos, bairro, diferenciais) e opcionalmente anexa fotos
-- Botão "Gerar anúncio com IA" cria título atrativo e descrição completa e persuasiva em português
-- O corretor pode refinar pedindo ajustes ("mais formal", "destaque a vista", "mencione proximidade do metrô")
-- Interface de chat inline ao lado do formulário de cadastro
-- Sugestões automáticas de palavras-chave e destaques baseados nas características do imóvel
-- Geração bilíngue (PT-BR e EN) para alcançar compradores estrangeiros
-- Implementação via Edge Function usando Lovable AI Gateway (Gemini)
+### Novas tabelas no banco de dados
 
-### 11. Assistente IA de Análise de Localização (Comprador)
-Na página de detalhes do imóvel, uma seção "Análise do Bairro" powered by IA:
-- Ao abrir, o comprador vê um botão "Analisar localização com IA"
-- A IA gera um panorama completo do bairro/região contendo:
-  - **Prós e contras** da localidade (segurança, barulho, trânsito, áreas verdes)
-  - **Preços médios** de imóveis similares na região (baseado nos dados do banco)
-  - **Infraestrutura**: escolas, hospitais, transporte, comércio próximo
-  - **Tendência de valorização**: análise geral da região
-  - **Perfil do bairro**: ideal para famílias, jovens, investidores, etc.
-- Interface em formato de relatório com seções expansíveis
-- Opção de fazer perguntas de follow-up via chat ("É seguro à noite?", "Tem metrô perto?")
-- Também bilíngue conforme idioma selecionado pelo usuário
-- Implementação via Edge Function usando Lovable AI Gateway (Gemini)
+```text
+property_groups
+├── id (uuid, PK)
+├── canonical_address (text)       -- endereço normalizado
+├── city, state, neighborhood
+├── property_type (enum)
+├── area_approx (numeric)          -- área aproximada para matching
+├── created_at
 
-### Backend para os Agentes
-- Duas Edge Functions: `ai-listing-assistant` e `ai-location-analysis`
-- Ambas usam Lovable AI Gateway com `LOVABLE_API_KEY`
-- System prompts especializados para cada caso (especialista imobiliário brasileiro)
-- Suporte a streaming para respostas em tempo real
-- Os dados de imóveis do banco são passados como contexto para a IA de localização
+property_group_members
+├── id (uuid, PK)
+├── group_id (uuid, FK → property_groups)
+├── property_id (uuid, FK → properties)
+├── broker_id (uuid)               -- user_id do corretor
+├── joined_at
 
-### Ordem de Implementação Atualizada
-1. Estrutura base, layout, header/footer, i18n
-2. Supabase: auth + tabelas + RLS
-3. Home page com busca
-4. Listagem de resultados com filtros
-5. Página de detalhes do imóvel
-6. Simulador de financiamento
-7. Painel do usuário (favoritos, buscas salvas)
-8. Painel do corretor (CRUD de imóveis)
-9. **Assistente IA para criação de anúncios** (integrado ao painel do corretor)
-10. **Assistente IA de análise de localização** (integrado à página do imóvel)
-11. Painel admin
-12. Refinamentos visuais e responsividade
+broker_partnerships
+├── id (uuid, PK)
+├── group_id (uuid, FK → property_groups)
+├── broker_a_id (uuid)
+├── broker_b_id (uuid)
+├── status (enum: pending, active, declined, completed)
+├── commission_split (numeric)     -- % do broker_a (ex: 50)
+├── terms (text)                   -- termos livres
+├── created_at, updated_at
+```
+
+### Lógica de agrupamento
+- Database function `find_or_create_group` que normaliza endereço e busca grupo existente com mesma cidade + bairro + endereço similar + tipo + area (tolerância de 10%)
+- Trigger `after insert` em `properties` que chama essa function automaticamente
+- Na busca, query agrupa por `group_id` e mostra o menor preço + quantidade de corretores
+
+### Frontend
+- **PropertyCard**: badge "X corretores" quando grupo tem mais de 1 membro
+- **Página de detalhes**: seção "Corretores que anunciam este imóvel" com perfil, CRECI, preço de cada um
+- **Botão "Propor parceria"**: corretor logado pode enviar proposta de parceria a outro corretor do mesmo grupo, definindo split de comissão
+- **Painel do corretor**: aba "Parcerias" para gerenciar propostas recebidas/enviadas
+
+### RLS
+- `property_groups` e `property_group_members`: SELECT publico, INSERT/UPDATE restrito a owners
+- `broker_partnerships`: SELECT/INSERT/UPDATE restrito aos dois brokers envolvidos
+
+---
+
+## 2. Painel de Gestão de Vendas do Corretor
+
+### Nova tabela
+
+```text
+sales_pipeline
+├── id (uuid, PK)
+├── broker_id (uuid)
+├── property_id (uuid, FK → properties)
+├── client_name (text)
+├── client_email, client_phone (text)
+├── stage (enum: lead, visit_scheduled, visited, proposal, negotiation, documentation, closed_won, closed_lost)
+├── notes (text)
+├── expected_close_date (date)
+├── actual_close_date (date)
+├── commission_value (numeric)
+├── created_at, updated_at
+
+sale_documents
+├── id (uuid, PK)
+├── pipeline_id (uuid, FK → sales_pipeline)
+├── name (text)
+├── file_url (text)
+├── document_type (text)          -- contrato, procuração, certidão, etc.
+├── uploaded_at
+```
+
+### Frontend — Página `/corretor/vendas`
+- **Kanban board** com colunas por stage (Lead → Visita → Proposta → Negociação → Documentação → Fechado)
+- Cards arrastáveis com nome do cliente, imóvel, valor
+- **Indicadores no topo**: total de leads, visitas agendadas, propostas ativas, vendas fechadas no mês, comissão acumulada
+- **Detalhe do pipeline**: modal/drawer com timeline, notas, upload de documentos
+- **Gráficos**: funil de conversão e evolução mensal (usando recharts, já instalado)
+
+### RLS
+- `sales_pipeline` e `sale_documents`: todas operações restritas a `auth.uid() = broker_id`
+
+### Rota e navegação
+- Nova rota `/corretor/vendas` dentro do MainLayout
+- Link no Header para corretores autenticados com role `broker`
+
+---
+
+## Ordem de implementação
+
+1. **Migration SQL**: criar tabelas `property_groups`, `property_group_members`, `broker_partnerships`, `sales_pipeline`, `sale_documents` + enums + RLS + function de agrupamento
+2. **Agrupamento no frontend**: atualizar PropertyCard e criar seção de corretores na página de detalhes
+3. **Sistema de parcerias**: UI para propor/aceitar/recusar parcerias
+4. **Painel de vendas do corretor**: página com kanban, indicadores e gestão de documentos
+5. **Atualizar i18n**: adicionar traduções PT-BR e EN para as novas seções
 
