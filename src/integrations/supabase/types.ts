@@ -240,6 +240,7 @@ export type Database = {
           commercial_name: string | null
           created_at: string
           creci: string | null
+          email_verified: boolean
           full_name: string | null
           id: string
           phone: string | null
@@ -253,6 +254,7 @@ export type Database = {
           commercial_name?: string | null
           created_at?: string
           creci?: string | null
+          email_verified?: boolean
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -266,6 +268,7 @@ export type Database = {
           commercial_name?: string | null
           created_at?: string
           creci?: string | null
+          email_verified?: boolean
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -607,6 +610,36 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          type: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          type?: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          type?: string
+          used?: boolean
           user_id?: string
         }
         Relationships: []
