@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -25,13 +27,52 @@ const formatPriceShort = (price: number) => {
   return `R$${price}`;
 };
 
+const CLUSTER_STYLE = `
+  .marker-cluster-custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: white;
+    border: 3px solid white;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  .marker-cluster-small {
+    background: hsl(215, 25%, 35%);
+    width: 36px; height: 36px;
+  }
+  .marker-cluster-medium {
+    background: hsl(215, 25%, 25%);
+    width: 42px; height: 42px;
+  }
+  .marker-cluster-large {
+    background: hsl(215, 25%, 15%);
+    width: 50px; height: 50px;
+  }
+  .custom-price-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+`;
+
 const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect }: PropertyMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const styleRef = useRef<HTMLStyleElement | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
+
+    // Inject cluster styles
+    const style = document.createElement("style");
+    style.textContent = CLUSTER_STYLE;
+    document.head.appendChild(style);
+    styleRef.current = style;
 
     const map = L.map(mapRef.current, {
       center,
@@ -44,7 +85,6 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       maxZoom: 19,
     }).addTo(map);
 
-    markersRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
 
     if (onBoundsChange) {
@@ -57,7 +97,6 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
           west: b.getWest(),
         });
       });
-      // Trigger initial bounds
       setTimeout(() => {
         const b = map.getBounds();
         onBoundsChange({
@@ -72,39 +111,59 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      styleRef.current?.remove();
     };
   }, []);
 
   // Update markers when properties change
   useEffect(() => {
-    if (!markersRef.current || !mapInstanceRef.current) return;
-    markersRef.current.clearLayers();
+    if (!mapInstanceRef.current) return;
+
+    // Remove old cluster group
+    if (clusterRef.current) {
+      mapInstanceRef.current.removeLayer(clusterRef.current);
+    }
+
+    const cluster = L.markerClusterGroup({
+      maxClusterRadius: 45,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (c) => {
+        const count = c.getChildCount();
+        let size: "small" | "medium" | "large" = "small";
+        if (count >= 20) size = "large";
+        else if (count >= 5) size = "medium";
+        return L.divIcon({
+          html: `<div class="marker-cluster-custom marker-cluster-${size}">+${count}</div>`,
+          className: "custom-price-marker",
+          iconSize: L.point(size === "large" ? 50 : size === "medium" ? 42 : 36, size === "large" ? 50 : size === "medium" ? 42 : 36),
+        });
+      },
+    });
 
     const propsWithCoords = properties.filter((p) => p.latitude && p.longitude);
 
     propsWithCoords.forEach((p) => {
       const isSelected = p.id === selectedId;
       const isSale = p.listing_type === "sale";
-      // Sale = red tones, Rent = purple tones
-      const bgColor = isSelected
-        ? (isSale ? "hsl(0, 72%, 50%)" : "hsl(270, 60%, 50%)")
-        : (isSale ? "hsl(0, 72%, 96%)" : "hsl(270, 60%, 96%)");
-      const textColor = isSelected
-        ? "white"
-        : (isSale ? "hsl(0, 72%, 40%)" : "hsl(270, 60%, 35%)");
+
+      // Always solid color: red for sale, purple for rent
+      const bgColor = isSale ? "hsl(0, 72%, 50%)" : "hsl(270, 60%, 50%)";
       const borderColor = isSelected
-        ? (isSale ? "hsl(0, 72%, 40%)" : "hsl(270, 60%, 40%)")
-        : (isSale ? "hsl(0, 50%, 80%)" : "hsl(270, 40%, 80%)");
+        ? "white"
+        : (isSale ? "hsl(0, 72%, 38%)" : "hsl(270, 60%, 38%)");
       const shadow = isSelected
-        ? "0 4px 12px rgba(0,0,0,0.3)"
-        : "0 2px 6px rgba(0,0,0,0.15)";
+        ? "0 0 0 3px white, 0 4px 14px rgba(0,0,0,0.35)"
+        : "0 2px 8px rgba(0,0,0,0.2)";
+      const scale = isSelected ? "scale(1.2)" : "scale(1)";
 
       const icon = L.divIcon({
         className: "custom-price-marker",
         html: `<div style="
           background: ${bgColor};
-          color: ${textColor};
-          padding: 4px 10px;
+          color: white;
+          padding: 5px 10px;
           border-radius: 20px;
           font-size: 11px;
           font-weight: 800;
@@ -114,14 +173,15 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
           border: 2px solid ${borderColor};
           cursor: pointer;
           font-family: 'DM Sans', sans-serif;
-          transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
+          transform: ${scale};
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+          text-align: center;
         ">${formatPriceShort(p.price)}</div>`,
         iconSize: [0, 0],
         iconAnchor: [35, 15],
       });
 
-      const marker = L.marker([p.latitude!, p.longitude!], { icon }).addTo(markersRef.current!);
+      const marker = L.marker([p.latitude!, p.longitude!], { icon });
 
       marker.on("click", () => {
         onSelect?.(p.id);
@@ -141,9 +201,14 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         </div>`,
         { maxWidth: 250 }
       );
+
+      cluster.addLayer(marker);
     });
 
-    // Fit bounds if there are coords
+    mapInstanceRef.current.addLayer(cluster);
+    clusterRef.current = cluster;
+
+    // Fit bounds
     if (propsWithCoords.length > 0) {
       const group = L.featureGroup(
         propsWithCoords.map((p) => L.marker([p.latitude!, p.longitude!]))
