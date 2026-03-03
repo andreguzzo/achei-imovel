@@ -9,9 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Users, TrendingUp, Calendar, DollarSign, FileText, Handshake, ChevronRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Plus, Users, TrendingUp, Calendar, DollarSign, FileText, Handshake, CalendarDays } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, LabelList } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
+import BrokerProposals from "@/components/dashboard/BrokerProposals";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PipelineItem = Tables<"sales_pipeline"> & {
@@ -33,16 +36,14 @@ const STAGES = [
   { key: "closed_lost", label: "Perdido", color: "bg-red-100 text-red-800" },
 ] as const;
 
-type StageKey = typeof STAGES[number]["key"];
-
 const BrokerSales = () => {
   const { user } = useAuth();
   const { locale } = useLanguage();
+  const pt = locale === "pt-BR";
   const [items, setItems] = useState<PipelineItem[]>([]);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDeal, setShowNewDeal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"pipeline" | "partnerships">("pipeline");
 
   // New deal form
   const [clientName, setClientName] = useState("");
@@ -127,17 +128,13 @@ const BrokerSales = () => {
   if (!user) {
     return (
       <div className="container py-20 text-center">
-        <p className="text-lg font-medium">Faça login para acessar o painel</p>
+        <p className="text-lg font-medium">{pt ? "Faça login para acessar o painel" : "Login to access"}</p>
       </div>
     );
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   // KPIs
@@ -161,38 +158,28 @@ const BrokerSales = () => {
 
   return (
     <div className="container py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold text-foreground">
-          {locale === "pt-BR" ? "Gestão de Vendas" : "Sales Management"}
-        </h1>
-        <div className="flex gap-2">
-          <Button
-            variant={activeTab === "pipeline" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("pipeline")}
-          >
-            <TrendingUp className="mr-1 h-4 w-4" /> Pipeline
-          </Button>
-          <Button
-            variant={activeTab === "partnerships" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("partnerships")}
-          >
-            <Handshake className="mr-1 h-4 w-4" /> {locale === "pt-BR" ? "Parcerias" : "Partnerships"}
-          </Button>
-        </div>
-      </div>
+      <h1 className="font-display text-2xl font-bold text-foreground">
+        {pt ? "Gestão de Vendas" : "Sales Management"}
+      </h1>
 
-      {activeTab === "pipeline" ? (
-        <>
+      <Tabs defaultValue="pipeline">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="pipeline" className="gap-1"><TrendingUp className="h-4 w-4" /> Pipeline</TabsTrigger>
+          <TabsTrigger value="proposals" className="gap-1"><FileText className="h-4 w-4" /> {pt ? "Propostas" : "Proposals"}</TabsTrigger>
+          <TabsTrigger value="agenda" className="gap-1"><CalendarDays className="h-4 w-4" /> {pt ? "Agenda" : "Calendar"}</TabsTrigger>
+          <TabsTrigger value="partnerships" className="gap-1"><Handshake className="h-4 w-4" /> {pt ? "Parcerias" : "Partnerships"}</TabsTrigger>
+        </TabsList>
+
+        {/* Pipeline Tab */}
+        <TabsContent value="pipeline" className="space-y-6">
           {/* KPIs */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {[
-              { label: "Leads", value: totalLeads, icon: Users, color: "text-blue-600" },
-              { label: locale === "pt-BR" ? "Visitas" : "Visits", value: visitsScheduled, icon: Calendar, color: "text-yellow-600" },
-              { label: locale === "pt-BR" ? "Propostas" : "Proposals", value: activeProposals, icon: FileText, color: "text-purple-600" },
-              { label: locale === "pt-BR" ? "Fechados" : "Closed", value: closedWon, icon: TrendingUp, color: "text-green-600" },
-              { label: locale === "pt-BR" ? "Comissão" : "Commission", value: `R$ ${totalCommission.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-primary" },
+              { label: "Leads", value: totalLeads, icon: Users, color: "text-primary" },
+              { label: pt ? "Visitas" : "Visits", value: visitsScheduled, icon: Calendar, color: "text-primary" },
+              { label: pt ? "Propostas" : "Proposals", value: activeProposals, icon: FileText, color: "text-primary" },
+              { label: pt ? "Fechados" : "Closed", value: closedWon, icon: TrendingUp, color: "text-primary" },
+              { label: pt ? "Comissão" : "Commission", value: `R$ ${totalCommission.toLocaleString("pt-BR")}`, icon: DollarSign, color: "text-primary" },
             ].map((kpi) => (
               <Card key={kpi.label}>
                 <CardContent className="flex items-center gap-3 p-4">
@@ -210,12 +197,12 @@ const BrokerSales = () => {
           {items.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{locale === "pt-BR" ? "Funil de Conversão" : "Conversion Funnel"}</CardTitle>
+                <CardTitle className="text-base">{pt ? "Funil de Conversão" : "Conversion Funnel"}</CardTitle>
               </CardHeader>
               <CardContent className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={funnelData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
                     <Tooltip />
@@ -226,23 +213,23 @@ const BrokerSales = () => {
             </Card>
           )}
 
-          {/* New deal button */}
+          {/* New deal */}
           <Dialog open={showNewDeal} onOpenChange={setShowNewDeal}>
             <DialogTrigger asChild>
-              <Button className="gap-1"><Plus className="h-4 w-4" /> {locale === "pt-BR" ? "Novo Lead" : "New Lead"}</Button>
+              <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo Lead" : "New Lead"}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{locale === "pt-BR" ? "Adicionar Lead" : "Add Lead"}</DialogTitle>
+                <DialogTitle>{pt ? "Adicionar Lead" : "Add Lead"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <Input placeholder={locale === "pt-BR" ? "Nome do cliente *" : "Client name *"} value={clientName} onChange={(e) => setClientName(e.target.value)} />
+                <Input placeholder={pt ? "Nome do cliente *" : "Client name *"} value={clientName} onChange={(e) => setClientName(e.target.value)} />
                 <Input placeholder="Email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
-                <Input placeholder={locale === "pt-BR" ? "Telefone" : "Phone"} value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
-                <Textarea placeholder={locale === "pt-BR" ? "Observações" : "Notes"} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <Input placeholder={pt ? "Telefone" : "Phone"} value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
+                <Textarea placeholder={pt ? "Observações" : "Notes"} value={notes} onChange={(e) => setNotes(e.target.value)} />
                 <Button onClick={handleCreateDeal} disabled={submitting || !clientName.trim()} className="w-full">
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {locale === "pt-BR" ? "Criar Lead" : "Create Lead"}
+                  {pt ? "Criar Lead" : "Create Lead"}
                 </Button>
               </div>
             </DialogContent>
@@ -284,46 +271,58 @@ const BrokerSales = () => {
               ))}
             </div>
           </div>
-        </>
-      ) : (
-        /* Partnerships tab */
-        <div className="space-y-4">
-          {partnerships.length === 0 ? (
-            <p className="py-10 text-center text-muted-foreground">
-              {locale === "pt-BR" ? "Nenhuma parceria encontrada." : "No partnerships found."}
-            </p>
-          ) : (
-            partnerships.map((p) => (
-              <Card key={p.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium">{p.partner_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {locale === "pt-BR" ? "Comissão" : "Commission"}: {p.commission_split}% / {100 - (p.commission_split ?? 50)}%
-                    </p>
-                    {p.terms && <p className="mt-1 text-xs text-muted-foreground">{p.terms}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={p.status === "active" ? "default" : p.status === "pending" ? "secondary" : "outline"}>
-                      {p.status}
-                    </Badge>
-                    {p.status === "pending" && p.broker_b_id === user?.id && (
-                      <div className="flex gap-1">
-                        <Button size="sm" onClick={() => handlePartnershipAction(p.id, "active")}>
-                          {locale === "pt-BR" ? "Aceitar" : "Accept"}
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handlePartnershipAction(p.id, "declined")}>
-                          {locale === "pt-BR" ? "Recusar" : "Decline"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
+        </TabsContent>
+
+        {/* Proposals Tab */}
+        <TabsContent value="proposals">
+          <BrokerProposals userId={user.id} />
+        </TabsContent>
+
+        {/* Agenda Tab */}
+        <TabsContent value="agenda">
+          <BrokerAgenda userId={user.id} />
+        </TabsContent>
+
+        {/* Partnerships Tab */}
+        <TabsContent value="partnerships">
+          <div className="space-y-4">
+            {partnerships.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">
+                {pt ? "Nenhuma parceria encontrada." : "No partnerships found."}
+              </p>
+            ) : (
+              partnerships.map((p) => (
+                <Card key={p.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <p className="font-medium">{p.partner_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {pt ? "Comissão" : "Commission"}: {p.commission_split}% / {100 - (p.commission_split ?? 50)}%
+                      </p>
+                      {p.terms && <p className="mt-1 text-xs text-muted-foreground">{p.terms}</p>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={p.status === "active" ? "default" : p.status === "pending" ? "secondary" : "outline"}>
+                        {p.status}
+                      </Badge>
+                      {p.status === "pending" && p.broker_b_id === user?.id && (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={() => handlePartnershipAction(p.id, "active")}>
+                            {pt ? "Aceitar" : "Accept"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handlePartnershipAction(p.id, "declined")}>
+                            {pt ? "Recusar" : "Decline"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

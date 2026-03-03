@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      broker_appointments: {
+        Row: {
+          appointment_date: string
+          appointment_type: Database["public"]["Enums"]["appointment_type"]
+          broker_id: string
+          client_name: string | null
+          client_phone: string | null
+          completed: boolean
+          created_at: string
+          end_time: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          pipeline_id: string | null
+          property_id: string | null
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_type?: Database["public"]["Enums"]["appointment_type"]
+          broker_id: string
+          client_name?: string | null
+          client_phone?: string | null
+          completed?: boolean
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          property_id?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_type?: Database["public"]["Enums"]["appointment_type"]
+          broker_id?: string
+          client_name?: string | null
+          client_phone?: string | null
+          completed?: boolean
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          property_id?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broker_appointments_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "sales_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broker_appointments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broker_partnerships: {
         Row: {
           broker_a_id: string
@@ -533,6 +605,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "broker" | "user"
+      appointment_type:
+        | "visit"
+        | "meeting"
+        | "signing"
+        | "inspection"
+        | "follow_up"
+        | "other"
       listing_type: "sale" | "rent"
       partnership_status: "pending" | "active" | "declined" | "completed"
       pipeline_stage:
@@ -674,6 +753,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "broker", "user"],
+      appointment_type: [
+        "visit",
+        "meeting",
+        "signing",
+        "inspection",
+        "follow_up",
+        "other",
+      ],
       listing_type: ["sale", "rent"],
       partnership_status: ["pending", "active", "declined", "completed"],
       pipeline_stage: [
