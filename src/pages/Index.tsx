@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import PropertyCard from "@/components/PropertyCard";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUserLocation, getStateImage } from "@/hooks/useUserLocation";
 import { motion } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -16,13 +15,20 @@ type PropertyWithImages = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
 };
 
-const POPULAR_CITIES = [
-  { name: "São Paulo", state: "SP", image: "/images/states/sp.jpg" },
-  { name: "Rio de Janeiro", state: "RJ", image: "/images/states/rj.jpg" },
-  { name: "Belo Horizonte", state: "MG", image: "/images/states/mg.jpg" },
-  { name: "Salvador", state: "BA", image: "/images/states/ba.jpg" },
-  { name: "Florianópolis", state: "SC", image: "/images/states/sc.jpg" },
-  { name: "Vitória", state: "ES", image: "/images/states/es.jpg" },
+const HERO_IMAGES = [
+  "/images/interiors/hero-living.jpg",
+  "/images/interiors/living-room.jpg",
+  "/images/interiors/kitchen.jpg",
+  "/images/interiors/cta-pool.jpg",
+];
+
+const AMBIENTES = [
+  { name: "Cozinhas", label: "kitchen", image: "/images/interiors/kitchen.jpg" },
+  { name: "Salas de estar", label: "living", image: "/images/interiors/living-room.jpg" },
+  { name: "Banheiros", label: "bathroom", image: "/images/interiors/bathroom.jpg" },
+  { name: "Quartos", label: "bedroom", image: "/images/interiors/bedroom.jpg" },
+  { name: "Áreas externas", label: "backyard", image: "/images/interiors/backyard.jpg" },
+  { name: "Salas de jantar", label: "dining", image: "/images/interiors/dining.jpg" },
 ];
 
 const fadeUp = {
@@ -36,13 +42,19 @@ const fadeUp = {
 const Index = () => {
   const { t, locale } = useLanguage();
   const navigate = useNavigate();
-  const { location } = useUserLocation();
   const [query, setQuery] = useState("");
   const [featured, setFeatured] = useState<PropertyWithImages[]>([]);
   const [recent, setRecent] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const [heroIdx, setHeroIdx] = useState(0);
 
-  const stateInfo = getStateImage(location?.state ?? "SP");
+  // Rotate hero image
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroIdx((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -70,7 +82,14 @@ const Index = () => {
       {/* Hero */}
       <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <img src={stateInfo.image} alt={stateInfo.landmark} className="h-full w-full object-cover" />
+          {HERO_IMAGES.map((src, i) => (
+            <img
+              key={src}
+              src={src}
+              alt="Interior"
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${i === heroIdx ? "opacity-100" : "opacity-0"}`}
+            />
+          ))}
           <div className="absolute inset-0 bg-gradient-to-b from-foreground/65 via-foreground/45 to-foreground/80" />
         </div>
 
@@ -136,51 +155,42 @@ const Index = () => {
               </Button>
             </motion.div>
 
-            {location && (
-              <motion.div custom={4} variants={fadeUp} className="mt-8 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-md border border-white/15">
-                <MapPin className="h-4 w-4" />
-                <span>{stateInfo.landmark}</span>
-              </motion.div>
-            )}
           </motion.div>
         </div>
       </section>
 
-      {/* Popular Cities */}
+      {/* Inspiração por ambientes */}
       <section className="container py-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
           <h2 className="font-display text-2xl font-semibold text-foreground">
-            {locale === "pt-BR" ? "Explore por cidade" : "Explore by city"}
+            {locale === "pt-BR" ? "Inspire-se por ambientes" : "Get inspired by spaces"}
           </h2>
           <p className="mt-1 text-muted-foreground">
-            {locale === "pt-BR" ? "Descubra imóveis nas principais cidades do Brasil" : "Discover properties in Brazil's top cities"}
+            {locale === "pt-BR" ? "Descubra espaços que combinam conforto e design" : "Discover spaces that combine comfort and design"}
           </p>
         </motion.div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {POPULAR_CITIES.map((city, i) => (
+          {AMBIENTES.map((amb, i) => (
             <motion.div
-              key={city.name}
+              key={amb.label}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.4 }}
             >
               <Link
-                to={`/busca?q=${encodeURIComponent(city.name)}`}
+                to={`/busca?keywords=${encodeURIComponent(amb.label)}`}
                 className="group relative h-48 overflow-hidden rounded-2xl block"
               >
                 <img
-                  src={city.image}
-                  alt={city.name}
+                  src={amb.image}
+                  alt={amb.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                  <div>
-                    <h3 className="font-display text-xl font-bold text-white drop-shadow">{city.name}</h3>
-                    <p className="text-sm text-white/80">{city.state}</p>
-                  </div>
+                  <h3 className="font-display text-xl font-bold text-white drop-shadow">{amb.name}</h3>
                   <ArrowRight className="h-5 w-5 text-white opacity-0 translate-x-[-4px] transition-all group-hover:opacity-100 group-hover:translate-x-0" />
                 </div>
               </Link>
@@ -247,7 +257,7 @@ const Index = () => {
       {/* CTA */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src={stateInfo.image} alt="" className="h-full w-full object-cover" />
+          <img src="/images/interiors/cta-pool.jpg" alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-primary/85 backdrop-blur-sm" />
         </div>
         <div className="container relative z-10 py-20 text-center">
