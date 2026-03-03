@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Building2, Mail, Trash2, Edit, Plus, Briefcase } from "lucide-react";
+import { Loader2, User, Building2, Mail, Trash2, Edit, Plus, Briefcase, TrendingUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import BrokerTab from "@/components/dashboard/BrokerTab";
+import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -101,8 +102,11 @@ const Dashboard = () => {
     <div className="container py-8">
       <h1 className="font-display text-2xl font-bold text-foreground">{pt ? "Meu Painel" : "My Dashboard"}</h1>
 
-      <Tabs defaultValue="profile" className="mt-6">
-        <TabsList>
+      <Tabs defaultValue={isBroker ? "sales" : "profile"} className="mt-6">
+        <TabsList className="flex-wrap">
+          {isBroker && (
+            <TabsTrigger value="sales" className="gap-1"><TrendingUp className="h-4 w-4" /> {pt ? "Gestão de Vendas" : "Sales Management"}</TabsTrigger>
+          )}
           <TabsTrigger value="profile" className="gap-1"><User className="h-4 w-4" /> {pt ? "Perfil" : "Profile"}</TabsTrigger>
           <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> {pt ? "Imóveis" : "Properties"}</TabsTrigger>
           <TabsTrigger value="contacts" className="gap-1"><Mail className="h-4 w-4" /> {pt ? "Contatos" : "Contacts"}</TabsTrigger>
@@ -110,6 +114,13 @@ const Dashboard = () => {
             <TabsTrigger value="broker" className="gap-1"><Briefcase className="h-4 w-4" /> {pt ? "Corretor" : "Broker"}</TabsTrigger>
           )}
         </TabsList>
+
+        {/* Sales Management Tab (main for brokers) */}
+        {isBroker && user && (
+          <TabsContent value="sales">
+            <DashboardSalesTab userId={user.id} />
+          </TabsContent>
+        )}
 
         {/* Profile Tab */}
         <TabsContent value="profile">
