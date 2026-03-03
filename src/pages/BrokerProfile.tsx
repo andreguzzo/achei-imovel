@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, Mail, MapPin, Handshake, Building2 } from "lucide-react";
+import { Loader2, Phone, Mail, MapPin, Handshake, Building2, MessageCircle } from "lucide-react";
 
 interface BrokerData {
   user_id: string;
@@ -15,6 +15,7 @@ interface BrokerData {
   username: string | null;
   avatar_url: string | null;
   phone: string | null;
+  whatsapp: string | null;
   bio: string | null;
   creci: string | null;
 }
@@ -65,7 +66,7 @@ const BrokerProfile = () => {
       // Find profile by username
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username" as any)
+        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp" as any)
         .eq("username", username.toLowerCase())
         .single();
 
@@ -155,6 +156,17 @@ const BrokerProfile = () => {
             {broker.phone && (
               <a href={`tel:${broker.phone}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                 <Phone className="h-4 w-4" /> {broker.phone}
+              </a>
+            )}
+            {broker.whatsapp && (
+              <a
+                href={`https://wa.me/${broker.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(pt ? "Olá! Vi seu perfil e gostaria de conversar." : "Hi! I saw your profile and would like to chat.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white">
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                </Button>
               </a>
             )}
           </div>
