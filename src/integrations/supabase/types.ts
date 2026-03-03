@@ -237,6 +237,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          commercial_name: string | null
           created_at: string
           creci: string | null
           full_name: string | null
@@ -244,10 +245,12 @@ export type Database = {
           phone: string | null
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          commercial_name?: string | null
           created_at?: string
           creci?: string | null
           full_name?: string | null
@@ -255,10 +258,12 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          commercial_name?: string | null
           created_at?: string
           creci?: string | null
           full_name?: string | null
@@ -266,6 +271,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
