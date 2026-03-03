@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
+import EmailVerification from "@/components/dashboard/EmailVerification";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -47,7 +48,7 @@ const Dashboard = () => {
   const [email, setEmail] = useState("");
   const [creci, setCreci] = useState("");
   const [bio, setBio] = useState("");
-
+  const [emailVerified, setEmailVerified] = useState(false);
   // Broker photos
   const [photos, setPhotos] = useState<BrokerPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -82,6 +83,7 @@ const Dashboard = () => {
         setEmail(user.email ?? "");
         setCreci(profileRes.data.creci ?? "");
         setBio(profileRes.data.bio ?? "");
+        setEmailVerified((profileRes.data as any).email_verified ?? false);
       }
       setProperties((propsRes.data as PropertyWithImages[]) ?? []);
       setIsBroker(!!brokerRes.data);
@@ -404,6 +406,13 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Email Verification */}
+            <EmailVerification
+              email={email}
+              verified={emailVerified}
+              onVerified={() => setEmailVerified(true)}
+            />
 
             {/* Photo Album (broker only) */}
             {isBroker && (
