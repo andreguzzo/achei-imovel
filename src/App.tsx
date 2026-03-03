@@ -12,6 +12,7 @@ import PropertyDetail from "./pages/PropertyDetail";
 import BrokerSales from "./pages/BrokerSales";
 import Financing from "./pages/Financing";
 import CreateProperty from "./pages/CreateProperty";
+import Plans from "./pages/Plans";
 import Favorites from "./pages/Favorites";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/corretor/vendas" element={<BrokerSales />} />
                 <Route path="/financiamento" element={<Financing />} />
                 <Route path="/anunciar" element={<CreateProperty />} />
+                <Route path="/planos" element={<Plans />} />
                 <Route path="/favoritos" element={<Favorites />} />
                 <Route path="/painel" element={<Dashboard />} />
               </Route>

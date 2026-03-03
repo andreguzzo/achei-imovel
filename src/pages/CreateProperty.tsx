@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getMaxProperties } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Plus } from "lucide-react";
+import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 
 const propertySchema = z.object({
@@ -197,14 +197,24 @@ const StatusChangeDialog = ({ pt, open, onOpenChange, statusAction, setStatusAct
 // --- Main component ---
 
 const CreateProperty = () => {
-  const { user } = useAuth();
+  const { user, tier } = useAuth();
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const pt = locale === "pt-BR";
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [propertyCount, setPropertyCount] = useState<number | null>(null);
+  const maxProperties = getMaxProperties(tier);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("properties")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .then(({ count }) => setPropertyCount(count ?? 0));
+  }, [user]);
   // Form fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -240,6 +250,25 @@ const CreateProperty = () => {
         <p className="text-lg font-medium">{pt ? "Faça login para anunciar" : "Sign in to list a property"}</p>
         <Button className="mt-4" onClick={() => navigate("/login")}>
           {pt ? "Entrar" : "Sign In"}
+        </Button>
+      </div>
+    );
+  }
+
+  if (propertyCount !== null && propertyCount >= maxProperties) {
+    return (
+      <div className="container max-w-lg py-20 text-center">
+        <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">
+          {pt ? "Limite de imóveis atingido" : "Property limit reached"}
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          {pt
+            ? `Você já possui ${propertyCount} imóveis cadastrados. Seu plano permite no máximo ${maxProperties}. Faça upgrade para cadastrar mais.`
+            : `You already have ${propertyCount} properties. Your plan allows ${maxProperties}. Upgrade to add more.`}
+        </p>
+        <Button onClick={() => navigate("/planos")}>
+          {pt ? "Ver planos" : "View plans"}
         </Button>
       </div>
     );
