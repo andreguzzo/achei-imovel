@@ -14,7 +14,7 @@ const Footer = () => {
             <div className="flex items-center gap-2">
               <Home className="h-6 w-6 text-primary" />
               <span className="font-display text-lg font-bold text-foreground">
-                Abit<span className="text-primary">zo</span>
+                Abit<span className="text-primary">o</span>
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
@@ -50,7 +50,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-12 border-t pt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Abitzo. {t.footer.rights}
+          © {new Date().getFullYear()} Abito. {t.footer.rights}
         </div>
       </div>
     </footer>

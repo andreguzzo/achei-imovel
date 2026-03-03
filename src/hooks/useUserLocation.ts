@@ -46,7 +46,7 @@ export const useUserLocation = () => {
           try {
             const res = await fetch(
               `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=pt-BR`,
-              { headers: { "User-Agent": "Abitzo/1.0" } }
+              { headers: { "User-Agent": "Abito/1.0" } }
             );
             const data = await res.json();
             const state = data.address?.state_code?.toUpperCase() ?? 
