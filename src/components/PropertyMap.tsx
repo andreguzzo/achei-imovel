@@ -56,6 +56,16 @@ const CLUSTER_STYLE = `
   .custom-price-marker {
     background: transparent !important;
     border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .custom-price-marker > div {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 `;
 
@@ -163,7 +173,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         html: `<div style="
           background: ${bgColor};
           color: white;
-          padding: 5px 10px;
+          padding: 5px 12px;
           border-radius: 20px;
           font-size: 11px;
           font-weight: 800;
@@ -173,12 +183,12 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
           border: 2px solid ${borderColor};
           cursor: pointer;
           font-family: 'DM Sans', sans-serif;
-          transform: ${scale};
+          ${isSelected ? "transform: translate(-50%, -50%) scale(1.2);" : "transform: translate(-50%, -50%);"}
           transition: transform 0.2s ease, box-shadow 0.2s ease;
           text-align: center;
         ">${formatPriceShort(p.price)}</div>`,
-        iconSize: [0, 0],
-        iconAnchor: [35, 15],
+        iconSize: [80, 28],
+        iconAnchor: [40, 14],
       });
 
       const marker = L.marker([p.latitude!, p.longitude!], { icon });
