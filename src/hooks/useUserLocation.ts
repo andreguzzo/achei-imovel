@@ -59,19 +59,18 @@ export const useUserLocation = () => {
               lng: pos.coords.longitude,
             });
           } catch {
-            setLocation({ state: "SP", stateName: "São Paulo", city: "São Paulo", lat: -23.55, lng: -46.63 });
+            setLocation({ state: "ES", stateName: "Espírito Santo", city: "Vitória", lat: -20.3155, lng: -40.3128 });
           }
           setLoading(false);
         },
         () => {
-          // Geolocation denied - default to SP
-          setLocation({ state: "SP", stateName: "São Paulo", city: "São Paulo", lat: -23.55, lng: -46.63 });
+          setLocation({ state: "ES", stateName: "Espírito Santo", city: "Vitória", lat: -20.3155, lng: -40.3128 });
           setLoading(false);
         },
         { timeout: 5000 }
       );
     } else {
-      setLocation({ state: "SP", stateName: "São Paulo", city: "São Paulo", lat: -23.55, lng: -46.63 });
+      setLocation({ state: "ES", stateName: "Espírito Santo", city: "Vitória", lat: -20.3155, lng: -40.3128 });
       setLoading(false);
     }
   }, []);
