@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink,
+  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
 import EmailVerification from "@/components/dashboard/EmailVerification";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
+import SupportForm from "@/components/dashboard/SupportForm";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -278,6 +279,7 @@ const Dashboard = () => {
           )}
           <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> {pt ? "Imóveis" : "Properties"}</TabsTrigger>
           <TabsTrigger value="profile" className="gap-1"><User className="h-4 w-4" /> {pt ? "Perfil" : "Profile"}</TabsTrigger>
+          <TabsTrigger value="support" className="gap-1"><MessageCircle className="h-4 w-4" /> {pt ? "Suporte" : "Support"}</TabsTrigger>
         </TabsList>
 
         {/* Sales Management Tab */}
@@ -521,6 +523,11 @@ const Dashboard = () => {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        {/* Support Tab */}
+        <TabsContent value="support">
+          <SupportForm />
         </TabsContent>
       </Tabs>
 
