@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
+import LocationPicker from "@/components/LocationPicker";
 import { z } from "zod";
 
 const propertySchema = z.object({
@@ -235,6 +236,8 @@ const CreateProperty = () => {
   const [iptu, setIptu] = useState("");
   const [features, setFeatures] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
 
   // Status dialog
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -342,6 +345,8 @@ const CreateProperty = () => {
         iptu: iptu ? Number(iptu) : null,
         features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
         video_url: videoUrl || null,
+        latitude: latitude ? Number(latitude) : null,
+        longitude: longitude ? Number(longitude) : null,
         status: finalStatus as "active" | "inactive" | "sold" | "rented",
         sold_price: statusAction === "sold" ? Number(soldPrice) : isSoldByOther ? null : null,
         sold_commission: statusAction === "sold" ? Number(soldCommission) : null,
@@ -411,26 +416,39 @@ const CreateProperty = () => {
         {/* Address */}
         <Card>
           <CardHeader><CardTitle className="text-base">{pt ? "Endereço" : "Address"}</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">{pt ? "Endereço" : "Address"}</label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={pt ? "Rua, número" : "Street, number"} />
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium">{pt ? "Endereço" : "Address"}</label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={pt ? "Rua, número" : "Street, number"} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">{pt ? "Bairro" : "Neighborhood"}</label>
+                <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">{pt ? "Cidade *" : "City *"}</label>
+                <Input value={city} onChange={(e) => setCity(e.target.value)} required />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">{pt ? "Estado (UF) *" : "State *"}</label>
+                <Input value={state} onChange={(e) => setState(e.target.value)} maxLength={2} placeholder="SP" required />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">CEP</label>
+                <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="00000-000" />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{pt ? "Bairro" : "Neighborhood"}</label>
-              <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{pt ? "Cidade *" : "City *"}</label>
-              <Input value={city} onChange={(e) => setCity(e.target.value)} required />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{pt ? "Estado (UF) *" : "State *"}</label>
-              <Input value={state} onChange={(e) => setState(e.target.value)} maxLength={2} placeholder="SP" required />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">CEP</label>
-              <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="00000-000" />
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-2">{pt ? "Localização no Mapa" : "Map Location"}</h4>
+              <LocationPicker
+                latitude={latitude}
+                longitude={longitude}
+                onLatChange={setLatitude}
+                onLngChange={setLongitude}
+                pt={pt}
+              />
             </div>
           </CardContent>
         </Card>
