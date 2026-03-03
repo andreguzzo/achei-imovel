@@ -1,53 +1,35 @@
 
 
-# Atribuir role broker + fluxo automático via CRECI
+## Mapa com visual mais limpo e compartilhamento de localização
 
-## Situação atual
-- Tabela `user_roles` está vazia, nenhum usuário tem role.
-- O usuário Andre Guzzo (user_id: `bcb8d2f3-61ea-4b44-8e1f-4fd5f39404e9`) tem CRECI cadastrado mas não tem role broker.
-- A aba Corretor no Dashboard só aparece quando `has_role(user_id, 'broker')` retorna true.
+### Situação atual
+O mapa usa tiles do OpenStreetMap padrão via Leaflet, que têm um visual carregado com muitas cores e informações.
 
-## Plano
+### Proposta
 
-### 1. Migração SQL
-- Inserir role `broker` para o usuário existente com CRECI preenchido.
-- Criar trigger na tabela `profiles`: quando `creci` é atualizado de NULL/vazio para um valor preenchido, automaticamente insere role `broker` em `user_roles`. Quando CRECI é removido, remove o role.
+**1. Visual mais limpo do mapa**
 
-### 2. Nenhuma mudança de frontend necessária
-- O Dashboard já verifica `has_role` e mostra a aba Corretor condicionalmente.
+Trocar o provedor de tiles para **CartoDB Voyager** — um estilo gratuito, moderno e limpo, muito similar ao visual do Google Maps, sem necessidade de API key:
 
-### Migração SQL a executar:
-```sql
--- Assign broker role to existing users with CRECI
-INSERT INTO public.user_roles (user_id, role)
-SELECT p.user_id, 'broker'::app_role
-FROM public.profiles p
-WHERE p.creci IS NOT NULL AND trim(p.creci) != ''
-ON CONFLICT (user_id, role) DO NOTHING;
-
--- Auto-assign broker role when CRECI is set
-CREATE OR REPLACE FUNCTION public.sync_broker_role()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  IF NEW.creci IS NOT NULL AND trim(NEW.creci) != '' THEN
-    INSERT INTO public.user_roles (user_id, role)
-    VALUES (NEW.user_id, 'broker'::app_role)
-    ON CONFLICT (user_id, role) DO NOTHING;
-  ELSE
-    DELETE FROM public.user_roles
-    WHERE user_id = NEW.user_id AND role = 'broker'::app_role;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_sync_broker_role
-AFTER INSERT OR UPDATE OF creci ON public.profiles
-FOR EACH ROW
-EXECUTE FUNCTION public.sync_broker_role();
 ```
+https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png
+```
+
+Alternativa ainda mais minimalista: **CartoDB Positron** (tons de cinza).
+
+> Nota: usar o Google Maps diretamente exigiria uma API key paga do Google Cloud. O CartoDB Voyager oferece resultado visual muito próximo sem custo.
+
+**2. Compartilhar localização do imóvel**
+
+Adicionar um botão "Compartilhar" no popup do marcador do mapa que:
+- Gera um link do Google Maps com as coordenadas (`https://www.google.com/maps?q=lat,lng`)
+- Usa a Web Share API (nativa do celular) quando disponível, com fallback para copiar o link para a área de transferência
+
+### Arquivos a editar
+- `src/components/PropertyMap.tsx` — trocar tile layer e adicionar botão de compartilhar no popup
+
+### Escopo técnico
+- Substituir a URL do tile layer
+- Atualizar a attribution do CartoDB
+- Adicionar botão "Compartilhar" no HTML do popup com `navigator.share()` + fallback `navigator.clipboard`
 
