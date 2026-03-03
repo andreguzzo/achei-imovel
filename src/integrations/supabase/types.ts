@@ -29,6 +29,7 @@ export type Database = {
           notes: string | null
           pipeline_id: string | null
           property_id: string | null
+          reminder_minutes: number | null
           start_time: string
           title: string
           updated_at: string
@@ -47,6 +48,7 @@ export type Database = {
           notes?: string | null
           pipeline_id?: string | null
           property_id?: string | null
+          reminder_minutes?: number | null
           start_time: string
           title: string
           updated_at?: string
@@ -65,6 +67,7 @@ export type Database = {
           notes?: string | null
           pipeline_id?: string | null
           property_id?: string | null
+          reminder_minutes?: number | null
           start_time?: string
           title?: string
           updated_at?: string
