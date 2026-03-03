@@ -19,6 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="/planos" element={<Plans />} />
                 <Route path="/favoritos" element={<Favorites />} />
                 <Route path="/painel" element={<Dashboard />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Signup />} />
