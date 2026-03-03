@@ -74,10 +74,46 @@ serve(async (req) => {
       logStep("Active subscription found", { productId });
     }
 
+    // Fetch recent invoices for payment history
+    const invoices = await stripe.invoices.list({
+      customer: customerId,
+      limit: 10,
+    });
+
+    const paymentHistory = invoices.data.map((inv) => ({
+      id: inv.id,
+      amount: inv.amount_paid / 100,
+      currency: inv.currency,
+      status: inv.status,
+      date: new Date((inv.created ?? 0) * 1000).toISOString(),
+      invoice_url: inv.hosted_invoice_url,
+      description: inv.lines?.data?.[0]?.description ?? null,
+    }));
+
+    // Get upcoming invoice if subscribed
+    let upcomingInvoice = null;
+    if (hasActiveSub) {
+      try {
+        const upcoming = await stripe.invoices.retrieveUpcoming({ customer: customerId });
+        upcomingInvoice = {
+          amount: upcoming.amount_due / 100,
+          currency: upcoming.currency,
+          due_date: upcoming.next_payment_attempt
+            ? new Date(upcoming.next_payment_attempt * 1000).toISOString()
+            : subscriptionEnd,
+        };
+        logStep("Upcoming invoice fetched", upcomingInvoice);
+      } catch (_) {
+        logStep("No upcoming invoice");
+      }
+    }
+
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       product_id: productId,
       subscription_end: subscriptionEnd,
+      payment_history: paymentHistory,
+      upcoming_invoice: upcomingInvoice,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
