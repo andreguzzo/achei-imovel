@@ -24,6 +24,7 @@ const filtersToParams = (f: SearchFiltersState, showMap: boolean): URLSearchPara
   if (f.minPrice) p.set("preco_min", f.minPrice);
   if (f.maxPrice) p.set("preco_max", f.maxPrice);
   if (f.bedrooms) p.set("quartos", f.bedrooms);
+  if (f.suites) p.set("suites", f.suites);
   if (f.bathrooms) p.set("banheiros", f.bathrooms);
   if (f.minArea) p.set("area_min", f.minArea);
   if (f.maxArea) p.set("area_max", f.maxArea);
@@ -43,6 +44,7 @@ const paramsToFilters = (sp: URLSearchParams): SearchFiltersState => ({
   minPrice: sp.get("preco_min") ?? "",
   maxPrice: sp.get("preco_max") ?? "",
   bedrooms: sp.get("quartos") ?? "",
+  suites: sp.get("suites") ?? "",
   bathrooms: sp.get("banheiros") ?? "",
   minArea: sp.get("area_min") ?? "",
   maxArea: sp.get("area_max") ?? "",
@@ -92,6 +94,7 @@ const Search = () => {
     if (f.minPrice) q = q.gte("price", Number(f.minPrice));
     if (f.maxPrice) q = q.lte("price", Number(f.maxPrice));
     if (f.bedrooms) q = q.gte("bedrooms", Number(f.bedrooms));
+    if (f.suites) q = q.gte("suites", Number(f.suites));
     if (f.bathrooms) q = q.gte("bathrooms", Number(f.bathrooms));
     if (f.minArea) q = q.gte("area", Number(f.minArea));
     if (f.maxArea) q = q.lte("area", Number(f.maxArea));

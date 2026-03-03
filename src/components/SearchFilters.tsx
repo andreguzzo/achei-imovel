@@ -22,6 +22,7 @@ export interface SearchFiltersState {
   minPrice: string;
   maxPrice: string;
   bedrooms: string;
+  suites: string;
   bathrooms: string;
   minArea: string;
   maxArea: string;
@@ -38,6 +39,7 @@ export const defaultFilters: SearchFiltersState = {
   minPrice: "",
   maxPrice: "",
   bedrooms: "",
+  suites: "",
   bathrooms: "",
   minArea: "",
   maxArea: "",
@@ -183,6 +185,12 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
       clear: () => update({ bedrooms: "" }),
     });
   }
+  if (filters.suites) {
+    chips.push({
+      label: `${filters.suites}+ Suítes`,
+      clear: () => update({ suites: "" }),
+    });
+  }
   if (filters.bathrooms) {
     chips.push({
       label: `${filters.bathrooms}+ ${t.filters.bathrooms}`,
@@ -224,7 +232,7 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
   ];
 
   const priceCount = (filters.minPrice || filters.maxPrice) ? 1 : 0;
-  const bedsCount = (filters.bedrooms ? 1 : 0) + (filters.bathrooms ? 1 : 0);
+  const bedsCount = (filters.bedrooms ? 1 : 0) + (filters.suites ? 1 : 0) + (filters.bathrooms ? 1 : 0);
   const typeCount = filters.propertyTypes.length;
   const moreCount =
     (filters.minArea || filters.maxArea ? 1 : 0) +
@@ -308,6 +316,12 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
               label={t.filters.bedrooms}
               value={filters.bedrooms}
               onChange={(v) => update({ bedrooms: v })}
+              anyLabel={t.filters.any}
+            />
+            <StepSelector
+              label="Suítes"
+              value={filters.suites}
+              onChange={(v) => update({ suites: v })}
               anyLabel={t.filters.any}
             />
             <StepSelector

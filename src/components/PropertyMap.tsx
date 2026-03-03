@@ -16,8 +16,14 @@ interface PropertyMapProps {
   onSelect?: (id: string) => void;
 }
 
-const formatPrice = (price: number) =>
+const formatPriceFull = (price: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price);
+
+const formatPriceShort = (price: number) => {
+  if (price >= 1_000_000) return `R$${(price / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  if (price >= 1_000) return `R$${(price / 1_000).toFixed(0)}k`;
+  return `R$${price}`;
+};
 
 const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect }: PropertyMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -78,23 +84,41 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
 
     propsWithCoords.forEach((p) => {
       const isSelected = p.id === selectedId;
+      const isSale = p.listing_type === "sale";
+      // Sale = red tones, Rent = purple tones
+      const bgColor = isSelected
+        ? (isSale ? "hsl(0, 72%, 50%)" : "hsl(270, 60%, 50%)")
+        : (isSale ? "hsl(0, 72%, 96%)" : "hsl(270, 60%, 96%)");
+      const textColor = isSelected
+        ? "white"
+        : (isSale ? "hsl(0, 72%, 40%)" : "hsl(270, 60%, 35%)");
+      const borderColor = isSelected
+        ? (isSale ? "hsl(0, 72%, 40%)" : "hsl(270, 60%, 40%)")
+        : (isSale ? "hsl(0, 50%, 80%)" : "hsl(270, 40%, 80%)");
+      const shadow = isSelected
+        ? "0 4px 12px rgba(0,0,0,0.3)"
+        : "0 2px 6px rgba(0,0,0,0.15)";
+
       const icon = L.divIcon({
         className: "custom-price-marker",
         html: `<div style="
-          background: ${isSelected ? "hsl(213, 80%, 50%)" : "white"};
-          color: ${isSelected ? "white" : "hsl(215, 25%, 12%)"};
-          padding: 4px 8px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 700;
+          background: ${bgColor};
+          color: ${textColor};
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.02em;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-          border: 2px solid ${isSelected ? "hsl(213, 80%, 40%)" : "hsl(214, 20%, 90%)"};
+          box-shadow: ${shadow};
+          border: 2px solid ${borderColor};
           cursor: pointer;
           font-family: 'DM Sans', sans-serif;
-        ">${formatPrice(p.price)}</div>`,
+          transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        ">${formatPriceShort(p.price)}</div>`,
         iconSize: [0, 0],
-        iconAnchor: [40, 15],
+        iconAnchor: [35, 15],
       });
 
       const marker = L.marker([p.latitude!, p.longitude!], { icon }).addTo(markersRef.current!);
@@ -110,7 +134,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       marker.bindPopup(
         `<div style="min-width:180px;font-family:'DM Sans',sans-serif;">
           ${imgHtml}
-          <div style="font-weight:700;font-size:14px;color:hsl(213,80%,50%);">${formatPrice(p.price)}</div>
+          <div style="font-weight:700;font-size:14px;color:${isSale ? 'hsl(0,72%,50%)' : 'hsl(270,60%,50%)'};">${formatPriceFull(p.price)}</div>
           <div style="font-size:13px;font-weight:600;margin-top:2px;">${p.title}</div>
           <div style="font-size:11px;color:#888;margin-top:2px;">${p.neighborhood ? p.neighborhood + ", " : ""}${p.city} - ${p.state}</div>
           <a href="/imovel/${p.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:hsl(213,80%,50%);font-weight:600;">Ver detalhes →</a>
