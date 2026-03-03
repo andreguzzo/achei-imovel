@@ -1,0 +1,1 @@
+ALTER TABLE public.broker_appointments ADD COLUMN reminder_minutes integer DEFAULT NULL;
