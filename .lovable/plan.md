@@ -1,43 +1,70 @@
 
 
-# Próximos Passos - Abitzo
+# Filtros Zillow-style para a Busca
 
-## O que já está pronto
-- Homepage com imóveis reais do banco
-- Busca com filtros
-- Página de detalhes do imóvel (com seção de corretores agrupados e parcerias)
-- Painel de vendas do corretor (Kanban + indicadores)
-- Simulador de financiamento (SAC/Price)
-- Formulário de anúncio de imóvel
-- Login/Cadastro com autenticação
-- Agrupamento automático de imóveis (backend)
+## Situação Atual
+A busca tem 5 filtros básicos escondidos num painel expansível: tipo de imóvel, comprar/alugar, preço min/max, quartos. A UX é diferente do Zillow, que usa **botões-dropdown inline na barra de filtros** (sempre visíveis, não escondidos).
 
-## Funcionalidades ausentes (sugestões priorizadas)
+## O que falta (inspirado no Zillow)
 
-### 1. Página de Favoritos (`/favoritos`)
-A tabela `favorites` já existe com RLS. Falta apenas a página frontend para listar imóveis favoritados e o botão de coração funcional no PropertyCard.
+### 1. Barra de filtros inline (sempre visível)
+Substituir o painel expansível por **botões-dropdown na própria barra**, cada um abrindo um Popover com opções:
+- **Comprar / Alugar** - Toggle ou tabs
+- **Preço** - Range com slider duplo + inputs min/max
+- **Quartos & Banheiros** - Botões tipo "1+", "2+", "3+", "4+", "5+"
+- **Tipo de imóvel** - Checkboxes (apartamento, casa, terreno, comercial)
+- **Mais filtros** - Popover com: área mínima/máxima, vagas de garagem, condomínio, IPTU, features
 
-### 2. Perfil do Corretor / Painel do Usuário (`/painel`)
-O Header já tem link para `/painel` mas a rota não existe. Criar página com:
-- Edição de dados pessoais (nome, telefone, CRECI, avatar)
-- Listagem dos imóveis do corretor com ações de editar/excluir
-- Resumo de contatos recebidos
+### 2. Filtros adicionais (dados já existem na tabela)
+Campos disponíveis na tabela `properties` que ainda não são filtráveis:
+- `bathrooms` - Banheiros
+- `parking_spots` - Vagas de garagem
+- `area` - Área (m²)
+- `condo_fee` - Condomínio
+- `iptu` - IPTU
+- `features` - Características (array text)
 
-### 3. Página de contato / Envio de mensagem ao corretor
-A tabela `contact_requests` existe. Adicionar formulário na página de detalhes do imóvel para visitantes enviarem mensagens ao corretor.
+### 3. Comportamento Zillow-like
+- Filtros aplicam **automaticamente** ao mudar (sem botão "Aplicar")
+- Contagem de filtros ativos nos botões
+- Tags/chips dos filtros ativos abaixo da barra com "X" para remover
+- Ordenação (preço, data, relevância)
+- Salvar busca (tabela `saved_searches` já existe)
 
-### 4. Atualizar i18n
-As traduções PT-BR e EN não cobrem as novas seções (pipeline, parcerias, financiamento, criação de imóvel). Completar ambos os arquivos de locale.
+## Plano de implementação
 
-### 5. Melhorias visuais
-- Imagens hero na homepage
-- Seção de cidades populares
-- Responsividade mobile refinada
+### Arquivo: `src/components/SearchFilters.tsx` (novo)
+Componente com a barra de filtros Zillow-style usando Popovers do Radix. Cada filtro é um botão que abre um dropdown inline. Inclui:
+- `PriceFilter` - Slider duplo + inputs
+- `BedroomBathroomFilter` - Botões segmentados "qualquer, 1+, 2+, 3+, 4+, 5+"
+- `PropertyTypeFilter` - Checkboxes múltiplos
+- `MoreFiltersFilter` - Área, vagas, condomínio, features
+- `SortSelect` - Ordenar por preço, data, relevância
+- Chips de filtros ativos com remoção individual
 
-## Ordem sugerida
-1. Favoritos (rápido, tabela já existe)
-2. Painel do usuário/corretor
-3. Formulário de contato na página de detalhes
-4. i18n completo
-5. Melhorias visuais
+### Arquivo: `src/pages/Search.tsx` (editar)
+- Substituir painel de filtros pelo novo componente
+- Adicionar novos estados para banheiros, área, vagas, ordenação
+- Aplicação automática dos filtros (debounced)
+- Sincronizar todos os filtros com URL params
+
+### Arquivo: `src/i18n/locales/pt-BR.ts` e `en.ts` (editar)
+- Adicionar traduções dos novos filtros
+
+## Detalhes Técnicos
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│  [🔍 Buscar...]  [Comprar▾] [Preço▾] [Quartos▾] [Tipo▾] [Mais▾] [Ordenar▾] [Mapa] │
+├──────────────────────────────────────────────────────────────────────┤
+│  Filtros ativos: [SP ✕] [2+ quartos ✕] [R$200k-500k ✕]            │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+- Usa `Popover` do Radix para os dropdowns
+- `Slider` duplo para range de preço e área
+- `ToggleGroup` para quartos/banheiros
+- `Checkbox` para tipo de imóvel e features
+- Debounce de 300ms na aplicação automática
+- URL sync bidirecional com `useSearchParams`
 
