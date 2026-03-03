@@ -1,7 +1,11 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bed, Bath, Car, Maximize } from "lucide-react";
+import { Bed, Bath, Car, Maximize, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -18,10 +22,42 @@ const typeLabels: Record<string, Record<string, string>> = {
   en: { apartment: "Apartment", house: "House", land: "Land", commercial: "Commercial" },
 };
 
-const PropertyCard = ({ property }: { property: Property }) => {
+const PropertyCard = ({ property, initialFavorited }: { property: Property; initialFavorited?: boolean }) => {
   const { locale } = useLanguage();
+  const { user } = useAuth();
+  const [favorited, setFavorited] = useState(initialFavorited ?? false);
+  const [toggling, setToggling] = useState(false);
   const imageUrl = property.property_images?.[0]?.url;
   const label = typeLabels[locale]?.[property.property_type] ?? property.property_type;
+
+  useEffect(() => {
+    if (!user || initialFavorited !== undefined) return;
+    supabase
+      .from("favorites")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("property_id", property.id)
+      .maybeSingle()
+      .then(({ data }) => setFavorited(!!data));
+  }, [user, property.id, initialFavorited]);
+
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast({ title: locale === "pt-BR" ? "Faça login para favoritar" : "Log in to save favorites", variant: "destructive" });
+      return;
+    }
+    setToggling(true);
+    if (favorited) {
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("property_id", property.id);
+      setFavorited(false);
+    } else {
+      await supabase.from("favorites").insert({ user_id: user.id, property_id: property.id });
+      setFavorited(true);
+    }
+    setToggling(false);
+  };
 
   return (
     <Link
@@ -38,6 +74,14 @@ const PropertyCard = ({ property }: { property: Property }) => {
         {property.listing_type === "rent" && (
           <Badge variant="secondary" className="absolute right-3 top-3">Aluguel</Badge>
         )}
+        <button
+          onClick={toggleFavorite}
+          disabled={toggling}
+          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur transition-colors hover:bg-card"
+          aria-label="Favoritar"
+        >
+          <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+        </button>
       </div>
       <div className="space-y-2 p-4">
         <p className="text-lg font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
