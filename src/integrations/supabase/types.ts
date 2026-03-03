@@ -241,13 +241,18 @@ export type Database = {
           created_at: string
           creci: string | null
           email_verified: boolean
+          facebook: string | null
           full_name: string | null
           id: string
+          instagram: string | null
+          linkedin: string | null
           phone: string | null
+          tiktok: string | null
           updated_at: string
           user_id: string
           username: string | null
           whatsapp: string | null
+          youtube: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -256,13 +261,18 @@ export type Database = {
           created_at?: string
           creci?: string | null
           email_verified?: boolean
+          facebook?: string | null
           full_name?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           phone?: string | null
+          tiktok?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
           whatsapp?: string | null
+          youtube?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -271,13 +281,18 @@ export type Database = {
           created_at?: string
           creci?: string | null
           email_verified?: boolean
+          facebook?: string | null
           full_name?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           phone?: string | null
+          tiktok?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
           whatsapp?: string | null
+          youtube?: string | null
         }
         Relationships: []
       }
