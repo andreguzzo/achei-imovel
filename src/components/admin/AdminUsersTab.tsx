@@ -5,7 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, KeyRound, Eye, Shield } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, Search, KeyRound, Eye, Shield, MoreVertical, Trash2, UserX, UserCheck, Edit } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -17,6 +34,11 @@ const AdminUsersTab = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<(Profile & { roles: Role[] }) | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<(Profile & { roles: Role[] }) | null>(null);
+  const [editTarget, setEditTarget] = useState<(Profile & { roles: Role[] }) | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editCreci, setEditCreci] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -41,7 +63,6 @@ const AdminUsersTab = () => {
   });
 
   const handleResetPassword = async (userId: string, email: string) => {
-    // Use edge function to reset password via admin API
     const { error } = await supabase.functions.invoke("admin-reset-password", {
       body: { userId, email },
     });
@@ -62,6 +83,49 @@ const AdminUsersTab = () => {
     toast({ title: `Role ${role} ${hasRole ? "removida" : "adicionada"}` });
   };
 
+  const handleDeleteUser = async (user: Profile & { roles: Role[] }) => {
+    // Remove all roles first, then delete profile
+    for (const r of user.roles) {
+      await supabase.from("user_roles").delete().eq("id", r.id);
+    }
+    const { error } = await supabase.from("profiles").delete().eq("id", user.id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Perfil excluído com sucesso" });
+      await fetchUsers();
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleToggleBroker = async (user: Profile & { roles: Role[] }) => {
+    const isBroker = user.roles.some(r => r.role === "broker");
+    await handleToggleRole(user.user_id, "broker", isBroker);
+  };
+
+  const openEdit = (user: Profile & { roles: Role[] }) => {
+    setEditTarget(user);
+    setEditName(user.full_name ?? "");
+    setEditPhone(user.phone ?? "");
+    setEditCreci(user.creci ?? "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    const { error } = await supabase.from("profiles").update({
+      full_name: editName,
+      phone: editPhone,
+      creci: editCreci || null,
+    }).eq("id", editTarget.id);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Perfil atualizado com sucesso" });
+      await fetchUsers();
+    }
+    setEditTarget(null);
+  };
+
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
@@ -74,29 +138,59 @@ const AdminUsersTab = () => {
       <p className="text-sm text-muted-foreground">{filtered.length} usuários encontrados</p>
 
       <div className="space-y-2">
-        {filtered.map(p => (
-          <Card key={p.id}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                {p.avatar_url ? <img src={p.avatar_url} className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-muted-foreground">{(p.full_name ?? "?")[0]}</span>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{p.full_name ?? "Sem nome"}</p>
-                <p className="text-xs text-muted-foreground truncate">{p.creci ? `CRECI: ${p.creci}` : "Sem CRECI"} · {p.phone ?? "Sem telefone"}</p>
-              </div>
-              <div className="flex gap-1 shrink-0">
-                {p.roles.map(r => (
-                  <Badge key={r.id} variant="secondary" className="text-[10px]">{r.role}</Badge>
-                ))}
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <Button size="icon" variant="ghost" title="Ver detalhes" onClick={() => setSelected(p)}><Eye className="h-4 w-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {filtered.map(p => {
+          const isBroker = p.roles.some(r => r.role === "broker");
+          return (
+            <Card key={p.id}>
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  {p.avatar_url ? <img src={p.avatar_url} className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-muted-foreground">{(p.full_name ?? "?")[0]}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{p.full_name ?? "Sem nome"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{p.creci ? `CRECI: ${p.creci}` : "Sem CRECI"} · {p.phone ?? "Sem telefone"}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  {p.roles.map(r => (
+                    <Badge key={r.id} variant="secondary" className="text-[10px]">{r.role}</Badge>
+                  ))}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button size="icon" variant="ghost" title="Ver detalhes" onClick={() => setSelected(p)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(p)} className="gap-2 cursor-pointer">
+                        <Edit className="h-4 w-4" /> Editar perfil
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleToggleBroker(p)} className="gap-2 cursor-pointer">
+                        {isBroker ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                        {isBroker ? "Remover corretor" : "Tornar corretor"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        const email = prompt("Confirme o e-mail do usuário:");
+                        if (email) handleResetPassword(p.user_id, email);
+                      }} className="gap-2 cursor-pointer">
+                        <KeyRound className="h-4 w-4" /> Redefinir senha
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4" /> Excluir usuário
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
+      {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Detalhes do Usuário</DialogTitle></DialogHeader>
@@ -127,18 +221,67 @@ const AdminUsersTab = () => {
                 </div>
               </div>
 
-              <div className="border-t pt-3">
+              <div className="border-t pt-3 flex gap-2 flex-wrap">
                 <Button variant="outline" className="gap-1" onClick={() => {
                   const email = prompt("Confirme o e-mail do usuário para enviar o link de redefinição:");
                   if (email) handleResetPassword(selected.user_id, email);
                 }}>
-                  <KeyRound className="h-4 w-4" /> Enviar link de redefinição de senha
+                  <KeyRound className="h-4 w-4" /> Redefinir senha
+                </Button>
+                <Button variant="outline" className="gap-1" onClick={() => { setSelected(null); openEdit(selected); }}>
+                  <Edit className="h-4 w-4" /> Editar
+                </Button>
+                <Button variant="destructive" className="gap-1" onClick={() => { setSelected(null); setDeleteTarget(selected); }}>
+                  <Trash2 className="h-4 w-4" /> Excluir
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar Usuário</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nome completo</label>
+              <Input value={editName} onChange={e => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Telefone</label>
+              <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">CRECI</label>
+              <Input value={editCreci} onChange={e => setEditCreci(e.target.value)} placeholder="Deixe vazio para remover" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o perfil de <strong>{deleteTarget?.full_name}</strong>? Esta ação removerá o perfil e todas as roles associadas. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteTarget && handleDeleteUser(deleteTarget)}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
