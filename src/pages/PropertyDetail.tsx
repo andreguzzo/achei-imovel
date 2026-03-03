@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Handshake } from "lucide-react";
+import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Handshake, Video } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ContactForm from "@/components/ContactForm";
 import type { Tables } from "@/integrations/supabase/types";
@@ -28,6 +28,16 @@ type GroupBroker = {
 const formatPrice = (price: number, listingType: string) => {
   const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
   return listingType === "rent" ? `${formatted}/mês` : formatted;
+};
+
+const getEmbedUrl = (url: string): string => {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return url;
 };
 
 const PropertyDetail = () => {
@@ -245,6 +255,23 @@ const PropertyDetail = () => {
               <h2 className="font-display text-lg font-semibold">{t.property.features}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {property.features.map((f) => <Badge key={f} variant="outline">{f}</Badge>)}
+              </div>
+            </div>
+          )}
+
+          {/* Video */}
+          {(property as any).video_url && (
+            <div>
+              <h2 className="font-display text-lg font-semibold flex items-center gap-2">
+                <Video className="h-5 w-5" /> {locale === "pt-BR" ? "Vídeo" : "Video"}
+              </h2>
+              <div className="mt-2 aspect-video overflow-hidden rounded-lg">
+                <iframe
+                  src={getEmbedUrl((property as any).video_url)}
+                  className="h-full w-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
               </div>
             </div>
           )}

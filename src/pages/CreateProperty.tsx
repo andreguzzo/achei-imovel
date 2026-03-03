@@ -45,6 +45,7 @@ const CreateProperty = () => {
   const [condoFee, setCondoFee] = useState("");
   const [iptu, setIptu] = useState("");
   const [features, setFeatures] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   if (!user) {
     return (
@@ -113,6 +114,7 @@ const CreateProperty = () => {
         condo_fee: condoFee ? Number(condoFee) : null,
         iptu: iptu ? Number(iptu) : null,
         features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
+        video_url: videoUrl || null,
       })
       .select()
       .single();
@@ -287,6 +289,16 @@ const CreateProperty = () => {
               )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">{locale === "pt-BR" ? "Máximo 10 fotos. Formatos: JPG, PNG, WebP." : "Max 10 photos. Formats: JPG, PNG, WebP."}</p>
+          </CardContent>
+        </Card>
+
+        {/* Video */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">{locale === "pt-BR" ? "Vídeo" : "Video"}</CardTitle></CardHeader>
+          <CardContent>
+            <label className="mb-1 block text-sm font-medium">{locale === "pt-BR" ? "Link do vídeo (YouTube ou Vimeo)" : "Video link (YouTube or Vimeo)"}</label>
+            <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+            <p className="mt-1 text-xs text-muted-foreground">{locale === "pt-BR" ? "Opcional. Cole o link do YouTube ou Vimeo." : "Optional. Paste a YouTube or Vimeo link."}</p>
           </CardContent>
         </Card>
 
