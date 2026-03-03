@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import {
 const Header = () => {
   const { t, locale, toggleLocale } = useLanguage();
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>([]);
@@ -111,7 +113,7 @@ const Header = () => {
                   <User className="h-4 w-4" /> {t.nav.myAccount}
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="hidden md:inline-flex gap-1.5" onClick={() => signOut()}>
+              <Button variant="outline" size="sm" className="hidden md:inline-flex gap-1.5" onClick={() => { signOut(); toast({ title: t.auth.loggedOut }); }}>
                 <LogOut className="h-4 w-4" /> {t.nav.logout}
               </Button>
             </>
@@ -181,7 +183,7 @@ const Header = () => {
                       <User className="h-4 w-4" /> {t.nav.myAccount}
                     </Button>
                   )}
-                  <Button variant="outline" className="w-full mt-1" onClick={() => { signOut(); setMobileOpen(false); }}>
+                  <Button variant="outline" className="w-full mt-1" onClick={() => { signOut(); toast({ title: t.auth.loggedOut }); setMobileOpen(false); }}>
                     <LogOut className="h-4 w-4 mr-1" /> {t.nav.logout}
                   </Button>
                 </>
