@@ -25,7 +25,7 @@ const Header = () => {
         <Link to="/" className="flex items-center gap-2">
           <Home className="h-7 w-7 text-primary" />
           <span className="font-display text-xl font-bold tracking-tight text-foreground">
-            Lar<span className="text-primary">Brasil</span>
+            Abit<span className="text-primary">zo</span>
           </span>
         </Link>
 
