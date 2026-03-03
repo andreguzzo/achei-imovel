@@ -74,6 +74,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
   const mapInstanceRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const prevPropertyIdsRef = useRef<string>("");
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -218,8 +219,10 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
     mapInstanceRef.current.addLayer(cluster);
     clusterRef.current = cluster;
 
-    // Fit bounds
-    if (propsWithCoords.length > 0) {
+    // Only fit bounds when the set of properties actually changes
+    const currentIds = propsWithCoords.map((p) => p.id).sort().join(",");
+    if (currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
+      prevPropertyIdsRef.current = currentIds;
       const group = L.featureGroup(
         propsWithCoords.map((p) => L.marker([p.latitude!, p.longitude!]))
       );
