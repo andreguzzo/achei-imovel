@@ -1,25 +1,39 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Heart, Menu, X, Globe, LogOut, User, Crown } from "lucide-react";
+import { Home, Heart, Menu, X, Globe, LogOut, User, Crown, Shield, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { t, locale, toggleLocale } = useLanguage();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isBroker, setIsBroker] = useState(false);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!user) { setIsBroker(false); return; }
-    supabase.rpc("has_role", { _user_id: user.id, _role: "broker" }).then(({ data }) => {
-      setIsBroker(!!data);
-    });
+    if (!user) { setUserRoles([]); return; }
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        setUserRoles(data?.map((r) => r.role) ?? []);
+      });
   }, [user]);
+
+  const isAdmin = userRoles.includes("admin");
+  const isBroker = userRoles.includes("broker");
+  const hasDualRole = isAdmin && isBroker;
 
   const navLinks = [
     { label: t.nav.buy, href: "/busca?tipo=comprar" },
@@ -76,9 +90,27 @@ const Header = () => {
 
           {user ? (
             <>
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1.5 text-muted-foreground hover:text-foreground" onClick={() => navigate("/painel")}>
-                <User className="h-4 w-4" /> {t.nav.myAccount}
-              </Button>
+              {hasDualRole ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1.5 text-muted-foreground hover:text-foreground">
+                      <User className="h-4 w-4" /> {t.nav.myAccount}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/painel")} className="gap-2 cursor-pointer">
+                      <Building2 className="h-4 w-4" /> {locale === "pt-BR" ? "Painel do Corretor" : "Broker Dashboard"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="gap-2 cursor-pointer">
+                      <Shield className="h-4 w-4" /> {locale === "pt-BR" ? "Painel Admin" : "Admin Dashboard"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1.5 text-muted-foreground hover:text-foreground" onClick={() => navigate(isAdmin ? "/admin" : "/painel")}>
+                  <User className="h-4 w-4" /> {t.nav.myAccount}
+                </Button>
+              )}
               <Button variant="outline" size="sm" className="hidden md:inline-flex gap-1.5" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4" /> {t.nav.logout}
               </Button>
@@ -135,9 +167,20 @@ const Header = () => {
               </Link>
               {user ? (
                 <>
-                  <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { navigate("/painel"); setMobileOpen(false); }}>
-                    <User className="h-4 w-4" /> {t.nav.myAccount}
-                  </Button>
+                  {hasDualRole ? (
+                    <>
+                      <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { navigate("/painel"); setMobileOpen(false); }}>
+                        <Building2 className="h-4 w-4" /> {locale === "pt-BR" ? "Painel do Corretor" : "Broker Dashboard"}
+                      </Button>
+                      <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { navigate("/admin"); setMobileOpen(false); }}>
+                        <Shield className="h-4 w-4" /> {locale === "pt-BR" ? "Painel Admin" : "Admin Dashboard"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { navigate(isAdmin ? "/admin" : "/painel"); setMobileOpen(false); }}>
+                      <User className="h-4 w-4" /> {t.nav.myAccount}
+                    </Button>
+                  )}
                   <Button variant="outline" className="w-full mt-1" onClick={() => { signOut(); setMobileOpen(false); }}>
                     <LogOut className="h-4 w-4 mr-1" /> {t.nav.logout}
                   </Button>
