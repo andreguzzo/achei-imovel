@@ -25,6 +25,14 @@ type GroupBroker = {
   profile: { full_name: string | null; creci: string | null; avatar_url: string | null; phone: string | null } | null;
 };
 
+type PartnerBroker = {
+  user_id: string;
+  full_name: string | null;
+  creci: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+};
+
 const formatPrice = (price: number, listingType: string) => {
   const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
   return listingType === "rent" ? `${formatted}/mês` : formatted;
@@ -47,6 +55,7 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
+  const [partnerBrokers, setPartnerBrokers] = useState<PartnerBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
 
   // Partnership form
@@ -112,6 +121,25 @@ const PropertyDetail = () => {
               setGroupBrokers(brokers);
             }
           }
+        }
+
+        // Fetch active partner brokers for the property owner
+        const ownerId = (prop as Property).user_id;
+        const { data: partnerships } = await supabase
+          .from("broker_partnerships")
+          .select("*")
+          .eq("status", "active")
+          .or(`broker_a_id.eq.${ownerId},broker_b_id.eq.${ownerId}`);
+
+        if (partnerships && partnerships.length > 0) {
+          const partnerIds = partnerships.map((p) =>
+            p.broker_a_id === ownerId ? p.broker_b_id : p.broker_a_id
+          );
+          const { data: partnerProfiles } = await supabase
+            .from("profiles")
+            .select("user_id, full_name, creci, avatar_url, phone")
+            .in("user_id", partnerIds);
+          setPartnerBrokers((partnerProfiles as PartnerBroker[]) ?? []);
         }
       }
       setLoading(false);
@@ -343,6 +371,43 @@ const PropertyDetail = () => {
             <ContactForm propertyId={property.id} />
           )}
           {groupBrokers.length > 1 && <ContactForm propertyId={property.id} />}
+
+          {/* Partner Brokers */}
+          {partnerBrokers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Handshake className="h-4 w-4 text-primary" />
+                  {locale === "pt-BR" ? "Corretores Parceiros" : "Partner Brokers"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {partnerBrokers.map((p) => (
+                  <div key={p.user_id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xs font-bold text-muted-foreground">
+                          {(p.full_name ?? "?")[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{p.full_name ?? "Corretor"}</p>
+                      {p.creci && <p className="text-xs text-muted-foreground">CRECI: {p.creci}</p>}
+                      {p.phone && <p className="text-xs text-muted-foreground">{p.phone}</p>}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  {locale === "pt-BR"
+                    ? "Estes corretores são parceiros do anunciante e também podem intermediar este imóvel."
+                    : "These brokers are partners of the listing agent and can also help with this property."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
