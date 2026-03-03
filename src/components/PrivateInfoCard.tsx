@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
   Lock,
@@ -13,55 +14,67 @@ import {
   Image as ImageIcon,
   ChevronDown,
   ChevronUp,
-  Loader2,
+  Plus,
+  Trash2,
+  Users,
 } from "lucide-react";
 
-interface PrivateDoc {
-  id: string;
+/* ── Types ── */
+
+export interface OwnerEntry {
   name: string;
-  document_type: string;
-  file_url: string;
+  cpf: string;
+  rg: string;
+  nationality: string;
+  marital_status: string;
+  profession: string;
+  phone: string;
+  address: string;
+  is_spouse: boolean;
 }
+
+export const emptyOwner = (): OwnerEntry => ({
+  name: "",
+  cpf: "",
+  rg: "",
+  nationality: "Brasileira",
+  marital_status: "",
+  profession: "",
+  phone: "",
+  address: "",
+  is_spouse: false,
+});
 
 interface PrivateInfoCardProps {
   pt: boolean;
   userId: string;
-  propertyId?: string; // undefined during creation — docs saved after property is created
-  ownerName: string;
-  setOwnerName: (v: string) => void;
-  ownerPhone: string;
-  setOwnerPhone: (v: string) => void;
-  ownerCpf: string;
-  setOwnerCpf: (v: string) => void;
-  ownerAddress: string;
-  setOwnerAddress: (v: string) => void;
+  propertyId?: string;
+  owners: OwnerEntry[];
+  setOwners: (fn: (prev: OwnerEntry[]) => OwnerEntry[]) => void;
   privateNotes: string;
   setPrivateNotes: (v: string) => void;
   pendingFiles: File[];
   setPendingFiles: (fn: (prev: File[]) => File[]) => void;
 }
 
-const DOC_TYPES: Record<string, { label_pt: string; label_en: string }> = {
-  escritura: { label_pt: "Escritura", label_en: "Deed" },
-  matricula: { label_pt: "Matrícula", label_en: "Registration" },
-  documento_proprietario: { label_pt: "Documento do Proprietário", label_en: "Owner ID" },
-  contrato: { label_pt: "Contrato", label_en: "Contract" },
-  planta: { label_pt: "Planta / Projeto", label_en: "Floor Plan" },
-  other: { label_pt: "Outro", label_en: "Other" },
-};
+const MARITAL_OPTIONS = [
+  { value: "solteiro", pt: "Solteiro(a)", en: "Single" },
+  { value: "casado_comunhao_parcial", pt: "Casado(a) – Comunhão parcial", en: "Married – Partial community" },
+  { value: "casado_comunhao_universal", pt: "Casado(a) – Comunhão universal", en: "Married – Universal community" },
+  { value: "casado_separacao_total", pt: "Casado(a) – Separação total", en: "Married – Total separation" },
+  { value: "uniao_estavel", pt: "União estável", en: "Common-law marriage" },
+  { value: "divorciado", pt: "Divorciado(a)", en: "Divorced" },
+  { value: "viuvo", pt: "Viúvo(a)", en: "Widowed" },
+];
+
+/* ── Component ── */
 
 const PrivateInfoCard = ({
   pt,
   userId,
   propertyId,
-  ownerName,
-  setOwnerName,
-  ownerPhone,
-  setOwnerPhone,
-  ownerCpf,
-  setOwnerCpf,
-  ownerAddress,
-  setOwnerAddress,
+  owners,
+  setOwners,
   privateNotes,
   setPrivateNotes,
   pendingFiles,
@@ -70,6 +83,20 @@ const PrivateInfoCard = ({
   const [expanded, setExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /* ── Owner helpers ── */
+  const updateOwner = (idx: number, field: keyof OwnerEntry, value: string | boolean) => {
+    setOwners((prev) => prev.map((o, i) => (i === idx ? { ...o, [field]: value } : o)));
+  };
+
+  const addOwner = (isSp = false) => {
+    setOwners((prev) => [...prev, { ...emptyOwner(), is_spouse: isSp }]);
+  };
+
+  const removeOwner = (idx: number) => {
+    setOwners((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  /* ── File helpers ── */
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     const valid = files.filter((f) => {
@@ -102,6 +129,153 @@ const PrivateInfoCard = ({
     return <ImageIcon className="h-4 w-4 text-blue-500" />;
   };
 
+  /* ── Married status needs spouse ── */
+  const isMarried = (status: string) =>
+    status.startsWith("casado") || status === "uniao_estavel";
+
+  /* ── Render single owner form ── */
+  const renderOwnerForm = (owner: OwnerEntry, idx: number) => {
+    const label = owner.is_spouse
+      ? pt ? "Cônjuge / Companheiro(a)" : "Spouse / Partner"
+      : `${pt ? "Proprietário" : "Owner"} ${idx + 1 - owners.slice(0, idx).filter(o => o.is_spouse).length}`;
+
+    return (
+      <div key={idx} className="rounded-lg border bg-background p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h5 className="text-sm font-semibold flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            {label}
+          </h5>
+          {(idx > 0) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-destructive hover:text-destructive"
+              onClick={() => removeOwner(idx)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              {pt ? "Remover" : "Remove"}
+            </Button>
+          )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Nome completo" : "Full name"}
+            </label>
+            <Input
+              value={owner.name}
+              onChange={(e) => updateOwner(idx, "name", e.target.value)}
+              placeholder={pt ? "Nome completo" : "Full name"}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">CPF</label>
+            <Input
+              value={owner.cpf}
+              onChange={(e) => updateOwner(idx, "cpf", e.target.value)}
+              placeholder="000.000.000-00"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">RG</label>
+            <Input
+              value={owner.rg}
+              onChange={(e) => updateOwner(idx, "rg", e.target.value)}
+              placeholder={pt ? "Número do RG" : "ID number"}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Nacionalidade" : "Nationality"}
+            </label>
+            <Input
+              value={owner.nationality}
+              onChange={(e) => updateOwner(idx, "nationality", e.target.value)}
+              placeholder="Brasileira"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Estado civil" : "Marital status"}
+            </label>
+            <Select
+              value={owner.marital_status}
+              onValueChange={(v) => updateOwner(idx, "marital_status", v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={pt ? "Selecione" : "Select"} />
+              </SelectTrigger>
+              <SelectContent>
+                {MARITAL_OPTIONS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {pt ? m.pt : m.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Profissão" : "Profession"}
+            </label>
+            <Input
+              value={owner.profession}
+              onChange={(e) => updateOwner(idx, "profession", e.target.value)}
+              placeholder={pt ? "Ex: Engenheiro(a)" : "E.g. Engineer"}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Telefone" : "Phone"}
+            </label>
+            <Input
+              value={owner.phone}
+              onChange={(e) => updateOwner(idx, "phone", e.target.value)}
+              placeholder="(11) 99999-9999"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">
+              {pt ? "Endereço" : "Address"}
+            </label>
+            <Input
+              value={owner.address}
+              onChange={(e) => updateOwner(idx, "address", e.target.value)}
+              placeholder={pt ? "Endereço completo" : "Full address"}
+            />
+          </div>
+        </div>
+
+        {/* Show "add spouse" hint if married and no spouse exists for this owner */}
+        {!owner.is_spouse && isMarried(owner.marital_status) && (
+          <div className="pt-1">
+            {!owners.some((o, j) => o.is_spouse && j === idx + 1) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  setOwners((prev) => {
+                    const copy = [...prev];
+                    copy.splice(idx + 1, 0, { ...emptyOwner(), is_spouse: true });
+                    return copy;
+                  });
+                }}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                {pt ? "Adicionar cônjuge / companheiro(a)" : "Add spouse / partner"}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Card className="border-amber-200/50 bg-amber-50/30 dark:border-amber-900/30 dark:bg-amber-950/10">
       <CardHeader
@@ -128,51 +302,32 @@ const PrivateInfoCard = ({
 
       {expanded && (
         <CardContent className="space-y-5">
-          {/* Owner info */}
+          {/* Owners section */}
           <div>
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
-              {pt ? "Dados do Proprietário" : "Owner Information"}
+            <h4 className="text-sm font-semibold mb-1 flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              {pt ? "Proprietários e Qualificação Civil" : "Owners & Civil Qualification"}
             </h4>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium">
-                  {pt ? "Nome" : "Name"}
-                </label>
-                <Input
-                  value={ownerName}
-                  onChange={(e) => setOwnerName(e.target.value)}
-                  placeholder={pt ? "Nome completo" : "Full name"}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">
-                  {pt ? "Telefone" : "Phone"}
-                </label>
-                <Input
-                  value={ownerPhone}
-                  onChange={(e) => setOwnerPhone(e.target.value)}
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">CPF</label>
-                <Input
-                  value={ownerCpf}
-                  onChange={(e) => setOwnerCpf(e.target.value)}
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">
-                  {pt ? "Endereço" : "Address"}
-                </label>
-                <Input
-                  value={ownerAddress}
-                  onChange={(e) => setOwnerAddress(e.target.value)}
-                  placeholder={pt ? "Endereço do proprietário" : "Owner address"}
-                />
-              </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              {pt
+                ? "Dados necessários para contratos. Adicione cônjuges/companheiros quando aplicável."
+                : "Data required for contracts. Add spouses/partners when applicable."}
+            </p>
+
+            <div className="space-y-3">
+              {owners.map((owner, idx) => renderOwnerForm(owner, idx))}
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => addOwner(false)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              {pt ? "Adicionar outro proprietário" : "Add another owner"}
+            </Button>
           </div>
 
           {/* Notes */}
@@ -204,7 +359,6 @@ const PrivateInfoCard = ({
                 : "Deeds, owner documents, contracts, floor plans. PDF or images up to 20MB."}
             </p>
 
-            {/* Pending files list */}
             {pendingFiles.length > 0 && (
               <div className="space-y-2 mb-3">
                 {pendingFiles.map((f, i) => (
@@ -270,13 +424,11 @@ export async function uploadPrivateDocuments(
       continue;
     }
 
-    // Get signed URL (private bucket)
     const { data: signedData } = await supabase.storage
       .from("property-documents")
-      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10); // 10 years
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
 
     const url = signedData?.signedUrl ?? path;
-
     const docType = guessDocType(file.name);
 
     await supabase.from("property_documents").insert({

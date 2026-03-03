@@ -1,0 +1,1 @@
+ALTER TABLE public.property_private_data ADD COLUMN owners jsonb DEFAULT '[]'::jsonb;

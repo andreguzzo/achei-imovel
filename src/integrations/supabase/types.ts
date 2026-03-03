@@ -546,6 +546,7 @@ export type Database = {
           owner_cpf: string | null
           owner_name: string | null
           owner_phone: string | null
+          owners: Json | null
           property_id: string
           updated_at: string
         }
@@ -557,6 +558,7 @@ export type Database = {
           owner_cpf?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          owners?: Json | null
           property_id: string
           updated_at?: string
         }
@@ -568,6 +570,7 @@ export type Database = {
           owner_cpf?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          owners?: Json | null
           property_id?: string
           updated_at?: string
         }
