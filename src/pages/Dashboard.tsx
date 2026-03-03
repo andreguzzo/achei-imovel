@@ -17,6 +17,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
 import EmailVerification from "@/components/dashboard/EmailVerification";
+import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -427,6 +428,9 @@ const Dashboard = () => {
               verified={emailVerified}
               onVerified={() => setEmailVerified(true)}
             />
+
+            {/* Subscription / Plan Info */}
+            <SubscriptionCard />
 
             {/* Photo Album (broker only) */}
             {isBroker && (
