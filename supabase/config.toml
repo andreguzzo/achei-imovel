@@ -1,1 +1,28 @@
 project_id = "mgutcwomukqnzaxxjqay"
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.send-verification-code]
+verify_jwt = false
+
+[functions.verify-code]
+verify_jwt = false
+
+[functions.admin-check-user-subscription]
+verify_jwt = false
+
+[functions.admin-grant-subscription]
+verify_jwt = false
+
+[functions.admin-list-subscribers]
+verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false
