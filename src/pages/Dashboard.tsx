@@ -48,6 +48,7 @@ const Dashboard = () => {
   const [email, setEmail] = useState("");
   const [creci, setCreci] = useState("");
   const [bio, setBio] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   // Broker photos
   const [photos, setPhotos] = useState<BrokerPhoto[]>([]);
@@ -83,6 +84,7 @@ const Dashboard = () => {
         setEmail(user.email ?? "");
         setCreci(profileRes.data.creci ?? "");
         setBio(profileRes.data.bio ?? "");
+        setWhatsapp((profileRes.data as any).whatsapp ?? "");
         setEmailVerified((profileRes.data as any).email_verified ?? false);
       }
       setProperties((propsRes.data as PropertyWithImages[]) ?? []);
@@ -119,6 +121,7 @@ const Dashboard = () => {
         commercial_name: commercialName || null,
         username: username.trim().toLowerCase() || null,
         phone, 
+        whatsapp: whatsapp || null,
         creci, 
         bio 
       } as any)
@@ -391,6 +394,11 @@ const Dashboard = () => {
                 <div>
                   <label className="text-sm font-medium">{pt ? "Telefone *" : "Phone *"}</label>
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" required />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">WhatsApp</label>
+                  <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="5511999999999" />
+                  <p className="mt-1 text-xs text-muted-foreground">{pt ? "Número com código do país (ex: 5511999999999)" : "Number with country code (e.g. 5511999999999)"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">CRECI *</label>
