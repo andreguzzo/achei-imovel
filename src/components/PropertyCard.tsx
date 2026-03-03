@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { motion } from "framer-motion";
 
 type Property = Tables<"properties"> & {
   property_images?: Tables<"property_images">[];
@@ -62,34 +63,41 @@ const PropertyCard = ({ property, initialFavorited }: { property: Property; init
   return (
     <Link
       to={`/imovel/${property.id}`}
-      className="group overflow-hidden rounded-xl border bg-card shadow-card transition-shadow hover:shadow-elevated"
+      className="group overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:shadow-lg hover:border-primary/20 block"
     >
-      <div className="relative aspect-[4/3] bg-muted">
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {imageUrl ? (
-          <img src={imageUrl} alt={property.title} className="h-full w-full object-cover" loading="lazy" />
+          <img
+            src={imageUrl}
+            alt={property.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">Sem foto</div>
         )}
-        <Badge className="absolute left-3 top-3 bg-primary text-primary-foreground">{label}</Badge>
+        {/* Gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <Badge className="absolute left-3 top-3 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[11px] shadow-sm">{label}</Badge>
         {property.listing_type === "rent" && (
-          <Badge variant="secondary" className="absolute right-3 top-3">Aluguel</Badge>
+          <Badge variant="secondary" className="absolute right-12 top-3 text-[11px] backdrop-blur-sm">Aluguel</Badge>
         )}
         <button
           onClick={toggleFavorite}
           disabled={toggling}
-          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur transition-colors hover:bg-card"
+          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-all hover:bg-card hover:scale-110 active:scale-95"
           aria-label="Favoritar"
         >
           <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
         </button>
       </div>
-      <div className="space-y-2 p-4">
+      <div className="space-y-1.5 p-4">
         <p className="text-lg font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
         <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{property.title}</h3>
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {property.neighborhood ? `${property.neighborhood}, ` : ""}{property.city} - {property.state}
         </p>
-        <div className="flex gap-4 pt-1 text-xs text-muted-foreground">
+        <div className="flex gap-4 pt-2 text-xs text-muted-foreground border-t border-border/50 mt-2">
           {property.bedrooms != null && property.bedrooms > 0 && (
             <span className="flex items-center gap-1"><Bed className="h-3.5 w-3.5" /> {property.bedrooms}</span>
           )}
