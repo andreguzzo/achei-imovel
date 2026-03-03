@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X,
 } from "lucide-react";
@@ -45,6 +48,14 @@ const Dashboard = () => {
   // Broker photos
   const [photos, setPhotos] = useState<BrokerPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // Status dialog for properties
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
+  const [statusAction, setStatusAction] = useState("active");
+  const [soldPrice, setSoldPrice] = useState("");
+  const [soldCommission, setSoldCommission] = useState("");
+  const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -103,6 +114,53 @@ const Dashboard = () => {
       setProperties((prev) => prev.filter((p) => p.id !== propId));
       toast({ title: pt ? "Imóvel excluído" : "Property deleted" });
     }
+  };
+
+  const handleOpenStatusDialog = (p: PropertyWithImages) => {
+    setStatusTarget(p);
+    setStatusAction(p.status);
+    setSoldPrice("");
+    setSoldCommission("");
+    setSoldByOtherPrice("");
+    setStatusDialogOpen(true);
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!statusTarget || !user) return;
+    if (statusAction === "sold" && (!soldPrice || !soldCommission)) {
+      toast({ title: pt ? "Informe o valor e a comissão" : "Enter value and commission", variant: "destructive" });
+      return;
+    }
+    const isSoldByOther = statusAction === "sold_by_other";
+    const finalStatus = isSoldByOther ? "sold" : statusAction;
+
+    const updateData: Record<string, unknown> = { status: finalStatus };
+    if (statusAction === "sold") {
+      updateData.sold_price = Number(soldPrice);
+      updateData.sold_commission = Number(soldCommission);
+    }
+    if (isSoldByOther && soldByOtherPrice) {
+      updateData.sold_by_other_price = Number(soldByOtherPrice);
+    }
+
+    const { error } = await supabase.from("properties").update(updateData as any).eq("id", statusTarget.id);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      // Close matching pipeline entries if sold by broker
+      if (statusAction === "sold") {
+        await supabase
+          .from("sales_pipeline")
+          .update({ stage: "closed_won" as any, actual_close_date: new Date().toISOString().split("T")[0], commission_value: Number(soldCommission) })
+          .eq("broker_id", user.id)
+          .eq("property_id", statusTarget.id);
+      }
+      toast({ title: pt ? "Status atualizado!" : "Status updated!" });
+      // Refresh properties
+      const { data } = await supabase.from("properties").select("*, property_images(*)").eq("user_id", user.id).order("created_at", { ascending: false });
+      setProperties((data as PropertyWithImages[]) ?? []);
+    }
+    setStatusDialogOpen(false);
   };
 
   // Photo handlers
@@ -215,40 +273,54 @@ const Dashboard = () => {
               <Card><CardContent className="py-12 text-center text-muted-foreground">{pt ? "Nenhum imóvel cadastrado" : "No properties listed"}</CardContent></Card>
             ) : (
               <div className="space-y-3">
-                {properties.map((p) => (
-                  <Card key={p.id}>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {p.property_images?.[0]?.url ? (
-                          <img src={p.property_images[0].url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">—</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{p.title}</p>
-                        <p className="text-sm text-muted-foreground">{p.city} - {p.state}</p>
-                        <p className="text-sm font-bold text-primary">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.price)}
-                        </p>
-                      </div>
-                      {isBroker && (
-                        <div className="flex items-center gap-1.5 shrink-0 mr-2">
-                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-sm font-semibold">{p.view_count ?? 0}</span>
+                {properties.map((p) => {
+                  const statusColors: Record<string, string> = { active: "default", inactive: "secondary", sold: "outline", rented: "outline" };
+                  const statusLabels: Record<string, string> = pt
+                    ? { active: "Ativo", inactive: "Fora de negociação", sold: "Vendido", rented: "Alugado" }
+                    : { active: "Active", inactive: "Withdrawn", sold: "Sold", rented: "Rented" };
+                  return (
+                    <Card key={p.id}>
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+                          {p.property_images?.[0]?.url ? (
+                            <img src={p.property_images[0].url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">—</div>
+                          )}
                         </div>
-                      )}
-                      <div className="flex gap-2 shrink-0">
-                        <Link to={`/imovel/${p.id}`}>
-                          <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
-                        </Link>
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDeleteProperty(p.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground truncate">{p.title}</p>
+                            <Badge variant={statusColors[p.status] as any ?? "secondary"} className="text-[10px] shrink-0">
+                              {statusLabels[p.status] ?? p.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{p.city} - {p.state}</p>
+                          <p className="text-sm font-bold text-primary">
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.price)}
+                          </p>
+                        </div>
+                        {isBroker && (
+                          <div className="flex items-center gap-1.5 shrink-0 mr-2">
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-semibold">{p.view_count ?? 0}</span>
+                          </div>
+                        )}
+                        <div className="flex gap-2 shrink-0">
+                          <Button size="sm" variant="outline" onClick={() => handleOpenStatusDialog(p)}>
+                            {pt ? "Status" : "Status"}
+                          </Button>
+                          <Link to={`/imovel/${p.id}`}>
+                            <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
+                          </Link>
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDeleteProperty(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -332,6 +404,54 @@ const Dashboard = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Status change dialog for properties */}
+      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{pt ? "Alterar Status do Imóvel" : "Change Property Status"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {statusTarget && <p className="text-sm text-muted-foreground truncate">{statusTarget.title}</p>}
+            <Select value={statusAction} onValueChange={setStatusAction}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">{pt ? "Ativo (disponível)" : "Active"}</SelectItem>
+                <SelectItem value="sold">{pt ? "Vendido (por mim)" : "Sold (by me)"}</SelectItem>
+                <SelectItem value="inactive">{pt ? "Fora de negociação" : "Withdrawn"}</SelectItem>
+                <SelectItem value="sold_by_other">{pt ? "Vendido por outro corretor" : "Sold by other"}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {statusAction === "sold" && (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">{pt ? "Valor de venda (R$) *" : "Sale price (R$) *"}</label>
+                  <Input type="number" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} min="0" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">{pt ? "Comissão (R$) *" : "Commission (R$) *"}</label>
+                  <Input type="number" value={soldCommission} onChange={(e) => setSoldCommission(e.target.value)} min="0" />
+                </div>
+              </>
+            )}
+
+            {statusAction === "sold_by_other" && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">{pt ? "Valor de venda informado (R$)" : "Reported sale price (R$)"}</label>
+                <Input type="number" value={soldByOtherPrice} onChange={(e) => setSoldByOtherPrice(e.target.value)} min="0" />
+                <p className="mt-1 text-xs text-muted-foreground">{pt ? "Usado como referência de mercado." : "Used as market reference."}</p>
+              </div>
+            )}
+
+            {statusAction === "inactive" && (
+              <p className="text-sm text-muted-foreground">{pt ? "O imóvel não aparecerá mais nas buscas." : "Property won't appear in searches."}</p>
+            )}
+
+            <Button onClick={handleStatusConfirm} className="w-full">{pt ? "Confirmar" : "Confirm"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
