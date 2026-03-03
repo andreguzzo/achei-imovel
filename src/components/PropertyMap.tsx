@@ -91,9 +91,10 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       zoomControl: true,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 20,
+      subdomains: "abcd",
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -198,20 +199,47 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         onSelect?.(p.id);
       });
 
-      // Popup
+      // Popup with share button
+      const mapsUrl = `https://www.google.com/maps?q=${p.latitude},${p.longitude}`;
+      const shareId = `share-${p.id}`;
       const imgHtml = p.property_images?.[0]?.url
         ? `<img src="${p.property_images[0].url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
         : "";
-      marker.bindPopup(
+      const popup = L.popup({ maxWidth: 250 }).setContent(
         `<div style="min-width:180px;font-family:'DM Sans',sans-serif;">
           ${imgHtml}
           <div style="font-weight:700;font-size:14px;color:${isSale ? 'hsl(0,72%,50%)' : 'hsl(270,60%,50%)'};">${formatPriceFull(p.price)}</div>
           <div style="font-size:13px;font-weight:600;margin-top:2px;">${p.title}</div>
           <div style="font-size:11px;color:#888;margin-top:2px;">${p.neighborhood ? p.neighborhood + ", " : ""}${p.city} - ${p.state}</div>
-          <a href="/imovel/${p.id}" style="display:inline-block;margin-top:6px;font-size:12px;color:hsl(213,80%,50%);font-weight:600;">Ver detalhes →</a>
-        </div>`,
-        { maxWidth: 250 }
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <a href="/imovel/${p.id}" style="font-size:12px;color:hsl(213,80%,50%);font-weight:600;">Ver detalhes →</a>
+            <button id="${shareId}" style="
+              background:hsl(215,25%,27%);color:white;border:none;border-radius:6px;
+              padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+              display:inline-flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;
+            ">📍 Compartilhar</button>
+          </div>
+          <span id="${shareId}-feedback" style="font-size:10px;color:hsl(150,60%,40%);display:none;margin-top:4px;">Link copiado!</span>
+        </div>`
       );
+
+      popup.on("add", () => {
+        const btn = document.getElementById(shareId);
+        btn?.addEventListener("click", async () => {
+          const shareData = { title: p.title, text: `${p.title} — ${formatPriceFull(p.price)}`, url: mapsUrl };
+          try {
+            if (navigator.share) {
+              await navigator.share(shareData);
+            } else {
+              await navigator.clipboard.writeText(mapsUrl);
+              const fb = document.getElementById(`${shareId}-feedback`);
+              if (fb) { fb.style.display = "inline"; setTimeout(() => { fb.style.display = "none"; }, 2000); }
+            }
+          } catch { /* user cancelled */ }
+        });
+      });
+
+      marker.bindPopup(popup);
 
       cluster.addLayer(marker);
     });
