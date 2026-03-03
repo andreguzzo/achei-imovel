@@ -142,8 +142,8 @@ const Plans = () => {
                   ))}
                 </ul>
                 {tierKey === "free" ? (
-                  <Button variant="outline" disabled className="w-full">
-                    {pt ? "Plano atual" : "Current plan"}
+                  <Button className="w-full" onClick={() => navigate("/cadastro")}>
+                    {pt ? "Criar conta" : "Create account"}
                   </Button>
                 ) : isCurrent ? (
                   <Button variant="outline" disabled className="w-full">
