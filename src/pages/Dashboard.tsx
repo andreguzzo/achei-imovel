@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X,
+  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
@@ -381,8 +381,14 @@ const Dashboard = () => {
                     <Input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} placeholder="seu.username" />
                   </div>
                   {username.trim() && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {pt ? "Seu perfil público: " : "Your public profile: "}{window.location.origin}/corretor/{username.trim().toLowerCase()}
+                    <p className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
+                      <span>{pt ? "Seu perfil público: " : "Your public profile: "}</span>
+                      <a href={`/corretor/${username.trim().toLowerCase()}`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+                        {window.location.origin}/corretor/{username.trim().toLowerCase()}
+                      </a>
+                      <a href={`/corretor/${username.trim().toLowerCase()}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-6 w-6 rounded-md border border-input hover:bg-accent transition-colors" title={pt ? "Visitar perfil" : "Visit profile"}>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </a>
                     </p>
                   )}
                 </div>
