@@ -1,70 +1,53 @@
 
 
-# Filtros Zillow-style para a Busca
+# Atribuir role broker + fluxo automático via CRECI
 
-## Situação Atual
-A busca tem 5 filtros básicos escondidos num painel expansível: tipo de imóvel, comprar/alugar, preço min/max, quartos. A UX é diferente do Zillow, que usa **botões-dropdown inline na barra de filtros** (sempre visíveis, não escondidos).
+## Situação atual
+- Tabela `user_roles` está vazia, nenhum usuário tem role.
+- O usuário Andre Guzzo (user_id: `bcb8d2f3-61ea-4b44-8e1f-4fd5f39404e9`) tem CRECI cadastrado mas não tem role broker.
+- A aba Corretor no Dashboard só aparece quando `has_role(user_id, 'broker')` retorna true.
 
-## O que falta (inspirado no Zillow)
+## Plano
 
-### 1. Barra de filtros inline (sempre visível)
-Substituir o painel expansível por **botões-dropdown na própria barra**, cada um abrindo um Popover com opções:
-- **Comprar / Alugar** - Toggle ou tabs
-- **Preço** - Range com slider duplo + inputs min/max
-- **Quartos & Banheiros** - Botões tipo "1+", "2+", "3+", "4+", "5+"
-- **Tipo de imóvel** - Checkboxes (apartamento, casa, terreno, comercial)
-- **Mais filtros** - Popover com: área mínima/máxima, vagas de garagem, condomínio, IPTU, features
+### 1. Migração SQL
+- Inserir role `broker` para o usuário existente com CRECI preenchido.
+- Criar trigger na tabela `profiles`: quando `creci` é atualizado de NULL/vazio para um valor preenchido, automaticamente insere role `broker` em `user_roles`. Quando CRECI é removido, remove o role.
 
-### 2. Filtros adicionais (dados já existem na tabela)
-Campos disponíveis na tabela `properties` que ainda não são filtráveis:
-- `bathrooms` - Banheiros
-- `parking_spots` - Vagas de garagem
-- `area` - Área (m²)
-- `condo_fee` - Condomínio
-- `iptu` - IPTU
-- `features` - Características (array text)
+### 2. Nenhuma mudança de frontend necessária
+- O Dashboard já verifica `has_role` e mostra a aba Corretor condicionalmente.
 
-### 3. Comportamento Zillow-like
-- Filtros aplicam **automaticamente** ao mudar (sem botão "Aplicar")
-- Contagem de filtros ativos nos botões
-- Tags/chips dos filtros ativos abaixo da barra com "X" para remover
-- Ordenação (preço, data, relevância)
-- Salvar busca (tabela `saved_searches` já existe)
+### Migração SQL a executar:
+```sql
+-- Assign broker role to existing users with CRECI
+INSERT INTO public.user_roles (user_id, role)
+SELECT p.user_id, 'broker'::app_role
+FROM public.profiles p
+WHERE p.creci IS NOT NULL AND trim(p.creci) != ''
+ON CONFLICT (user_id, role) DO NOTHING;
 
-## Plano de implementação
+-- Auto-assign broker role when CRECI is set
+CREATE OR REPLACE FUNCTION public.sync_broker_role()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  IF NEW.creci IS NOT NULL AND trim(NEW.creci) != '' THEN
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (NEW.user_id, 'broker'::app_role)
+    ON CONFLICT (user_id, role) DO NOTHING;
+  ELSE
+    DELETE FROM public.user_roles
+    WHERE user_id = NEW.user_id AND role = 'broker'::app_role;
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
-### Arquivo: `src/components/SearchFilters.tsx` (novo)
-Componente com a barra de filtros Zillow-style usando Popovers do Radix. Cada filtro é um botão que abre um dropdown inline. Inclui:
-- `PriceFilter` - Slider duplo + inputs
-- `BedroomBathroomFilter` - Botões segmentados "qualquer, 1+, 2+, 3+, 4+, 5+"
-- `PropertyTypeFilter` - Checkboxes múltiplos
-- `MoreFiltersFilter` - Área, vagas, condomínio, features
-- `SortSelect` - Ordenar por preço, data, relevância
-- Chips de filtros ativos com remoção individual
-
-### Arquivo: `src/pages/Search.tsx` (editar)
-- Substituir painel de filtros pelo novo componente
-- Adicionar novos estados para banheiros, área, vagas, ordenação
-- Aplicação automática dos filtros (debounced)
-- Sincronizar todos os filtros com URL params
-
-### Arquivo: `src/i18n/locales/pt-BR.ts` e `en.ts` (editar)
-- Adicionar traduções dos novos filtros
-
-## Detalhes Técnicos
-
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  [🔍 Buscar...]  [Comprar▾] [Preço▾] [Quartos▾] [Tipo▾] [Mais▾] [Ordenar▾] [Mapa] │
-├──────────────────────────────────────────────────────────────────────┤
-│  Filtros ativos: [SP ✕] [2+ quartos ✕] [R$200k-500k ✕]            │
-└──────────────────────────────────────────────────────────────────────┘
+CREATE TRIGGER trg_sync_broker_role
+AFTER INSERT OR UPDATE OF creci ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_broker_role();
 ```
-
-- Usa `Popover` do Radix para os dropdowns
-- `Slider` duplo para range de preço e área
-- `ToggleGroup` para quartos/banheiros
-- `Checkbox` para tipo de imóvel e features
-- Debounce de 300ms na aplicação automática
-- URL sync bidirecional com `useSearchParams`
 
