@@ -6,14 +6,38 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, RotateCcw, Eye, ExternalLink } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, Search, RotateCcw, Eye, ExternalLink, MoreVertical, Trash2, Edit, Ban, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Property = Tables<"properties"> & { property_images: { url: string }[]; profiles?: { full_name: string | null } };
+type Property = Tables<"properties"> & { property_images: { url: string }[] };
 
 const statusLabels: Record<string, string> = {
   active: "Ativo", inactive: "Inativo", sold: "Vendido", rented: "Alugado",
+};
+
+const statusColors: Record<string, string> = {
+  active: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  inactive: "bg-muted text-muted-foreground",
+  sold: "bg-blue-500/10 text-blue-700 border-blue-200",
+  rented: "bg-amber-500/10 text-amber-700 border-amber-200",
 };
 
 const AdminPropertiesTab = () => {
@@ -22,6 +46,11 @@ const AdminPropertiesTab = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState<Property | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Property | null>(null);
+  const [editTarget, setEditTarget] = useState<Property | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editStatus, setEditStatus] = useState("");
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -51,6 +80,42 @@ const AdminPropertiesTab = () => {
       await fetchProperties();
       if (selected?.id === propId) setSelected(null);
     }
+  };
+
+  const handleDeleteProperty = async (prop: Property) => {
+    // Delete images, then property
+    await supabase.from("property_images").delete().eq("property_id", prop.id);
+    const { error } = await supabase.from("properties").delete().eq("id", prop.id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Imóvel excluído com sucesso" });
+      await fetchProperties();
+    }
+    setDeleteTarget(null);
+  };
+
+  const openEdit = (prop: Property) => {
+    setEditTarget(prop);
+    setEditTitle(prop.title);
+    setEditPrice(String(prop.price));
+    setEditStatus(prop.status);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    const { error } = await supabase.from("properties").update({
+      title: editTitle,
+      price: Number(editPrice),
+      status: editStatus as any,
+    }).eq("id", editTarget.id);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Imóvel atualizado com sucesso" });
+      await fetchProperties();
+    }
+    setEditTarget(null);
   };
 
   const fmt = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -88,7 +153,7 @@ const AdminPropertiesTab = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium truncate">{p.title}</p>
-                  <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[10px] shrink-0">{statusLabels[p.status]}</Badge>
+                  <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColors[p.status] ?? ""}`}>{statusLabels[p.status]}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{p.city} - {p.state} · {fmt(p.price)}</p>
               </div>
@@ -97,19 +162,45 @@ const AdminPropertiesTab = () => {
                 <span className="text-sm">{p.view_count ?? 0}</span>
               </div>
               <div className="flex gap-1 shrink-0">
-                {p.status !== "active" && (
-                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleChangeStatus(p.id, "active")}>
-                    <RotateCcw className="h-3 w-3" /> Reativar
-                  </Button>
-                )}
-                <Button size="icon" variant="ghost" onClick={() => setSelected(p)}><Eye className="h-4 w-4" /></Button>
-                <a href={`/imovel/${p.id}`} target="_blank" rel="noreferrer"><Button size="icon" variant="ghost"><ExternalLink className="h-4 w-4" /></Button></a>
+                <Button size="icon" variant="ghost" onClick={() => setSelected(p)} title="Ver detalhes">
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost"><MoreVertical className="h-4 w-4" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEdit(p)} className="gap-2 cursor-pointer">
+                      <Edit className="h-4 w-4" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                      <a href={`/imovel/${p.id}`} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-4 w-4" /> Ver página
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {p.status === "active" ? (
+                      <DropdownMenuItem onClick={() => handleChangeStatus(p.id, "inactive")} className="gap-2 cursor-pointer">
+                        <Ban className="h-4 w-4" /> Desativar
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => handleChangeStatus(p.id, "active")} className="gap-2 cursor-pointer">
+                        <CheckCircle2 className="h-4 w-4" /> Reativar
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4" /> Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Detalhes do Imóvel</DialogTitle></DialogHeader>
@@ -128,18 +219,84 @@ const AdminPropertiesTab = () => {
                 <div className="col-span-2"><span className="text-muted-foreground">Corretor ID:</span> <code className="text-xs">{selected.user_id}</code></div>
                 <div className="col-span-2"><span className="text-muted-foreground">Criado em:</span> {new Date(selected.created_at).toLocaleDateString("pt-BR")}</div>
               </div>
-              <div className="border-t pt-3 flex gap-2 flex-wrap">
+              <div className="border-t pt-3 space-y-2">
                 <p className="text-sm font-medium w-full mb-1">Alterar Status:</p>
-                {(["active", "inactive", "sold", "rented"] as const).map(s => (
-                  <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => handleChangeStatus(selected.id, s)} disabled={selected.status === s}>
-                    {statusLabels[s]}
+                <div className="flex gap-2 flex-wrap">
+                  {(["active", "inactive", "sold", "rented"] as const).map(s => (
+                    <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => handleChangeStatus(selected.id, s)} disabled={selected.status === s}>
+                      {statusLabels[s]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t pt-3 flex gap-2 flex-wrap">
+                <Button variant="outline" className="gap-1" onClick={() => { setSelected(null); openEdit(selected); }}>
+                  <Edit className="h-4 w-4" /> Editar
+                </Button>
+                <a href={`/imovel/${selected.id}`} target="_blank" rel="noreferrer">
+                  <Button variant="outline" className="gap-1">
+                    <ExternalLink className="h-4 w-4" /> Ver página
                   </Button>
-                ))}
+                </a>
+                <Button variant="destructive" className="gap-1" onClick={() => { setSelected(null); setDeleteTarget(selected); }}>
+                  <Trash2 className="h-4 w-4" /> Excluir
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar Imóvel</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Título</label>
+              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Preço (R$)</label>
+              <Input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Status</label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                  <SelectItem value="sold">Vendido</SelectItem>
+                  <SelectItem value="rented">Alugado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir imóvel?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.title}</strong>? As imagens associadas também serão removidas. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteTarget && handleDeleteProperty(deleteTarget)}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
