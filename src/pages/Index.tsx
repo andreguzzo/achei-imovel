@@ -159,46 +159,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Inspiração por ambientes */}
-      <section className="container py-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-          <h2 className="font-display text-2xl font-semibold text-foreground">
-            {locale === "pt-BR" ? "Inspire-se por ambientes" : "Get inspired by spaces"}
-          </h2>
-          <p className="mt-1 text-muted-foreground">
-            {locale === "pt-BR" ? "Descubra espaços que combinam conforto e design" : "Discover spaces that combine comfort and design"}
-          </p>
-        </motion.div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {AMBIENTES.map((amb, i) => (
-            <motion.div
-              key={amb.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.4 }}
-            >
-              <Link
-                to={`/busca?keywords=${encodeURIComponent(amb.label)}`}
-                className="group relative h-48 overflow-hidden rounded-2xl block"
-              >
-                <img
-                  src={amb.image}
-                  alt={amb.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                  <h3 className="font-display text-xl font-bold text-white drop-shadow">{amb.name}</h3>
-                  <ArrowRight className="h-5 w-5 text-white opacity-0 translate-x-[-4px] transition-all group-hover:opacity-100 group-hover:translate-x-0" />
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
       {/* Featured */}
       <section className="container py-16 border-t border-border">
         <div className="flex items-center justify-between">
