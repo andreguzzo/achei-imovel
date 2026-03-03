@@ -35,7 +35,7 @@ const Header = () => {
         <Link to="/" className="flex items-center gap-2 group">
           <Home className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
           <span className="font-display text-xl font-bold tracking-tight text-foreground">
-            Abit<span className="text-primary">o</span>
+            Abit<span className="text-primary">zo</span>
           </span>
         </Link>
 

@@ -38,7 +38,7 @@ const Signup = () => {
         <CardHeader className="text-center">
           <Link to="/" className="mx-auto mb-4 flex items-center gap-2">
             <Home className="h-7 w-7 text-primary" />
-            <span className="font-display text-xl font-bold">Abit<span className="text-primary">o</span></span>
+            <span className="font-display text-xl font-bold">Abit<span className="text-primary">zo</span></span>
           </Link>
           <CardTitle className="text-2xl">{t.nav.signup}</CardTitle>
           <CardDescription>Crie sua conta gratuitamente</CardDescription>
