@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Home, Heart, Menu, X, Globe } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Home, Heart, Menu, X, Globe, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const { t, locale, toggleLocale } = useLanguage();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
@@ -60,14 +63,25 @@ const Header = () => {
             </Button>
           </Link>
 
-          <Link to="/login" className="hidden md:inline-flex">
-            <Button variant="outline" size="sm">
-              {t.nav.login}
-            </Button>
-          </Link>
-          <Link to="/cadastro" className="hidden md:inline-flex">
-            <Button size="sm">{t.nav.signup}</Button>
-          </Link>
+          {user ? (
+            <>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex gap-1 text-muted-foreground" onClick={() => navigate("/painel")}>
+                <User className="h-4 w-4" /> {t.nav.myAccount}
+              </Button>
+              <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-1" /> {t.nav.logout}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="hidden md:inline-flex">
+                <Button variant="outline" size="sm">{t.nav.login}</Button>
+              </Link>
+              <Link to="/cadastro" className="hidden md:inline-flex">
+                <Button size="sm">{t.nav.signup}</Button>
+              </Link>
+            </>
+          )}
 
           {/* Mobile toggle */}
           <Button
@@ -101,12 +115,25 @@ const Header = () => {
                 <Heart className="h-4 w-4" /> {t.nav.favorites}
               </Button>
             </Link>
-            <Link to="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="outline" className="w-full">{t.nav.login}</Button>
-            </Link>
-            <Link to="/cadastro" onClick={() => setMobileOpen(false)}>
-              <Button className="w-full">{t.nav.signup}</Button>
-            </Link>
+            {user ? (
+              <>
+                <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => { navigate("/painel"); setMobileOpen(false); }}>
+                  <User className="h-4 w-4" /> {t.nav.myAccount}
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => { signOut(); setMobileOpen(false); }}>
+                  <LogOut className="h-4 w-4 mr-1" /> {t.nav.logout}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setMobileOpen(false)}>
+                  <Button variant="outline" className="w-full">{t.nav.login}</Button>
+                </Link>
+                <Link to="/cadastro" onClick={() => setMobileOpen(false)}>
+                  <Button className="w-full">{t.nav.signup}</Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}
