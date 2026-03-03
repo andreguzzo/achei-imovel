@@ -24,7 +24,10 @@ const Login = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      const description = error.message?.includes("Invalid login credentials")
+        ? t.auth.invalidCredentials
+        : error.message;
+      toast({ title: t.common.error, description, variant: "destructive" });
     } else {
       navigate("/");
     }
@@ -38,27 +41,32 @@ const Login = () => {
             <Home className="h-7 w-7 text-primary" />
             <span className="font-display text-xl font-bold">Abit<span className="text-primary">zo</span></span>
           </Link>
-          <CardTitle className="text-2xl">{t.nav.login}</CardTitle>
-          <CardDescription>Entre na sua conta para continuar</CardDescription>
+          <CardTitle className="text-2xl">{t.auth.loginTitle}</CardTitle>
+          <CardDescription>{t.auth.loginSubtitle}</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">{t.auth.password}</Label>
+                <Link to="/esqueci-senha" className="text-xs text-primary hover:underline">
+                  {t.auth.forgotPassword}
+                </Link>
+              </div>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t.nav.login}
+              {t.auth.loginTitle}
             </Button>
             <p className="text-sm text-muted-foreground">
-              Não tem conta?{" "}
+              {t.auth.noAccount}{" "}
               <Link to="/cadastro" className="font-medium text-primary hover:underline">{t.nav.signup}</Link>
             </p>
           </CardFooter>

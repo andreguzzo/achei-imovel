@@ -18,6 +18,8 @@ import Favorites from "./pages/Favorites";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 
@@ -45,9 +47,11 @@ const App = () => (
                 <Route path="/favoritos" element={<Favorites />} />
                 <Route path="/painel" element={<Dashboard />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/cadastro" element={<Signup />} />
+                <Route path="/esqueci-senha" element={<ForgotPassword />} />
+                <Route path="/redefinir-senha" element={<ResetPassword />} />
               </Route>
-              <Route path="/login" element={<Login />} />
-              <Route path="/cadastro" element={<Signup />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
