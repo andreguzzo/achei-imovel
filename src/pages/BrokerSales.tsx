@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -125,12 +126,14 @@ const BrokerSales = () => {
     fetchData();
   };
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) navigate("/login");
+  }, [user, navigate]);
+
   if (!user) {
-    return (
-      <div className="container py-20 text-center">
-        <p className="text-lg font-medium">{pt ? "Faça login para acessar o painel" : "Login to access"}</p>
-      </div>
-    );
+    return null;
   }
 
   if (loading) {
