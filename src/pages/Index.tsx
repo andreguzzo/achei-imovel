@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PropertyCard from "@/components/PropertyCard";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
@@ -19,9 +19,33 @@ const HERO_IMAGES = [
   "/images/cities/rio.jpg",
   "/images/cities/sao-paulo.jpg",
   "/images/cities/salvador.jpg",
-  "/images/cities/florianopolis.jpg",
   "/images/cities/brasilia.jpg",
   "/images/cities/recife.jpg",
+  "/images/cities/curitiba.jpg",
+  "/images/cities/belo-horizonte.jpg",
+  "/images/cities/fortaleza.jpg",
+];
+
+const HERO_PHRASES_PT = [
+  "Encontre o lar dos seus sonhos",
+  "Seu novo endereço começa aqui",
+  "Descubra imóveis incríveis pelo Brasil",
+  "O imóvel perfeito está te esperando",
+  "Invista no seu futuro com segurança",
+  "Milhares de imóveis em todo o Brasil",
+  "Realize o sonho da casa própria",
+  "Encontre o lugar ideal para você",
+];
+
+const HERO_PHRASES_EN = [
+  "Find the home of your dreams",
+  "Your new address starts here",
+  "Discover amazing properties across Brazil",
+  "The perfect property is waiting for you",
+  "Invest in your future with confidence",
+  "Thousands of properties across Brazil",
+  "Make your homeownership dream come true",
+  "Find the perfect place for you",
 ];
 
 const AMBIENTES = [
@@ -50,11 +74,13 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [heroIdx, setHeroIdx] = useState(0);
 
-  // Rotate hero image
+  const heroPhrase = (locale === "pt-BR" ? HERO_PHRASES_PT : HERO_PHRASES_EN)[heroIdx % HERO_PHRASES_PT.length];
+
+  // Rotate hero image + phrase
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroIdx((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 6000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -100,12 +126,18 @@ const Index = () => {
             initial="hidden" animate="visible"
             className="mx-auto max-w-3xl"
           >
-            <motion.h1
-              custom={0} variants={fadeUp}
-              className="font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-lg"
-            >
-              {t.hero.title}
-            </motion.h1>
+            <AnimatePresence mode="wait">
+              <motion.h1
+                key={heroPhrase}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.8 }}
+                className="font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-lg"
+              >
+                {heroPhrase}
+              </motion.h1>
+            </AnimatePresence>
             <motion.p custom={1} variants={fadeUp} className="mx-auto mt-4 max-w-xl text-lg text-white/85 drop-shadow">
               {t.hero.subtitle}
             </motion.p>
