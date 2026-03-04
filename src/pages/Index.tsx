@@ -18,12 +18,12 @@ type PropertyWithImages = Tables<"properties"> & {
 const HERO_IMAGES = [
   "/images/cities/rio.jpg",
   "/images/cities/sao-paulo-new.jpg",
-  "/images/cities/salvador-new.jpg",
-  "/images/cities/brasilia-new.jpg",
   "/images/cities/recife-new.jpg",
-  "/images/cities/floripa-new.jpg",
-  "/images/cities/curitiba-new.jpg",
-  "/images/cities/bh-new.jpg",
+  "/images/hero/park.jpg",
+  "/images/hero/historic-street.jpg",
+  "/images/hero/skyline.jpg",
+  "/images/hero/apartment-interior.jpg",
+  "/images/hero/kitchen-interior.jpg",
 ];
 
 const HERO_PHRASES_PT = [
