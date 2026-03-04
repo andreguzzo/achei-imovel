@@ -80,7 +80,7 @@ const Index = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroIdx((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 10000);
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
