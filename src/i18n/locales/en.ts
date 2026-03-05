@@ -211,6 +211,7 @@ export const en = {
     updatePassword: "Update password",
     invalidCredentials: "Invalid email or password",
     backToLogin: "Back to login",
+    orContinueWith: "or continue with",
   },
   common: {
     loading: "Loading...",

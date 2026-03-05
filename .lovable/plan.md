@@ -1,27 +1,22 @@
 
 
-## Plano: Login com Google e Apple
+## Plano: Atualizar imagens do hero
 
-### Contexto
-O projeto já possui autenticação por email/senha via Lovable Cloud. Vamos adicionar login social com Google e Apple usando a solução gerenciada do Lovable Cloud (sem necessidade de configuração externa).
+### O que muda
+- **Manter**: `rio.jpg`, `sao-paulo-new.jpg`, `recife-new.jpg`
+- **Remover**: `salvador-new.jpg`, `brasilia-new.jpg`, `floripa-new.jpg`, `curitiba-new.jpg`, `bh-new.jpg`
+- **Adicionar 5 novas imagens** com temas variados:
+  1. Parque urbano brasileiro (ex: Ibirapuera ou similar)
+  2. Rua de bairro histórico / arquitetura colonial
+  3. Skyline / prédios modernos
+  4. Interior de apartamento moderno (sala de estar)
+  5. Interior de casa (cozinha ou quarto aconchegante)
 
 ### Implementação
+1. Deletar os 5 arquivos de imagem não desejados
+2. Baixar 5 novas imagens com os temas acima para `public/images/cities/` (ou `public/images/interiors/` conforme o tema)
+3. Atualizar o array `HERO_IMAGES` em `src/pages/Index.tsx` para referenciar as 8 imagens (3 cidades + 5 novas)
 
-1. **Configurar Social Login** — Usar a ferramenta "Configure Social Auth" para gerar o módulo `src/integrations/lovable/` com suporte a Google e Apple OAuth.
-
-2. **Atualizar página de Login** (`src/pages/Login.tsx`)
-   - Adicionar botões "Entrar com Google" e "Entrar com Apple" abaixo do formulário de email/senha
-   - Usar `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })` e equivalente para Apple
-
-3. **Atualizar página de Cadastro** (`src/pages/Signup.tsx`)
-   - Adicionar os mesmos botões de login social com separador visual "ou"
-
-4. **Tradução** — Adicionar strings para os botões em `pt-BR` e `en` nos arquivos de locale.
-
-### Arquivos alterados
-- `src/pages/Login.tsx` — botões OAuth
-- `src/pages/Signup.tsx` — botões OAuth
-- `src/i18n/locales/pt-BR.ts` — novas strings
-- `src/i18n/locales/en.ts` — novas strings
-- `src/integrations/lovable/` — gerado automaticamente pela ferramenta
+### Observação
+Como não consigo pré-visualizar as imagens no chat, vou buscar imagens de alta qualidade e sem direitos autorais. Após implementar, você pode conferir no preview e me dizer se quer trocar alguma.
 
