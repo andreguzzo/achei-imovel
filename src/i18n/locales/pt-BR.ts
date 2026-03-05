@@ -211,6 +211,7 @@ export const ptBR = {
     updatePassword: "Atualizar senha",
     invalidCredentials: "Email ou senha inválidos",
     backToLogin: "Voltar para o login",
+    orContinueWith: "ou continue com",
   },
   common: {
     loading: "Carregando...",
