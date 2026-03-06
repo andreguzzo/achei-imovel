@@ -88,7 +88,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -100,16 +103,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // Fallback: only set state if onAuthStateChange hasn't fired yet
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (session?.user) {
-        refreshSubscription();
+      if (!initialSessionHandled) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        if (session?.user) {
+          refreshSubscription();
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Periodic subscription refresh every 60s
+    const interval = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) refreshSubscription();
+      });
+    }, 60_000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, [refreshSubscription]);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {

@@ -24,13 +24,17 @@ const Header = () => {
 
   useEffect(() => {
     if (!user) { setUserRoles([]); return; }
+    let cancelled = false;
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .then(({ data }) => {
-        setUserRoles(data?.map((r) => r.role) ?? []);
+      .then(({ data, error }) => {
+        if (!cancelled && !error) {
+          setUserRoles(data?.map((r) => r.role) ?? []);
+        }
       });
+    return () => { cancelled = true; };
   }, [user]);
 
   const isAdmin = userRoles.includes("admin");
