@@ -619,7 +619,7 @@ const CreateProperty = () => {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <BasicInfoCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} onGenerateAI={handleGenerateAI} generatingAI={generatingAI} />
+        <BasicInfoCard pt={pt} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} />
 
         <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} />
 
@@ -711,6 +711,9 @@ const CreateProperty = () => {
           pendingFiles={pendingDocs}
           setPendingFiles={setPendingDocs}
         />
+
+        {/* Title & Description with AI - placed last so all info is filled */}
+        <TitleDescriptionCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} onGenerateAI={handleGenerateAI} generatingAI={generatingAI} />
 
         {/* Status */}
         <Card>
