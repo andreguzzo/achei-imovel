@@ -197,7 +197,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
     const { error } = await supabase.from("broker_appointments").insert({
       broker_id: userId,
       title: formTitle,
-      appointment_type: formType,
+      appointment_type: formType as "visit" | "meeting" | "signing" | "inspection" | "follow_up" | "other",
       appointment_date: formDate,
       start_time: formStartTime,
       end_time: formEndTime || null,
@@ -207,7 +207,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
       location: formLocation || null,
       notes: formNotes || null,
       reminder_minutes: formReminder !== "none" ? parseInt(formReminder) : null,
-    } as any);
+    });
     if (error) {
       toast({ title: pt ? "Erro" : "Error", description: error.message, variant: "destructive" });
     } else {
@@ -279,7 +279,6 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
   };
 
   const openNewForDate = (date: Date) => {
-    setFormDate(format(date, "yyyy-MM-dd"));
     resetForm();
     setFormDate(format(date, "yyyy-MM-dd"));
     setShowNew(true);

@@ -67,7 +67,8 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
     const [contactsRes, pipelineRes, partnershipsRes] = await Promise.all([
       supabase
         .from("contact_requests")
-        .select("*, properties:property_id(title, user_id)")
+        .select("*, properties:property_id!inner(title, user_id)")
+        .eq("properties.user_id", userId)
         .neq("sender_id", userId)
         .order("created_at", { ascending: false })
         .limit(100),
