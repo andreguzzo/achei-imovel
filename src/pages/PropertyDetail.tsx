@@ -6,11 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Handshake, Video } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon } from "lucide-react";
 import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
 import type { Tables } from "@/integrations/supabase/types";
@@ -19,19 +16,22 @@ type Property = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
 };
 
-type GroupBroker = {
-  broker_id: string;
-  property_id: string;
-  price: number;
-  profile: { full_name: string | null; creci: string | null; avatar_url: string | null; phone: string | null } | null;
-};
-
-type PartnerBroker = {
+type BrokerProfile = {
   user_id: string;
   full_name: string | null;
   creci: string | null;
   avatar_url: string | null;
   phone: string | null;
+  whatsapp: string | null;
+  username: string | null;
+  commercial_name: string | null;
+};
+
+type GroupBroker = {
+  broker_id: string;
+  property_id: string;
+  price: number;
+  profile: BrokerProfile | null;
 };
 
 const formatPrice = (price: number, listingType: string) => {
@@ -40,32 +40,77 @@ const formatPrice = (price: number, listingType: string) => {
 };
 
 const getEmbedUrl = (url: string): string => {
-  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  // Vimeo
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   return url;
+};
+
+const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
+
+const buildWhatsAppUrl = (phone: string, propertyTitle: string) => {
+  const cleaned = cleanPhone(phone);
+  const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
+  const msg = encodeURIComponent(`Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`);
+  return `https://wa.me/${number}?text=${msg}`;
+};
+
+const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; propertyTitle: string; pt: boolean }) => {
+  const whatsappNumber = profile.whatsapp || profile.phone;
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
+      <Link to={profile.username ? `/corretor/${profile.username}` : "#"}>
+        <Avatar className="h-14 w-14 border-2 border-primary/20">
+          <AvatarImage src={profile.avatar_url ?? undefined} />
+          <AvatarFallback className="text-lg font-bold">{(profile.full_name ?? "?")[0]}</AvatarFallback>
+        </Avatar>
+      </Link>
+      <div className="flex-1 min-w-0">
+        <Link
+          to={profile.username ? `/corretor/${profile.username}` : "#"}
+          className="font-semibold text-foreground hover:text-primary transition-colors"
+        >
+          {profile.commercial_name || profile.full_name || "Corretor"}
+        </Link>
+        {profile.creci && (
+          <p className="text-xs text-muted-foreground">CRECI: {profile.creci}</p>
+        )}
+        {profile.phone && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <PhoneIcon className="h-3 w-3" /> {profile.phone}
+          </p>
+        )}
+        {whatsappNumber && (
+          <a
+            href={buildWhatsAppUrl(whatsappNumber, propertyTitle)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex"
+          >
+            <Button size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white">
+              <MessageCircle className="h-4 w-4" />
+              {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
+            </Button>
+          </a>
+        )}
+      </div>
+    </div>
+  );
 };
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLanguage();
   const { user } = useAuth();
+  const pt = locale === "pt-BR";
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
-  const [partnerBrokers, setPartnerBrokers] = useState<PartnerBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  // Partnership form
-  const [partnerBrokerId, setPartnerBrokerId] = useState<string | null>(null);
-  const [commissionSplit, setCommissionSplit] = useState("50");
-  const [terms, setTerms] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  // Increment view count
   useEffect(() => {
     if (!id) return;
     supabase.rpc("increment_view_count", { _property_id: id });
@@ -84,7 +129,15 @@ const PropertyDetail = () => {
       if (prop) {
         setProperty(prop as Property);
 
-        // Fetch group members
+        // Fetch owner profile
+        const { data: ownerProf } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+          .eq("user_id", (prop as Property).user_id)
+          .single();
+        if (ownerProf) setOwnerProfile(ownerProf as BrokerProfile);
+
+        // Fetch group members (other brokers listing same property)
         const { data: members } = await supabase
           .from("property_group_members")
           .select("broker_id, property_id")
@@ -106,6 +159,7 @@ const PropertyDetail = () => {
             if (allMembers && allMembers.length > 1) {
               const brokers: GroupBroker[] = [];
               for (const m of allMembers) {
+                if (m.broker_id === (prop as Property).user_id) continue; // skip owner, already shown
                 const { data: brokerProp } = await supabase
                   .from("properties")
                   .select("price")
@@ -113,79 +167,25 @@ const PropertyDetail = () => {
                   .single();
                 const { data: profile } = await supabase
                   .from("profiles")
-                  .select("full_name, creci, avatar_url, phone")
+                  .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
                   .eq("user_id", m.broker_id)
                   .single();
                 brokers.push({
                   broker_id: m.broker_id,
                   property_id: m.property_id,
                   price: brokerProp?.price ?? 0,
-                  profile: profile ?? null,
+                  profile: (profile as BrokerProfile) ?? null,
                 });
               }
               setGroupBrokers(brokers);
             }
           }
         }
-
-        // Fetch active partner brokers for the property owner
-        const ownerId = (prop as Property).user_id;
-        const { data: partnerships } = await supabase
-          .from("broker_partnerships")
-          .select("*")
-          .eq("status", "active")
-          .or(`broker_a_id.eq.${ownerId},broker_b_id.eq.${ownerId}`);
-
-        if (partnerships && partnerships.length > 0) {
-          const partnerIds = partnerships.map((p) =>
-            p.broker_a_id === ownerId ? p.broker_b_id : p.broker_a_id
-          );
-          const { data: partnerProfiles } = await supabase
-            .from("profiles")
-            .select("user_id, full_name, creci, avatar_url, phone")
-            .in("user_id", partnerIds);
-          setPartnerBrokers((partnerProfiles as PartnerBroker[]) ?? []);
-        }
       }
       setLoading(false);
     };
     fetchData();
   }, [id]);
-
-  const handleProposPartnership = async () => {
-    if (!user || !partnerBrokerId || !id) return;
-    setSubmitting(true);
-
-    // Get group_id
-    const { data: member } = await supabase
-      .from("property_group_members")
-      .select("group_id")
-      .eq("property_id", id)
-      .single();
-
-    if (!member) {
-      toast({ title: "Erro", description: "Grupo não encontrado", variant: "destructive" });
-      setSubmitting(false);
-      return;
-    }
-
-    const { error } = await supabase.from("broker_partnerships").insert({
-      group_id: member.group_id,
-      broker_a_id: user.id,
-      broker_b_id: partnerBrokerId,
-      commission_split: Number(commissionSplit),
-      terms,
-    });
-
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Proposta enviada!", description: "O corretor receberá sua proposta de parceria." });
-      setPartnerBrokerId(null);
-      setTerms("");
-    }
-    setSubmitting(false);
-  };
 
   if (loading) {
     return (
@@ -205,11 +205,14 @@ const PropertyDetail = () => {
   }
 
   const images = property.property_images?.sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) ?? [];
-
   const typeLabels: Record<string, Record<string, string>> = {
     "pt-BR": { apartment: "Apartamento", house: "Casa", land: "Terreno", commercial: "Comercial" },
     en: { apartment: "Apartment", house: "House", land: "Land", commercial: "Commercial" },
   };
+
+  const allBrokerProfiles: BrokerProfile[] = [];
+  if (ownerProfile) allBrokerProfiles.push(ownerProfile);
+  groupBrokers.forEach((gb) => { if (gb.profile) allBrokerProfiles.push(gb.profile); });
 
   return (
     <div className="container py-8">
@@ -264,7 +267,7 @@ const PropertyDetail = () => {
               <div className="flex items-center gap-2 text-sm"><Bed className="h-5 w-5 text-muted-foreground" /> {property.bedrooms} {t.property.bedrooms}</div>
             )}
             {property.suites != null && property.suites > 0 && (
-              <div className="flex items-center gap-2 text-sm"><Bed className="h-5 w-5 text-muted-foreground" /> {property.suites} {locale === "pt-BR" ? "Suítes" : "Suites"}</div>
+              <div className="flex items-center gap-2 text-sm"><Bed className="h-5 w-5 text-muted-foreground" /> {property.suites} {pt ? "Suítes" : "Suites"}</div>
             )}
             {property.bathrooms != null && property.bathrooms > 0 && (
               <div className="flex items-center gap-2 text-sm"><Bath className="h-5 w-5 text-muted-foreground" /> {property.bathrooms} {t.property.bathrooms}</div>
@@ -299,7 +302,7 @@ const PropertyDetail = () => {
           {(property as any).video_url && (
             <div>
               <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-                <Video className="h-5 w-5" /> {locale === "pt-BR" ? "Vídeo" : "Video"}
+                <Video className="h-5 w-5" /> {pt ? "Vídeo" : "Video"}
               </h2>
               <div className="mt-2 aspect-video overflow-hidden rounded-lg">
                 <iframe
@@ -316,7 +319,7 @@ const PropertyDetail = () => {
           {property.latitude != null && property.longitude != null && (
             <div>
               <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-                <MapPin className="h-5 w-5" /> {locale === "pt-BR" ? "Localização" : "Location"}
+                <MapPin className="h-5 w-5" /> {pt ? "Localização" : "Location"}
               </h2>
               <div className="mt-2 h-64 rounded-lg overflow-hidden border">
                 <PropertyMap
@@ -331,7 +334,7 @@ const PropertyDetail = () => {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
               >
-                <MapPin className="h-3 w-3" /> {locale === "pt-BR" ? "Abrir no Google Maps" : "Open in Google Maps"}
+                <MapPin className="h-3 w-3" /> {pt ? "Abrir no Google Maps" : "Open in Google Maps"}
               </a>
             </div>
           )}
@@ -347,99 +350,30 @@ const PropertyDetail = () => {
           </div>
         </div>
 
-        {/* Sidebar: Brokers */}
+        {/* Sidebar */}
         <div className="space-y-4">
-          {groupBrokers.length > 1 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Users className="h-5 w-5 text-primary" />
-                  {locale === "pt-BR" ? `${groupBrokers.length} corretores anunciam este imóvel` : `${groupBrokers.length} brokers list this property`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {groupBrokers.map((b) => (
-                  <div key={b.broker_id} className="flex items-start justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">{b.profile?.full_name ?? "Corretor"}</p>
-                      {b.profile?.creci && <p className="text-xs text-muted-foreground">CRECI: {b.profile.creci}</p>}
-                      {b.profile?.phone && <p className="text-xs text-muted-foreground">{b.profile.phone}</p>}
-                      <p className="mt-1 text-sm font-bold text-primary">{formatPrice(b.price, property.listing_type)}</p>
-                    </div>
-                    {user && user.id !== b.broker_id && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="gap-1" onClick={() => setPartnerBrokerId(b.broker_id)}>
-                            <Handshake className="h-3.5 w-3.5" />
-                            {locale === "pt-BR" ? "Parceria" : "Partner"}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{locale === "pt-BR" ? "Propor Parceria" : "Propose Partnership"}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">{locale === "pt-BR" ? "Sua comissão (%)" : "Your commission (%)"}</label>
-                              <Input type="number" value={commissionSplit} onChange={(e) => setCommissionSplit(e.target.value)} min="0" max="100" />
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium">{locale === "pt-BR" ? "Termos" : "Terms"}</label>
-                              <Textarea value={terms} onChange={(e) => setTerms(e.target.value)} placeholder={locale === "pt-BR" ? "Descreva os termos da parceria..." : "Describe partnership terms..."} />
-                            </div>
-                            <Button onClick={handleProposPartnership} disabled={submitting} className="w-full">
-                              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              {locale === "pt-BR" ? "Enviar Proposta" : "Send Proposal"}
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : (
-            <ContactForm propertyId={property.id} />
-          )}
-          {groupBrokers.length > 1 && <ContactForm propertyId={property.id} />}
+          {/* Broker(s) Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4 text-primary" />
+                {allBrokerProfiles.length > 1
+                  ? (pt ? "Corretores" : "Brokers")
+                  : (pt ? "Corretor responsável" : "Listing agent")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {allBrokerProfiles.map((bp) => (
+                <BrokerCard key={bp.user_id} profile={bp} propertyTitle={property.title} pt={pt} />
+              ))}
+              {allBrokerProfiles.length === 0 && (
+                <p className="text-sm text-muted-foreground">{pt ? "Informações do corretor não disponíveis." : "Broker info not available."}</p>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Partner Brokers */}
-          {partnerBrokers.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Handshake className="h-4 w-4 text-primary" />
-                  {locale === "pt-BR" ? "Corretores Parceiros" : "Partner Brokers"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {partnerBrokers.map((p) => (
-                  <div key={p.user_id} className="flex items-center gap-3 rounded-lg border p-3">
-                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
-                      {p.avatar_url ? (
-                        <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs font-bold text-muted-foreground">
-                          {(p.full_name ?? "?")[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">{p.full_name ?? "Corretor"}</p>
-                      {p.creci && <p className="text-xs text-muted-foreground">CRECI: {p.creci}</p>}
-                      {p.phone && <p className="text-xs text-muted-foreground">{p.phone}</p>}
-                    </div>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground">
-                  {locale === "pt-BR"
-                    ? "Estes corretores são parceiros do anunciante e também podem intermediar este imóvel."
-                    : "These brokers are partners of the listing agent and can also help with this property."}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Contact Form */}
+          <ContactForm propertyId={property.id} />
         </div>
       </div>
     </div>

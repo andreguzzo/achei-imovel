@@ -27,28 +27,28 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      toast({ title: pt ? "Faça login para enviar" : "Log in to send", variant: "destructive" });
-      return;
-    }
     if (!name.trim() || !email.trim()) return;
 
     setSending(true);
-    const { error } = await supabase.from("contact_requests").insert({
-      property_id: propertyId,
-      sender_id: user.id,
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim() || null,
-      message: message.trim() || null,
-      request_type: "contact",
-    });
 
-    if (error) {
-      toast({ title: pt ? "Erro ao enviar" : "Error sending", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contact", {
+        body: {
+          property_id: propertyId,
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || null,
+          message: message.trim() || null,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
       setSent(true);
       toast({ title: pt ? "Mensagem enviada!" : "Message sent!" });
+    } catch (err: any) {
+      toast({ title: pt ? "Erro ao enviar" : "Error sending", description: err.message, variant: "destructive" });
     }
     setSending(false);
   };
@@ -68,17 +68,18 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{pt ? "Contatar corretor" : "Contact agent"}</CardTitle>
+        <CardTitle className="text-lg">{pt ? "Enviar mensagem" : "Send message"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={pt ? "Seu nome" : "Your name"} required />
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={pt ? "Seu nome *" : "Your name *"} required />
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email *" required />
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={pt ? "Telefone (opcional)" : "Phone (optional)"} />
           <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={pt ? "Sua mensagem..." : "Your message..."} rows={3} />
-          <Button type="submit" className="w-full" disabled={sending || !user}>
+          <Button type="submit" className="w-full gap-2" disabled={sending}>
             {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {!user ? (pt ? "Faça login para enviar" : "Log in to send") : (pt ? "Enviar mensagem" : "Send message")}
+            <Send className="h-4 w-4" />
+            {pt ? "Enviar mensagem" : "Send message"}
           </Button>
         </form>
       </CardContent>
