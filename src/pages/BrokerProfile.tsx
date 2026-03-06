@@ -73,9 +73,12 @@ const BrokerProfile = () => {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const displayName = broker?.commercial_name || broker?.full_name || "Corretor";
+  const coverPhoto = photos.find(p => p.is_cover);
+  const avatarSrc = coverPhoto?.url || broker?.avatar_url || undefined;
 
   useEffect(() => {
     if (!username) return;
@@ -83,7 +86,7 @@ const BrokerProfile = () => {
       setLoading(true);
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp, instagram, facebook, youtube, tiktok, linkedin" as any)
+        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp, instagram, facebook, youtube, tiktok, linkedin")
         .eq("username", username.toLowerCase())
         .single();
 
@@ -112,7 +115,7 @@ const BrokerProfile = () => {
       if (partnerIds.length > 0) {
         const { data: partnerProfiles } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, creci, username" as any)
+          .select("full_name, avatar_url, creci, username")
           .in("user_id", partnerIds);
         setPartners((partnerProfiles as any) ?? []);
       }
@@ -121,6 +124,21 @@ const BrokerProfile = () => {
     };
     fetchBroker();
   }, [username]);
+
+  // SEO: set document title
+  useEffect(() => {
+    if (!broker) return;
+    document.title = `${displayName} — Corretor de Imóveis`;
+    return () => { document.title = "Lares Digital"; };
+  }, [displayName, broker]);
+
+  // Close lightbox on Escape
+  useEffect(() => {
+    if (!showGallery) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowGallery(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showGallery]);
 
   if (loading) {
     return <BrokerProfileSkeleton />;
@@ -138,10 +156,8 @@ const BrokerProfile = () => {
     );
   }
 
-  const displayName = broker.commercial_name || broker.full_name || "Corretor";
   const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
   const bannerPhoto = photos.find(p => p.is_banner);
-  const coverPhoto = photos.find(p => p.is_cover);
   const galleryPhotos = photos.filter(p => !p.is_cover && !p.is_banner);
 
   return (
@@ -161,7 +177,7 @@ const BrokerProfile = () => {
           className="flex flex-col sm:flex-row items-center sm:items-end gap-5"
         >
           <Avatar className="h-32 w-32 border-4 border-background shadow-xl ring-2 ring-primary/20">
-            <AvatarImage src={broker.avatar_url ?? undefined} className="object-cover" />
+            <AvatarImage src={avatarSrc} className="object-cover" />
             <AvatarFallback className="text-4xl font-display bg-primary/10 text-primary">{(displayName)[0]}</AvatarFallback>
           </Avatar>
           <div className="text-center sm:text-left flex-1 min-w-0 pb-1">
