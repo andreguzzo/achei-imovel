@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin } from "lucide-react";
+import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BrokerData {
@@ -74,6 +74,8 @@ const BrokerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (!username) return;
@@ -141,8 +143,6 @@ const BrokerProfile = () => {
   const bannerPhoto = photos.find(p => p.is_banner);
   const coverPhoto = photos.find(p => p.is_cover);
   const galleryPhotos = photos.filter(p => !p.is_cover && !p.is_banner);
-  const [showGallery, setShowGallery] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
 
   return (
     <div className="min-h-screen">
