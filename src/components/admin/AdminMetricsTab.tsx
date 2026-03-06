@@ -31,15 +31,15 @@ const AdminMetricsTab = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [profiles, roles, allProps, activeProps, soldProps, contacts, pipeline, recentProfiles, supportMsgs, openSupportCount] = await Promise.all([
+      const [profiles, roles, allProps, activeProps, soldProps, contacts, pipeline, viewsRes, recentProfiles, supportMsgs, openSupportCount] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "broker"),
         supabase.from("properties").select("id", { count: "exact", head: true }),
         supabase.from("properties").select("id", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("properties").select("id", { count: "exact", head: true }).eq("status", "sold"),
-      supabase.from("contact_requests").select("id", { count: "exact", head: true }),
-      supabase.from("sales_pipeline").select("id", { count: "exact", head: true }),
-      supabase.from("properties").select("view_count").eq("status", "active"),
+        supabase.from("contact_requests").select("id", { count: "exact", head: true }),
+        supabase.from("sales_pipeline").select("id", { count: "exact", head: true }),
+        supabase.from("properties").select("view_count"),
         supabase.from("profiles").select("full_name, creci, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("support_messages").select("*").order("created_at", { ascending: false }).limit(5),
         supabase.from("support_messages").select("id", { count: "exact", head: true }).eq("status", "open"),
