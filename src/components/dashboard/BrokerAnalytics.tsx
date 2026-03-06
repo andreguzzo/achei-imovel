@@ -46,18 +46,6 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 
 interface BrokerAnalyticsProps {
   userId: string;
