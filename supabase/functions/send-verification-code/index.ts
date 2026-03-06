@@ -2,8 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function generateCode(): string {
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,18 +25,27 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
 
-    // Get user from token
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user }, error: userError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Use anon client with auth header for ES256 compatibility
+    const token = authHeader.replace("Bearer ", "");
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
 
-    if (userError || !user) {
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = claimsData.claims.sub as string;
+    const userEmail = claimsData.claims.email as string;
 
     const { type } = await req.json();
 
@@ -52,28 +60,25 @@ Deno.serve(async (req) => {
     await supabase
       .from("verification_codes")
       .update({ used: true })
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("type", type)
       .eq("used", false);
 
     // Generate new code
     const code = generateCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     await supabase.from("verification_codes").insert({
-      user_id: user.id,
+      user_id: userId,
       code,
       type,
       expires_at: expiresAt,
     });
 
-    // Send email using Supabase Auth admin API (send OTP via email)
-    // We'll use a simple approach: send via the Resend-compatible endpoint or use admin
-    // For now, we use Supabase's built-in email by leveraging the admin API
+    // Send email via Resend if configured
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    
+
     if (resendApiKey) {
-      // Send via Resend
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -82,7 +87,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           from: "noreply@lovable.app",
-          to: user.email,
+          to: userEmail,
           subject: "Código de verificação / Verification Code",
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
@@ -96,25 +101,17 @@ Deno.serve(async (req) => {
           `,
         }),
       });
-      
+
       if (!emailRes.ok) {
         console.error("Resend error:", await emailRes.text());
       }
     } else {
-      // Fallback: Log code (in production, configure RESEND_API_KEY)
-      console.log(`Verification code for ${user.email}: ${code}`);
+      console.log(`[SEND-VERIFICATION] Code generated for ${userEmail} (RESEND_API_KEY not set)`);
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Code sent",
-        // In dev without Resend, return code for testing
-        ...(!resendApiKey ? { dev_code: code } : {}),
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, message: "Code sent" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error:", error);
