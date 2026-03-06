@@ -128,8 +128,8 @@ const BrokerProfile = () => {
   // SEO: set document title
   useEffect(() => {
     if (!broker) return;
-    document.title = `${displayName} — Corretor de Imóveis`;
-    return () => { document.title = "Lares Digital"; };
+    document.title = `${displayName} — Corretor de Imóveis | Abitzo`;
+    return () => { document.title = "Abitzo"; };
   }, [displayName, broker]);
 
   // Close lightbox on Escape
