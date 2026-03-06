@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Loader2, Search, RotateCcw, Eye, ExternalLink, MoreVertical, Trash2, Edit, Ban, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, Database } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & { property_images: { url: string }[] };
 
@@ -72,7 +72,7 @@ const AdminPropertiesTab = () => {
   });
 
   const handleChangeStatus = async (propId: string, newStatus: string) => {
-    const { error } = await supabase.from("properties").update({ status: newStatus as any }).eq("id", propId);
+    const { error } = await supabase.from("properties").update({ status: newStatus as Database["public"]["Enums"]["property_status"] }).eq("id", propId);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
@@ -117,7 +117,7 @@ const AdminPropertiesTab = () => {
     const { error } = await supabase.from("properties").update({
       title: editTitle,
       price: Number(editPrice),
-      status: editStatus as any,
+      status: editStatus as Database["public"]["Enums"]["property_status"],
     }).eq("id", editTarget.id);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
