@@ -31,6 +31,7 @@ interface BrokerPhoto {
   id: string;
   url: string;
   is_cover: boolean;
+  is_banner: boolean;
 }
 
 interface PartnerProfile {
@@ -94,7 +95,7 @@ const BrokerProfile = () => {
       setBroker(profile);
 
       const [photosRes, propsRes, partnershipsRes] = await Promise.all([
-        supabase.from("broker_photos").select("id, url, is_cover").eq("user_id", profile.user_id).order("position"),
+        supabase.from("broker_photos").select("id, url, is_cover, is_banner").eq("user_id", profile.user_id).order("position"),
         supabase.from("properties").select("id, title, city, state, price, property_type, listing_type, bedrooms, area, property_images(url)").eq("user_id", profile.user_id).eq("status", "active").order("created_at", { ascending: false }),
         supabase.from("broker_partnerships").select("broker_a_id, broker_b_id").or(`broker_a_id.eq.${profile.user_id},broker_b_id.eq.${profile.user_id}`).eq("status", "active"),
       ]);
@@ -137,14 +138,18 @@ const BrokerProfile = () => {
 
   const displayName = broker.commercial_name || broker.full_name || "Corretor";
   const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  const bannerPhoto = photos.find(p => p.is_banner);
   const coverPhoto = photos.find(p => p.is_cover);
+  const galleryPhotos = photos.filter(p => !p.is_cover && !p.is_banner);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   return (
     <div className="min-h-screen">
-      {/* Hero Cover */}
+      {/* Hero Cover - uses banner photo */}
       <div className="relative h-48 sm:h-64 md:h-72 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 overflow-hidden">
-        {coverPhoto && (
-          <img src={coverPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
+        {bannerPhoto && (
+          <img src={bannerPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
@@ -253,42 +258,56 @@ const BrokerProfile = () => {
           </motion.div>
         )}
 
-        {/* Photo Gallery */}
-        {photos.length > 0 && (
+        {/* Photo Gallery Button */}
+        {galleryPhotos.length > 0 && (
           <motion.div initial="hidden" animate="visible" custom={2} variants={fadeUp}>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-              {pt ? "Fotos" : "Photos"}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {photos.map((photo, i) => (
-                <motion.div
-                  key={photo.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.05, duration: 0.3 }}
-                  className="aspect-square overflow-hidden rounded-xl cursor-pointer group relative"
-                  onClick={() => setSelectedPhoto(photo.url)}
-                >
-                  <img src={photo.url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300" />
-                </motion.div>
-              ))}
-            </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => { setGalleryIndex(0); setShowGallery(true); }}
+            >
+              <Camera className="h-4 w-4" />
+              {pt ? `Ver fotos (${galleryPhotos.length})` : `View photos (${galleryPhotos.length})`}
+            </Button>
           </motion.div>
         )}
 
-        {/* Lightbox */}
+        {/* Photo Gallery Lightbox */}
         <AnimatePresence>
-          {selectedPhoto && (
+          {showGallery && galleryPhotos.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
-              onClick={() => setSelectedPhoto(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+              onClick={() => setShowGallery(false)}
             >
-              <motion.img
+              <motion.div
                 initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                src={selectedPhoto} alt="" className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
-              />
+                className="relative max-h-[90vh] max-w-[90vw]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img src={galleryPhotos[galleryIndex].url} alt="" className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain shadow-2xl" />
+                {galleryPhotos.length > 1 && (
+                  <>
+                    <Button
+                      size="icon" variant="ghost"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 text-white bg-black/40 hover:bg-black/60"
+                      onClick={() => setGalleryIndex((i) => (i - 1 + galleryPhotos.length) % galleryPhotos.length)}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      size="icon" variant="ghost"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 text-white bg-black/40 hover:bg-black/60"
+                      onClick={() => setGalleryIndex((i) => (i + 1) % galleryPhotos.length)}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+                  {galleryIndex + 1} / {galleryPhotos.length}
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
