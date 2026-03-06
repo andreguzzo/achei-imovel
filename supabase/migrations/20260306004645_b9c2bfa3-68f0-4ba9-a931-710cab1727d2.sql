@@ -1,0 +1,1 @@
+ALTER TABLE public.broker_photos ADD COLUMN is_banner boolean DEFAULT false;

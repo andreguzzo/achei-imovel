@@ -137,6 +137,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_banner: boolean | null
           is_cover: boolean | null
           position: number | null
           url: string
@@ -145,6 +146,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_banner?: boolean | null
           is_cover?: boolean | null
           position?: number | null
           url: string
@@ -153,6 +155,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_banner?: boolean | null
           is_cover?: boolean | null
           position?: number | null
           url?: string
