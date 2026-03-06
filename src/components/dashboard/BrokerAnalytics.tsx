@@ -136,22 +136,22 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
     });
   }, [sales, dateFrom, dateTo]);
 
-  // VGV Ativo: sum of active property prices (for sale)
-  const vgvAtivo = useMemo(() => {
-    return properties
-      .filter((p) => p.status === "active" && p.listing_type === "sale")
-      .reduce((sum, p) => sum + p.price, 0);
+  // VGV Ativo: active properties for sale
+  const activeForSale = useMemo(() => {
+    return properties.filter((p) => p.status === "active" && p.listing_type === "sale");
   }, [properties]);
+  const vgvAtivo = useMemo(() => activeForSale.reduce((sum, p) => sum + p.price, 0), [activeForSale]);
 
-  // VGV Realizado: sum of sold properties (use sold_price when available)
-  const vgvRealizado = useMemo(() => {
+  // VGV Realizado: sold properties
+  const soldProperties = useMemo(() => {
     const soldIds = new Set(
       sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
     );
-    return properties
-      .filter((p) => soldIds.has(p.id) || p.status === "sold")
-      .reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
+    return properties.filter((p) => soldIds.has(p.id) || p.status === "sold");
   }, [properties, sales]);
+  const vgvRealizado = useMemo(() => {
+    return soldProperties.reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
+  }, [soldProperties]);
 
   // Commission totals: from sales pipeline + from properties marked as sold directly
   const totalCommission = useMemo(() => {
