@@ -126,7 +126,7 @@ const Search = () => {
       initialFetchDone.current = true;
     }, delay);
     return () => clearTimeout(debounceRef.current);
-  }, [filters, showMap]);
+  }, [filters, showMap, fetchProperties, setSearchParams]);
 
   const toggleMap = () => setShowMap((v) => !v);
 
