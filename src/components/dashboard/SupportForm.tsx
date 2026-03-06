@@ -42,7 +42,7 @@ const SupportForm = () => {
       user_id: user.id,
       subject: subject.trim(),
       message: message.trim(),
-    } as any);
+    });
     if (error) {
       toast({ title: pt ? "Erro ao enviar" : "Error sending", description: error.message, variant: "destructive" });
     } else {
