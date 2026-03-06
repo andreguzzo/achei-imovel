@@ -208,7 +208,7 @@ export const en = {
     passwordsMismatch: "Passwords do not match",
     passwordMinLength: "Password must be at least 6 characters",
     passwordUpdated: "Password updated successfully!",
-    passwordUpdatedDesc: "You can now sign in with your new password.",
+    passwordUpdatedDesc: "Your password has been updated successfully.",
     updatePassword: "Update password",
     invalidCredentials: "Invalid email or password",
     backToLogin: "Back to login",
