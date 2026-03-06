@@ -217,8 +217,8 @@ const PropertyDetail = () => {
   if (!property) {
     return (
       <div className="container py-20 text-center">
-        <p className="text-lg font-medium">Imóvel não encontrado</p>
-        <Link to="/busca"><Button variant="link">Voltar à busca</Button></Link>
+        <p className="text-lg font-medium">{pt ? "Imóvel não encontrado" : "Property not found"}</p>
+        <Link to="/busca"><Button variant="link">{t.common.back}</Button></Link>
       </div>
     );
   }
@@ -270,7 +270,7 @@ const PropertyDetail = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge>{typeLabels[locale]?.[property.property_type] ?? property.property_type}</Badge>
-              {property.listing_type === "rent" && <Badge variant="secondary">Aluguel</Badge>}
+              {property.listing_type === "rent" && <Badge variant="secondary">{pt ? "Aluguel" : "Rent"}</Badge>}
             </div>
             <div className="mt-2 flex items-start justify-between gap-2">
               <h1 className="font-display text-2xl font-bold text-foreground">{property.title}</h1>
