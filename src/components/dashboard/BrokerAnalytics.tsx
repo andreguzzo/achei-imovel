@@ -99,9 +99,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
   const pt = locale === "pt-BR";
   const dateLocale = pt ? ptBR : undefined;
 
+  const navigate = useNavigate();
+
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [properties, setProperties] = useState<PropertyRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailView, setDetailView] = useState<"vgv_ativo" | "vgv_realizado" | "commissions" | null>(null);
 
   const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(subMonths(new Date(), 11)));
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
