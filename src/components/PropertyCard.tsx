@@ -1,13 +1,8 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Bed, Bath, Car, Maximize, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
-import { motion } from "framer-motion";
 
 type Property = Tables<"properties"> & {
   property_images?: Tables<"property_images">[];
@@ -23,42 +18,16 @@ const typeLabels: Record<string, Record<string, string>> = {
   en: { apartment: "Apartment", house: "House", land: "Land", commercial: "Commercial" },
 };
 
-const PropertyCard = ({ property, initialFavorited }: { property: Property; initialFavorited?: boolean }) => {
+interface PropertyCardProps {
+  property: Property;
+  favorited?: boolean;
+  onToggleFavorite?: (e: React.MouseEvent) => void;
+}
+
+const PropertyCard = ({ property, favorited = false, onToggleFavorite }: PropertyCardProps) => {
   const { locale } = useLanguage();
-  const { user } = useAuth();
-  const [favorited, setFavorited] = useState(initialFavorited ?? false);
-  const [toggling, setToggling] = useState(false);
   const imageUrl = property.property_images?.[0]?.url;
   const label = typeLabels[locale]?.[property.property_type] ?? property.property_type;
-
-  useEffect(() => {
-    if (!user || initialFavorited !== undefined) return;
-    supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("property_id", property.id)
-      .maybeSingle()
-      .then(({ data }) => setFavorited(!!data));
-  }, [user, property.id, initialFavorited]);
-
-  const toggleFavorite = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user) {
-      toast({ title: locale === "pt-BR" ? "Faça login para favoritar" : "Log in to save favorites", variant: "destructive" });
-      return;
-    }
-    setToggling(true);
-    if (favorited) {
-      await supabase.from("favorites").delete().eq("user_id", user.id).eq("property_id", property.id);
-      setFavorited(false);
-    } else {
-      await supabase.from("favorites").insert({ user_id: user.id, property_id: property.id });
-      setFavorited(true);
-    }
-    setToggling(false);
-  };
 
   return (
     <Link
@@ -76,20 +45,20 @@ const PropertyCard = ({ property, initialFavorited }: { property: Property; init
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">Sem foto</div>
         )}
-        {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <Badge className="absolute left-3 top-3 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[11px] shadow-sm">{label}</Badge>
         {property.listing_type === "rent" && (
           <Badge variant="secondary" className="absolute right-12 top-3 text-[11px] backdrop-blur-sm">Aluguel</Badge>
         )}
-        <button
-          onClick={toggleFavorite}
-          disabled={toggling}
-          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-all hover:bg-card hover:scale-110 active:scale-95"
-          aria-label="Favoritar"
-        >
-          <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-        </button>
+        {onToggleFavorite && (
+          <button
+            onClick={onToggleFavorite}
+            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-all hover:bg-card hover:scale-110 active:scale-95"
+            aria-label="Favoritar"
+          >
+            <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+          </button>
+        )}
       </div>
       <div className="space-y-1.5 p-4">
         <p className="text-lg font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
