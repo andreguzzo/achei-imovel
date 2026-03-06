@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon } from "lucide-react";
+import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check } from "lucide-react";
 import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -110,11 +111,53 @@ const PropertyDetail = () => {
   const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    supabase.rpc("increment_view_count", { _property_id: id });
+    supabase.rpc("increment_view_count", { _property_id: id }).then(({ error }) => {
+      if (error) console.warn("View count error:", error.message);
+    });
   }, [id]);
+
+  // Check favorite status
+  useEffect(() => {
+    if (!id || !user) return;
+    supabase.from("favorites").select("id").eq("property_id", id).eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setIsFavorited(!!data));
+  }, [id, user]);
+
+  const toggleFavorite = async () => {
+    if (!user || !id) {
+      toast({ title: pt ? "Faça login para favoritar" : "Login to favorite", variant: "destructive" });
+      return;
+    }
+    setFavLoading(true);
+    if (isFavorited) {
+      await supabase.from("favorites").delete().eq("property_id", id).eq("user_id", user.id);
+      setIsFavorited(false);
+    } else {
+      await supabase.from("favorites").insert({ property_id: id, user_id: user.id });
+      setIsFavorited(true);
+    }
+    setFavLoading(false);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: property?.title, url });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ title: pt ? "Link copiado!" : "Link copied!" });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -253,7 +296,17 @@ const PropertyDetail = () => {
               <Badge>{typeLabels[locale]?.[property.property_type] ?? property.property_type}</Badge>
               {property.listing_type === "rent" && <Badge variant="secondary">Aluguel</Badge>}
             </div>
-            <h1 className="mt-2 font-display text-2xl font-bold text-foreground">{property.title}</h1>
+            <div className="mt-2 flex items-start justify-between gap-2">
+              <h1 className="font-display text-2xl font-bold text-foreground">{property.title}</h1>
+              <div className="flex shrink-0 gap-1">
+                <Button variant="ghost" size="icon" onClick={toggleFavorite} disabled={favLoading} className="h-9 w-9">
+                  <Heart className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`} />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleShare} className="h-9 w-9">
+                  {copied ? <Check className="h-5 w-5 text-green-500" /> : <Share2 className="h-5 w-5" />}
+                </Button>
+              </div>
+            </div>
             <p className="mt-1 flex items-center gap-1 text-muted-foreground">
               <MapPin className="h-4 w-4" />
               {property.address && `${property.address}, `}{property.neighborhood && `${property.neighborhood}, `}{property.city} - {property.state}
@@ -299,14 +352,14 @@ const PropertyDetail = () => {
           )}
 
           {/* Video */}
-          {(property as any).video_url && (
+          {property.video_url && (
             <div>
               <h2 className="font-display text-lg font-semibold flex items-center gap-2">
                 <Video className="h-5 w-5" /> {pt ? "Vídeo" : "Video"}
               </h2>
               <div className="mt-2 aspect-video overflow-hidden rounded-lg">
                 <iframe
-                  src={getEmbedUrl((property as any).video_url)}
+                  src={getEmbedUrl(property.video_url)}
                   className="h-full w-full"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
