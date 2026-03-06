@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +32,7 @@ import {
   XCircle,
   ArrowUpRight,
   Building2,
+  ExternalLink,
 } from "lucide-react";
 import {
   BarChart,
@@ -90,9 +99,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
   const pt = locale === "pt-BR";
   const dateLocale = pt ? ptBR : undefined;
 
+  const navigate = useNavigate();
+
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [properties, setProperties] = useState<PropertyRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailView, setDetailView] = useState<"vgv_ativo" | "vgv_realizado" | "commissions" | null>(null);
 
   const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(subMonths(new Date(), 11)));
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
@@ -124,22 +136,22 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
     });
   }, [sales, dateFrom, dateTo]);
 
-  // VGV Ativo: sum of active property prices (for sale)
-  const vgvAtivo = useMemo(() => {
-    return properties
-      .filter((p) => p.status === "active" && p.listing_type === "sale")
-      .reduce((sum, p) => sum + p.price, 0);
+  // VGV Ativo: active properties for sale
+  const activeForSale = useMemo(() => {
+    return properties.filter((p) => p.status === "active" && p.listing_type === "sale");
   }, [properties]);
+  const vgvAtivo = useMemo(() => activeForSale.reduce((sum, p) => sum + p.price, 0), [activeForSale]);
 
-  // VGV Realizado: sum of sold properties (use sold_price when available)
-  const vgvRealizado = useMemo(() => {
+  // VGV Realizado: sold properties
+  const soldProperties = useMemo(() => {
     const soldIds = new Set(
       sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
     );
-    return properties
-      .filter((p) => soldIds.has(p.id) || p.status === "sold")
-      .reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
+    return properties.filter((p) => soldIds.has(p.id) || p.status === "sold");
   }, [properties, sales]);
+  const vgvRealizado = useMemo(() => {
+    return soldProperties.reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
+  }, [soldProperties]);
 
   // Commission totals: from sales pipeline + from properties marked as sold directly
   const totalCommission = useMemo(() => {
@@ -319,7 +331,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("vgv_ativo")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -329,13 +341,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(vgvAtivo)}</p>
             <p className="text-xs text-muted-foreground">
-              {properties.filter((p) => p.status === "active" && p.listing_type === "sale").length}{" "}
-              {pt ? "imóveis à venda" : "properties for sale"}
+              {activeForSale.length} {pt ? "imóveis à venda" : "properties for sale"}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("vgv_realizado")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -345,13 +356,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(vgvRealizado)}</p>
             <p className="text-xs text-muted-foreground">
-              {filteredSales.filter((s) => s.stage === "closed_won").length}{" "}
-              {pt ? "vendas fechadas" : "closed sales"}
+              {soldProperties.length} {pt ? "imóveis vendidos" : "properties sold"}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("commissions")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -360,7 +370,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(totalCommission)}</p>
-            <p className="text-xs text-muted-foreground">{pt ? "no período selecionado" : "in selected period"}</p>
+            <p className="text-xs text-muted-foreground">{pt ? "clique para detalhes" : "click for details"}</p>
           </CardContent>
         </Card>
 
@@ -589,6 +599,149 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailView !== null} onOpenChange={(open) => !open && setDetailView(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailView === "vgv_ativo" && (pt ? "Imóveis à Venda (VGV Ativo)" : "Properties for Sale (Active GDV)")}
+              {detailView === "vgv_realizado" && (pt ? "Imóveis Vendidos (VGV Realizado)" : "Sold Properties (Realized GDV)")}
+              {detailView === "commissions" && (pt ? "Detalhamento de Comissões" : "Commission Breakdown")}
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailView === "vgv_ativo" && (
+            <div className="space-y-2">
+              {activeForSale.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">{pt ? "Nenhum imóvel à venda" : "No properties for sale"}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {activeForSale.length} {pt ? "imóveis" : "properties"} • {pt ? "Total:" : "Total:"} {formatCurrency(vgvAtivo)}
+                  </p>
+                  {activeForSale.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/imovel/${p.id}`)}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{p.title}</p>
+                        <Badge variant="secondary" className="text-[10px] mt-1">{pt ? "Ativo" : "Active"}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className="text-sm font-bold text-primary">{formatCurrency(p.price)}</p>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+
+          {detailView === "vgv_realizado" && (
+            <div className="space-y-2">
+              {soldProperties.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">{pt ? "Nenhum imóvel vendido" : "No sold properties"}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {soldProperties.length} {pt ? "imóveis" : "properties"} • {pt ? "Total:" : "Total:"} {formatCurrency(vgvRealizado)}
+                  </p>
+                  {soldProperties.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/imovel/${p.id}`)}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{p.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px]">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {pt ? "Vendido" : "Sold"}
+                          </Badge>
+                          {p.sold_commission != null && p.sold_commission > 0 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {pt ? "Comissão:" : "Commission:"} {formatCurrency(p.sold_commission)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-primary">{formatCurrency(p.sold_price ?? p.price)}</p>
+                          {p.sold_price && p.sold_price !== p.price && (
+                            <p className="text-[10px] text-muted-foreground line-through">{formatCurrency(p.price)}</p>
+                          )}
+                        </div>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+
+          {detailView === "commissions" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {pt ? "Total:" : "Total:"} <span className="font-bold text-foreground">{formatCurrency(totalCommission)}</span>
+              </p>
+              {/* Pipeline commissions */}
+              {filteredSales.filter((s) => s.stage === "closed_won" && (s.commission_value ?? 0) > 0).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{pt ? "Do Pipeline" : "From Pipeline"}</p>
+                  {filteredSales
+                    .filter((s) => s.stage === "closed_won" && (s.commission_value ?? 0) > 0)
+                    .map((s) => (
+                      <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <div>
+                          <p className="text-sm font-medium">{s.client_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {s.actual_close_date ? format(new Date(s.actual_close_date), "dd/MM/yyyy") : "—"}
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-primary">{formatCurrency(s.commission_value ?? 0)}</p>
+                      </div>
+                    ))}
+                </div>
+              )}
+              {/* Direct property commissions */}
+              {(() => {
+                const pipelinePropIds = new Set(
+                  sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
+                );
+                const directSold = properties.filter(
+                  (p) => p.status === "sold" && p.sold_commission && !pipelinePropIds.has(p.id)
+                );
+                if (directSold.length === 0) return null;
+                return (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{pt ? "Vendas Diretas" : "Direct Sales"}</p>
+                    {directSold.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between py-2 border-b last:border-0 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 transition-colors"
+                        onClick={() => navigate(`/imovel/${p.id}`)}
+                      >
+                        <p className="text-sm font-medium truncate">{p.title}</p>
+                        <p className="text-sm font-bold text-primary shrink-0 ml-2">{formatCurrency(p.sold_commission!)}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              {totalCommission === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">{pt ? "Nenhuma comissão registrada" : "No commissions recorded"}</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
