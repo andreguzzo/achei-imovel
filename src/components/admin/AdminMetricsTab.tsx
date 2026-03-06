@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, Eye, MessageSquare, TrendingUp, Handshake, UserPlus, Clock, MessageCircle } from "lucide-react";
+import { Users, Building2, MessageSquare, TrendingUp, Handshake, UserPlus, Clock, MessageCircle } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -31,30 +31,29 @@ const AdminMetricsTab = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [profiles, roles, properties, contacts, pipeline, recentProfiles, supportMsgs] = await Promise.all([
+      const [profiles, roles, allProps, activeProps, soldProps, contacts, pipeline, recentProfiles, supportMsgs, openSupportCount] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "broker"),
-        supabase.from("properties").select("status, view_count"),
+        supabase.from("properties").select("id", { count: "exact", head: true }),
+        supabase.from("properties").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("properties").select("id", { count: "exact", head: true }).eq("status", "sold"),
         supabase.from("contact_requests").select("id", { count: "exact", head: true }),
         supabase.from("sales_pipeline").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("full_name, creci, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("support_messages").select("*").order("created_at", { ascending: false }).limit(5),
+        supabase.from("support_messages").select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
-
-      const props = properties.data ?? [];
-      const totalViews = props.reduce((s, p) => s + (p.view_count ?? 0), 0);
-      const openSupport = (supportMsgs.data ?? []).filter((m: any) => m.status === "open").length;
 
       setMetrics({
         totalUsers: profiles.count ?? 0,
         totalBrokers: roles.count ?? 0,
-        totalProperties: props.length,
-        activeProperties: props.filter(p => p.status === "active").length,
-        soldProperties: props.filter(p => p.status === "sold").length,
-        totalViews,
+        totalProperties: allProps.count ?? 0,
+        activeProperties: activeProps.count ?? 0,
+        soldProperties: soldProps.count ?? 0,
+        totalViews: 0,
         totalContacts: contacts.count ?? 0,
         totalPipeline: pipeline.count ?? 0,
-        openSupport,
+        openSupport: openSupportCount.count ?? 0,
       });
       setRecentUsers((recentProfiles.data as RecentUser[]) ?? []);
       setRecentSupport(supportMsgs.data ?? []);
@@ -72,7 +71,7 @@ const AdminMetricsTab = () => {
     { label: "Imóveis Totais", value: metrics.totalProperties, icon: Building2, color: "text-violet-500" },
     { label: "Imóveis Ativos", value: metrics.activeProperties, icon: TrendingUp, color: "text-green-500" },
     { label: "Imóveis Vendidos", value: metrics.soldProperties, icon: Building2, color: "text-orange-500" },
-    { label: "Visualizações", value: metrics.totalViews, icon: Eye, color: "text-cyan-500" },
+    { label: "Negociações", value: metrics.totalPipeline, icon: TrendingUp, color: "text-cyan-500" },
     { label: "Contatos", value: metrics.totalContacts, icon: MessageSquare, color: "text-pink-500" },
     { label: "Suporte Aberto", value: metrics.openSupport, icon: MessageCircle, color: "text-red-500" },
   ];

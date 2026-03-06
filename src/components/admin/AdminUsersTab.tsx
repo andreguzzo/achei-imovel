@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Loader2, Search, KeyRound, Eye, Shield, MoreVertical, Trash2, UserX, UserCheck, Edit } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, Database } from "@/integrations/supabase/types";
 
 type Profile = Tables<"profiles">;
 type Role = Tables<"user_roles">;
@@ -75,9 +75,9 @@ const AdminUsersTab = () => {
 
   const handleToggleRole = async (userId: string, role: string, hasRole: boolean) => {
     if (hasRole) {
-      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as any);
+      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as Database["public"]["Enums"]["app_role"]);
     } else {
-      await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+      await supabase.from("user_roles").insert({ user_id: userId, role: role as Database["public"]["Enums"]["app_role"] });
     }
     await fetchUsers();
     toast({ title: `Role ${role} ${hasRole ? "removida" : "adicionada"}` });
