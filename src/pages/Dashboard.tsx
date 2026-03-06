@@ -84,21 +84,22 @@ const Dashboard = () => {
       ]);
 
       if (profileRes.data) {
-        setProfile(profileRes.data);
-        setFullName(profileRes.data.full_name ?? "");
-        setCommercialName((profileRes.data as any).commercial_name ?? "");
-        setUsername((profileRes.data as any).username ?? "");
-        setPhone(profileRes.data.phone ?? "");
+        const p = profileRes.data;
+        setProfile(p);
+        setFullName(p.full_name ?? "");
+        setCommercialName(p.commercial_name ?? "");
+        setUsername(p.username ?? "");
+        setPhone(p.phone ?? "");
         setEmail(user.email ?? "");
-        setCreci(profileRes.data.creci ?? "");
-        setBio(profileRes.data.bio ?? "");
-        setWhatsapp((profileRes.data as any).whatsapp ?? "");
-        setInstagram((profileRes.data as any).instagram ?? "");
-        setFacebook((profileRes.data as any).facebook ?? "");
-        setYoutube((profileRes.data as any).youtube ?? "");
-        setTiktok((profileRes.data as any).tiktok ?? "");
-        setLinkedin((profileRes.data as any).linkedin ?? "");
-        setEmailVerified((profileRes.data as any).email_verified ?? false);
+        setCreci(p.creci ?? "");
+        setBio(p.bio ?? "");
+        setWhatsapp(p.whatsapp ?? "");
+        setInstagram(p.instagram ?? "");
+        setFacebook(p.facebook ?? "");
+        setYoutube(p.youtube ?? "");
+        setTiktok(p.tiktok ?? "");
+        setLinkedin(p.linkedin ?? "");
+        setEmailVerified(p.email_verified ?? false);
       }
       setProperties((propsRes.data as PropertyWithImages[]) ?? []);
       setIsBroker(!!brokerRes.data);
@@ -142,7 +143,7 @@ const Dashboard = () => {
         linkedin: linkedin || null,
         creci, 
         bio 
-      } as any)
+      })
       .eq("user_id", user.id);
 
     if (error) {
@@ -195,7 +196,7 @@ const Dashboard = () => {
       updateData.sold_by_other_price = Number(soldByOtherPrice);
     }
 
-    const { error } = await supabase.from("properties").update(updateData as any).eq("id", statusTarget.id);
+    const { error } = await supabase.from("properties").update(updateData).eq("id", statusTarget.id);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
@@ -203,7 +204,7 @@ const Dashboard = () => {
       if (statusAction === "sold") {
         await supabase
           .from("sales_pipeline")
-          .update({ stage: "closed_won" as any, actual_close_date: new Date().toISOString().split("T")[0], commission_value: Number(soldCommission) })
+          .update({ stage: "closed_won", actual_close_date: new Date().toISOString().split("T")[0], commission_value: Number(soldCommission) } as any)
           .eq("broker_id", user.id)
           .eq("property_id", statusTarget.id);
       }
@@ -230,15 +231,17 @@ const Dashboard = () => {
       return;
     }
     setUploading(true);
+    let currentCount = photos.length;
     for (const file of files) {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("broker-photos").upload(path, file, { upsert: true });
       if (!uploadErr) {
         const { data: urlData } = supabase.storage.from("broker-photos").getPublicUrl(path);
-        const isCover = photos.length === 0;
-        await supabase.from("broker_photos").insert({ user_id: user.id, url: urlData.publicUrl, position: photos.length, is_cover: isCover });
+        const isCover = currentCount === 0;
+        await supabase.from("broker_photos").insert({ user_id: user.id, url: urlData.publicUrl, position: currentCount, is_cover: isCover });
         if (isCover) await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("user_id", user.id);
+        currentCount++;
       }
     }
     await fetchPhotos();
@@ -247,17 +250,19 @@ const Dashboard = () => {
 
   const handleSetCover = async (photo: BrokerPhoto) => {
     if (!user) return;
-    await supabase.from("broker_photos").update({ is_cover: false } as any).eq("user_id", user.id);
-    await supabase.from("broker_photos").update({ is_cover: true } as any).eq("id", photo.id);
-    await supabase.from("profiles").update({ avatar_url: photo.url }).eq("user_id", user.id);
+    await supabase.from("broker_photos").update({ is_cover: false }).eq("user_id", user.id);
+    await Promise.all([
+      supabase.from("broker_photos").update({ is_cover: true }).eq("id", photo.id),
+      supabase.from("profiles").update({ avatar_url: photo.url }).eq("user_id", user.id),
+    ]);
     await fetchPhotos();
     toast({ title: pt ? "Foto de perfil atualizada!" : "Profile photo updated!" });
   };
 
   const handleSetBanner = async (photo: BrokerPhoto) => {
     if (!user) return;
-    await supabase.from("broker_photos").update({ is_banner: false } as any).eq("user_id", user.id);
-    await supabase.from("broker_photos").update({ is_banner: true } as any).eq("id", photo.id);
+    await supabase.from("broker_photos").update({ is_banner: false }).eq("user_id", user.id);
+    await supabase.from("broker_photos").update({ is_banner: true }).eq("id", photo.id);
     await fetchPhotos();
     toast({ title: pt ? "Banner atualizado!" : "Banner updated!" });
   };
