@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { z } from "zod";
@@ -31,11 +31,28 @@ interface BasicInfoProps {
   propertyType: string; setPropertyType: (v: string) => void;
   listingType: string; setListingType: (v: string) => void;
   price: string; setPrice: (v: string) => void;
+  onGenerateAI?: () => void;
+  generatingAI?: boolean;
 }
 
-const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, propertyType, setPropertyType, listingType, setListingType, price, setPrice }: BasicInfoProps) => (
+const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, propertyType, setPropertyType, listingType, setListingType, price, setPrice, onGenerateAI, generatingAI }: BasicInfoProps) => (
   <Card>
-    <CardHeader><CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle></CardHeader>
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={onGenerateAI}
+          disabled={generatingAI}
+        >
+          {generatingAI ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {pt ? "Gerar com IA" : "Generate with AI"}
+        </Button>
+      </div>
+    </CardHeader>
     <CardContent className="space-y-4">
       <div>
         <label className="mb-1 block text-sm font-medium">{pt ? "Título do anúncio *" : "Listing title *"}</label>
@@ -256,6 +273,36 @@ const CreateProperty = () => {
   const [soldCommission, setSoldCommission] = useState("");
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
   const [propertyStatus, setPropertyStatus] = useState<string>("active");
+
+  // AI generation
+  const [generatingAI, setGeneratingAI] = useState(false);
+
+  const handleGenerateAI = async () => {
+    if (!city && !propertyType) {
+      toast({ title: pt ? "Preencha pelo menos tipo e cidade" : "Fill at least type and city", variant: "destructive" });
+      return;
+    }
+    setGeneratingAI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-property-description", {
+        body: {
+          propertyType, listingType, price, area, bedrooms, suites, bathrooms,
+          parkingSpots, neighborhood, city, state, features, condoFee, iptu, address,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: data.error, variant: "destructive" });
+      } else {
+        if (data?.title) setTitle(data.title);
+        if (data?.description) setDescription(data.description);
+        toast({ title: pt ? "Título e descrição gerados!" : "Title and description generated!" });
+      }
+    } catch (e: any) {
+      toast({ title: pt ? "Erro ao gerar" : "Generation error", description: e.message, variant: "destructive" });
+    }
+    setGeneratingAI(false);
+  };
 
   // Load existing property data in edit mode
   useEffect(() => {
@@ -561,7 +608,7 @@ const CreateProperty = () => {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <BasicInfoCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} />
+        <BasicInfoCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} onGenerateAI={handleGenerateAI} generatingAI={generatingAI} />
 
         <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} />
 
