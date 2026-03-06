@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Loader2 } from "lucide-react";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
@@ -56,6 +57,7 @@ const paramsToFilters = (sp: URLSearchParams): SearchFiltersState => ({
 
 const Search = () => {
   const { t } = useLanguage();
+  const { isFavorited, toggle: toggleFav } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ const Search = () => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>();
   const [filters, setFilters] = useState<SearchFiltersState>(() => paramsToFilters(searchParams));
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const initialFetchDone = useRef(false);
 
   const fetchProperties = useCallback(async (f: SearchFiltersState) => {
     setLoading(true);
@@ -81,9 +84,13 @@ const Search = () => {
       .order(orderCol, { ascending: orderAsc });
 
     if (f.query.trim()) {
-      q = q.or(
-        `city.ilike.%${f.query.trim()}%,neighborhood.ilike.%${f.query.trim()}%,title.ilike.%${f.query.trim()}%,state.ilike.%${f.query.trim()}%,address.ilike.%${f.query.trim()}%`
-      );
+      // Sanitize user input for PostgREST .or() filter
+      const sanitized = f.query.trim().replace(/[%_(),.]/g, "");
+      if (sanitized) {
+        q = q.or(
+          `city.ilike.%${sanitized}%,neighborhood.ilike.%${sanitized}%,title.ilike.%${sanitized}%,state.ilike.%${sanitized}%,address.ilike.%${sanitized}%`
+        );
+      }
     }
     if (f.propertyTypes.length === 1) {
       q = q.eq("property_type", f.propertyTypes[0] as any);
@@ -109,20 +116,17 @@ const Search = () => {
     setLoading(false);
   }, []);
 
-  // Auto-apply filters with debounce
+  // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
     clearTimeout(debounceRef.current);
+    const delay = initialFetchDone.current ? 300 : 0;
     debounceRef.current = setTimeout(() => {
       setSearchParams(filtersToParams(filters, showMap), { replace: true });
       fetchProperties(filters);
-    }, 300);
+      initialFetchDone.current = true;
+    }, delay);
     return () => clearTimeout(debounceRef.current);
   }, [filters, showMap]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchProperties(filters);
-  }, []);
 
   const toggleMap = () => setShowMap((v) => !v);
 
@@ -157,14 +161,14 @@ const Search = () => {
                       onMouseEnter={() => setSelectedPropertyId(p.id)}
                       onMouseLeave={() => setSelectedPropertyId(undefined)}
                     >
-                      <PropertyCard property={p} />
+                      <PropertyCard property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <div className="hidden flex-1 sm:block">
+          <div className="flex-1 min-h-[300px]">
             <PropertyMap properties={properties} selectedId={selectedPropertyId} onSelect={setSelectedPropertyId} />
           </div>
         </div>
@@ -185,7 +189,7 @@ const Search = () => {
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((p) => (
-                <PropertyCard key={p.id} property={p} />
+                <PropertyCard key={p.id} property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
               ))}
             </div>
           )}

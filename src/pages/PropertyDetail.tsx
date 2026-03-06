@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,9 +112,8 @@ const PropertyDetail = () => {
   const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { isFavorited: isFavFn, toggle: toggleFav } = useFavorites();
 
   useEffect(() => {
     if (!id) return;
@@ -121,29 +121,6 @@ const PropertyDetail = () => {
       if (error) console.warn("View count error:", error.message);
     });
   }, [id]);
-
-  // Check favorite status
-  useEffect(() => {
-    if (!id || !user) return;
-    supabase.from("favorites").select("id").eq("property_id", id).eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => setIsFavorited(!!data));
-  }, [id, user]);
-
-  const toggleFavorite = async () => {
-    if (!user || !id) {
-      toast({ title: pt ? "Faça login para favoritar" : "Login to favorite", variant: "destructive" });
-      return;
-    }
-    setFavLoading(true);
-    if (isFavorited) {
-      await supabase.from("favorites").delete().eq("property_id", id).eq("user_id", user.id);
-      setIsFavorited(false);
-    } else {
-      await supabase.from("favorites").insert({ property_id: id, user_id: user.id });
-      setIsFavorited(true);
-    }
-    setFavLoading(false);
-  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -299,11 +276,11 @@ const PropertyDetail = () => {
             <div className="mt-2 flex items-start justify-between gap-2">
               <h1 className="font-display text-2xl font-bold text-foreground">{property.title}</h1>
               <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" size="icon" onClick={toggleFavorite} disabled={favLoading} className="h-9 w-9">
-                  <Heart className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`} />
+                <Button variant="ghost" size="icon" onClick={() => id && toggleFav(id)} className="h-9 w-9">
+                  <Heart className={`h-5 w-5 ${id && isFavFn(id) ? "fill-destructive text-destructive" : ""}`} />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={handleShare} className="h-9 w-9">
-                  {copied ? <Check className="h-5 w-5 text-green-500" /> : <Share2 className="h-5 w-5" />}
+                  {copied ? <Check className="h-5 w-5 text-primary" /> : <Share2 className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
