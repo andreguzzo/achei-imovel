@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,39 +112,8 @@ const PropertyDetail = () => {
   const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    supabase.rpc("increment_view_count", { _property_id: id }).then(({ error }) => {
-      if (error) console.warn("View count error:", error.message);
-    });
-  }, [id]);
-
-  // Check favorite status
-  useEffect(() => {
-    if (!id || !user) return;
-    supabase.from("favorites").select("id").eq("property_id", id).eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => setIsFavorited(!!data));
-  }, [id, user]);
-
-  const toggleFavorite = async () => {
-    if (!user || !id) {
-      toast({ title: pt ? "Faça login para favoritar" : "Login to favorite", variant: "destructive" });
-      return;
-    }
-    setFavLoading(true);
-    if (isFavorited) {
-      await supabase.from("favorites").delete().eq("property_id", id).eq("user_id", user.id);
-      setIsFavorited(false);
-    } else {
-      await supabase.from("favorites").insert({ property_id: id, user_id: user.id });
-      setIsFavorited(true);
-    }
-    setFavLoading(false);
-  };
+  const { isFavorited, toggle: toggleFav } = useFavorites();
 
   const handleShare = async () => {
     const url = window.location.href;
