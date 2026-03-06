@@ -608,7 +608,7 @@ const CreateProperty = () => {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <BasicInfoCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} />
+        <BasicInfoCard pt={pt} title={title} setTitle={setTitle} description={description} setDescription={setDescription} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} onGenerateAI={handleGenerateAI} generatingAI={generatingAI} />
 
         <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} />
 
