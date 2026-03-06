@@ -45,13 +45,15 @@ const AdminMetricsTab = () => {
         supabase.from("support_messages").select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
 
+      const totalViews = (viewsRes.data ?? []).reduce((sum, p) => sum + (p.view_count ?? 0), 0);
+
       setMetrics({
         totalUsers: profiles.count ?? 0,
         totalBrokers: roles.count ?? 0,
         totalProperties: allProps.count ?? 0,
         activeProperties: activeProps.count ?? 0,
         soldProperties: soldProps.count ?? 0,
-        totalViews: 0,
+        totalViews,
         totalContacts: contacts.count ?? 0,
         totalPipeline: pipeline.count ?? 0,
         openSupport: openSupportCount.count ?? 0,
