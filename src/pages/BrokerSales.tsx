@@ -59,7 +59,7 @@ const BrokerSales = () => {
 
     const { data: pipeline } = await supabase
       .from("sales_pipeline")
-      .select("*")
+      .select("*, property:properties(title, city)")
       .eq("broker_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -120,7 +120,11 @@ const BrokerSales = () => {
     if (newStage === "closed_won" || newStage === "closed_lost") {
       updateData.actual_close_date = new Date().toISOString().split("T")[0];
     }
-    await supabase.from("sales_pipeline").update(updateData).eq("id", itemId);
+    const { error } = await supabase.from("sales_pipeline").update(updateData).eq("id", itemId);
+    if (error) {
+      toast({ title: pt ? "Erro ao atualizar estágio" : "Error updating stage", description: error.message, variant: "destructive" });
+      return;
+    }
     fetchData();
   };
 
@@ -256,6 +260,9 @@ const BrokerSales = () => {
                       <Card key={item.id} className="cursor-pointer">
                         <CardContent className="p-3 space-y-2">
                           <p className="font-medium text-sm">{item.client_name}</p>
+                          {item.property && (
+                            <p className="text-xs text-muted-foreground truncate">{item.property.title} — {item.property.city}</p>
+                          )}
                           {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
                           {item.commission_value != null && item.commission_value > 0 && (
                             <p className="text-xs font-medium text-primary">R$ {item.commission_value.toLocaleString("pt-BR")}</p>
