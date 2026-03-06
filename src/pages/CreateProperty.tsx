@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Plus, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { z } from "zod";
