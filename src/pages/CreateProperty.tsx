@@ -355,7 +355,10 @@ const CreateProperty = () => {
       setLatitude(prop.latitude?.toString() ?? "");
       setLongitude(prop.longitude?.toString() ?? "");
       setPropertyStatus(prop.status);
-      setStatusAction(prop.status);
+      setStatusAction(prop.status === "sold" ? "sold" : prop.status);
+      setSoldPrice(prop.sold_price?.toString() ?? "");
+      setSoldCommission(prop.sold_commission?.toString() ?? "");
+      setSoldByOtherPrice(prop.sold_by_other_price?.toString() ?? "");
 
       // Load existing images
       const imgs = (prop.property_images ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
@@ -425,8 +428,9 @@ const CreateProperty = () => {
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    if (files.length + imageFiles.length > 10) {
-      toast({ title: "Máximo 10 fotos", variant: "destructive" });
+    const totalAfter = files.length + imageFiles.length + existingImages.length;
+    if (totalAfter > 10) {
+      toast({ title: `Máximo 10 fotos (${existingImages.length} existentes)`, variant: "destructive" });
       return;
     }
     setImageFiles((prev) => [...prev, ...files]);
@@ -676,7 +680,7 @@ const CreateProperty = () => {
                   </button>
                 </div>
               ))}
-              {imageFiles.length < 10 && (
+              {imageFiles.length + existingImages.length < 10 && (
                 <label className="flex h-24 w-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors">
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
                   <div className="text-center">
@@ -751,12 +755,6 @@ const CreateProperty = () => {
           onConfirm={handleStatusConfirm}
         />
 
-        <Button type="submit" size="lg" className="w-full gap-2" disabled={submitting}>
-          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          <Upload className="h-4 w-4" />
-          {isEditMode ? (pt ? "Salvar Alterações" : "Save Changes") : (pt ? "Publicar Anúncio" : "Publish Listing")}
-        </Button>
-
         {/* Show existing images in edit mode */}
         {isEditMode && existingImages.length > 0 && (
           <Card>
@@ -782,6 +780,12 @@ const CreateProperty = () => {
             </CardContent>
           </Card>
         )}
+
+        <Button type="submit" size="lg" className="w-full gap-2" disabled={submitting}>
+          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Upload className="h-4 w-4" />
+          {isEditMode ? (pt ? "Salvar Alterações" : "Save Changes") : (pt ? "Publicar Anúncio" : "Publish Listing")}
+        </Button>
       </form>
     </div>
   );
