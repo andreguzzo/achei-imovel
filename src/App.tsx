@@ -51,9 +51,8 @@ const App = () => (
                 <Route path="/cadastro" element={<Signup />} />
                 <Route path="/esqueci-senha" element={<ForgotPassword />} />
                 <Route path="/redefinir-senha" element={<ResetPassword />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
