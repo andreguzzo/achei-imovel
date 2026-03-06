@@ -57,6 +57,7 @@ const paramsToFilters = (sp: URLSearchParams): SearchFiltersState => ({
 
 const Search = () => {
   const { t } = useLanguage();
+  const { isFavorited, toggle: toggleFav } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,7 @@ const Search = () => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>();
   const [filters, setFilters] = useState<SearchFiltersState>(() => paramsToFilters(searchParams));
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const initialFetchDone = useRef(false);
 
   const fetchProperties = useCallback(async (f: SearchFiltersState) => {
     setLoading(true);
@@ -82,9 +84,13 @@ const Search = () => {
       .order(orderCol, { ascending: orderAsc });
 
     if (f.query.trim()) {
-      q = q.or(
-        `city.ilike.%${f.query.trim()}%,neighborhood.ilike.%${f.query.trim()}%,title.ilike.%${f.query.trim()}%,state.ilike.%${f.query.trim()}%,address.ilike.%${f.query.trim()}%`
-      );
+      // Sanitize user input for PostgREST .or() filter
+      const sanitized = f.query.trim().replace(/[%_(),.]/g, "");
+      if (sanitized) {
+        q = q.or(
+          `city.ilike.%${sanitized}%,neighborhood.ilike.%${sanitized}%,title.ilike.%${sanitized}%,state.ilike.%${sanitized}%,address.ilike.%${sanitized}%`
+        );
+      }
     }
     if (f.propertyTypes.length === 1) {
       q = q.eq("property_type", f.propertyTypes[0] as any);
