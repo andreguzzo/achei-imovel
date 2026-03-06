@@ -274,6 +274,36 @@ const CreateProperty = () => {
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
   const [propertyStatus, setPropertyStatus] = useState<string>("active");
 
+  // AI generation
+  const [generatingAI, setGeneratingAI] = useState(false);
+
+  const handleGenerateAI = async () => {
+    if (!city && !propertyType) {
+      toast({ title: pt ? "Preencha pelo menos tipo e cidade" : "Fill at least type and city", variant: "destructive" });
+      return;
+    }
+    setGeneratingAI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-property-description", {
+        body: {
+          propertyType, listingType, price, area, bedrooms, suites, bathrooms,
+          parkingSpots, neighborhood, city, state, features, condoFee, iptu, address,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: data.error, variant: "destructive" });
+      } else {
+        if (data?.title) setTitle(data.title);
+        if (data?.description) setDescription(data.description);
+        toast({ title: pt ? "Título e descrição gerados!" : "Title and description generated!" });
+      }
+    } catch (e: any) {
+      toast({ title: pt ? "Erro ao gerar" : "Generation error", description: e.message, variant: "destructive" });
+    }
+    setGeneratingAI(false);
+  };
+
   // Load existing property data in edit mode
   useEffect(() => {
     if (!editId || !user) return;
