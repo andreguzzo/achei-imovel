@@ -31,11 +31,28 @@ interface BasicInfoProps {
   propertyType: string; setPropertyType: (v: string) => void;
   listingType: string; setListingType: (v: string) => void;
   price: string; setPrice: (v: string) => void;
+  onGenerateAI?: () => void;
+  generatingAI?: boolean;
 }
 
-const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, propertyType, setPropertyType, listingType, setListingType, price, setPrice }: BasicInfoProps) => (
+const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, propertyType, setPropertyType, listingType, setListingType, price, setPrice, onGenerateAI, generatingAI }: BasicInfoProps) => (
   <Card>
-    <CardHeader><CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle></CardHeader>
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={onGenerateAI}
+          disabled={generatingAI}
+        >
+          {generatingAI ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {pt ? "Gerar com IA" : "Generate with AI"}
+        </Button>
+      </div>
+    </CardHeader>
     <CardContent className="space-y-4">
       <div>
         <label className="mb-1 block text-sm font-medium">{pt ? "Título do anúncio *" : "Listing title *"}</label>
