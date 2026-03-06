@@ -26,20 +26,58 @@ const propertySchema = z.object({
 
 interface BasicInfoProps {
   pt: boolean;
-  title: string; setTitle: (v: string) => void;
-  description: string; setDescription: (v: string) => void;
   propertyType: string; setPropertyType: (v: string) => void;
   listingType: string; setListingType: (v: string) => void;
   price: string; setPrice: (v: string) => void;
+}
+
+const BasicInfoCard = ({ pt, propertyType, setPropertyType, listingType, setListingType, price, setPrice }: BasicInfoProps) => (
+  <Card>
+    <CardHeader><CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle></CardHeader>
+    <CardContent className="grid gap-4 sm:grid-cols-3">
+      <div>
+        <label className="mb-1 block text-sm font-medium">{pt ? "Tipo" : "Type"}</label>
+        <Select value={propertyType} onValueChange={setPropertyType}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="apartment">{pt ? "Apartamento" : "Apartment"}</SelectItem>
+            <SelectItem value="house">{pt ? "Casa" : "House"}</SelectItem>
+            <SelectItem value="land">{pt ? "Terreno" : "Land"}</SelectItem>
+            <SelectItem value="commercial">{pt ? "Comercial" : "Commercial"}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">{pt ? "Modalidade" : "Listing type"}</label>
+        <Select value={listingType} onValueChange={setListingType}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sale">{pt ? "Venda" : "Sale"}</SelectItem>
+            <SelectItem value="rent">{pt ? "Aluguel" : "Rent"}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">{pt ? "Preço (R$) *" : "Price (R$) *"}</label>
+        <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" required />
+      </div>
+    </CardContent>
+  </Card>
+);
+
+interface TitleDescriptionProps {
+  pt: boolean;
+  title: string; setTitle: (v: string) => void;
+  description: string; setDescription: (v: string) => void;
   onGenerateAI?: () => void;
   generatingAI?: boolean;
 }
 
-const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, propertyType, setPropertyType, listingType, setListingType, price, setPrice, onGenerateAI, generatingAI }: BasicInfoProps) => (
+const TitleDescriptionCard = ({ pt, title, setTitle, description, setDescription, onGenerateAI, generatingAI }: TitleDescriptionProps) => (
   <Card>
     <CardHeader>
       <div className="flex items-center justify-between">
-        <CardTitle className="text-base">{pt ? "Informações Básicas" : "Basic Information"}</CardTitle>
+        <CardTitle className="text-base">{pt ? "Título e Descrição" : "Title & Description"}</CardTitle>
         <Button
           type="button"
           variant="outline"
@@ -52,6 +90,7 @@ const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, prope
           {pt ? "Gerar com IA" : "Generate with AI"}
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground">{pt ? "Preencha os campos acima e clique em \"Gerar com IA\" para criar automaticamente." : "Fill the fields above and click \"Generate with AI\" to auto-create."}</p>
     </CardHeader>
     <CardContent className="space-y-4">
       <div>
@@ -60,35 +99,7 @@ const BasicInfoCard = ({ pt, title, setTitle, description, setDescription, prope
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">{pt ? "Descrição" : "Description"}</label>
-        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder={pt ? "Descreva o imóvel em detalhes..." : "Describe the property..."} />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium">{pt ? "Tipo" : "Type"}</label>
-          <Select value={propertyType} onValueChange={setPropertyType}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="apartment">{pt ? "Apartamento" : "Apartment"}</SelectItem>
-              <SelectItem value="house">{pt ? "Casa" : "House"}</SelectItem>
-              <SelectItem value="land">{pt ? "Terreno" : "Land"}</SelectItem>
-              <SelectItem value="commercial">{pt ? "Comercial" : "Commercial"}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{pt ? "Modalidade" : "Listing type"}</label>
-          <Select value={listingType} onValueChange={setListingType}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sale">{pt ? "Venda" : "Sale"}</SelectItem>
-              <SelectItem value="rent">{pt ? "Aluguel" : "Rent"}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{pt ? "Preço (R$) *" : "Price (R$) *"}</label>
-          <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="0" required />
-        </div>
+        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} placeholder={pt ? "Descreva o imóvel em detalhes..." : "Describe the property..."} />
       </div>
     </CardContent>
   </Card>
