@@ -71,18 +71,22 @@ const BrokerSales = () => {
       .or(`broker_a_id.eq.${user.id},broker_b_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
-    if (parts) {
-      const enriched: Partnership[] = [];
-      for (const p of parts) {
+    if (parts && parts.length > 0) {
+      const partnerIds = parts.map((p) =>
+        p.broker_a_id === user.id ? p.broker_b_id : p.broker_a_id
+      );
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", partnerIds);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach((p) => { nameMap[p.user_id] = p.full_name ?? "Corretor"; });
+      setPartnerships(parts.map((p) => {
         const partnerId = p.broker_a_id === user.id ? p.broker_b_id : p.broker_a_id;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", partnerId)
-          .single();
-        enriched.push({ ...p, partner_name: profile?.full_name ?? "Corretor" });
-      }
-      setPartnerships(enriched);
+        return { ...p, partner_name: nameMap[partnerId] ?? "Corretor" };
+      }));
+    } else {
+      setPartnerships([]);
     }
 
     setLoading(false);

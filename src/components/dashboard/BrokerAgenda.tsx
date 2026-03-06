@@ -207,7 +207,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
       location: formLocation || null,
       notes: formNotes || null,
       reminder_minutes: formReminder !== "none" ? parseInt(formReminder) : null,
-    } as any);
+    });
     if (error) {
       toast({ title: pt ? "Erro" : "Error", description: error.message, variant: "destructive" });
     } else {
@@ -279,7 +279,6 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
   };
 
   const openNewForDate = (date: Date) => {
-    setFormDate(format(date, "yyyy-MM-dd"));
     resetForm();
     setFormDate(format(date, "yyyy-MM-dd"));
     setShowNew(true);
