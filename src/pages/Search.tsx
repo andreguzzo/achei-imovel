@@ -161,14 +161,14 @@ const Search = () => {
                       onMouseEnter={() => setSelectedPropertyId(p.id)}
                       onMouseLeave={() => setSelectedPropertyId(undefined)}
                     >
-                      <PropertyCard property={p} />
+                      <PropertyCard property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <div className="hidden flex-1 sm:block">
+          <div className="flex-1 min-h-[300px]">
             <PropertyMap properties={properties} selectedId={selectedPropertyId} onSelect={setSelectedPropertyId} />
           </div>
         </div>
@@ -189,7 +189,7 @@ const Search = () => {
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((p) => (
-                <PropertyCard key={p.id} property={p} />
+                <PropertyCard key={p.id} property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
               ))}
             </div>
           )}
