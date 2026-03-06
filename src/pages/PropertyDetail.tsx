@@ -17,19 +17,22 @@ type Property = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
 };
 
-type GroupBroker = {
-  broker_id: string;
-  property_id: string;
-  price: number;
-  profile: { full_name: string | null; creci: string | null; avatar_url: string | null; phone: string | null } | null;
-};
-
-type PartnerBroker = {
+type BrokerProfile = {
   user_id: string;
   full_name: string | null;
   creci: string | null;
   avatar_url: string | null;
   phone: string | null;
+  whatsapp: string | null;
+  username: string | null;
+  commercial_name: string | null;
+};
+
+type GroupBroker = {
+  broker_id: string;
+  property_id: string;
+  price: number;
+  profile: BrokerProfile | null;
 };
 
 const formatPrice = (price: number, listingType: string) => {
