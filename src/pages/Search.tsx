@@ -116,20 +116,17 @@ const Search = () => {
     setLoading(false);
   }, []);
 
-  // Auto-apply filters with debounce
+  // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
     clearTimeout(debounceRef.current);
+    const delay = initialFetchDone.current ? 300 : 0;
     debounceRef.current = setTimeout(() => {
       setSearchParams(filtersToParams(filters, showMap), { replace: true });
       fetchProperties(filters);
-    }, 300);
+      initialFetchDone.current = true;
+    }, delay);
     return () => clearTimeout(debounceRef.current);
   }, [filters, showMap]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchProperties(filters);
-  }, []);
 
   const toggleMap = () => setShowMap((v) => !v);
 
