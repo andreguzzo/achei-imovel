@@ -197,7 +197,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
     const { error } = await supabase.from("broker_appointments").insert({
       broker_id: userId,
       title: formTitle,
-      appointment_type: formType,
+      appointment_type: formType as "visit" | "meeting" | "signing" | "inspection" | "follow_up" | "other",
       appointment_date: formDate,
       start_time: formStartTime,
       end_time: formEndTime || null,
