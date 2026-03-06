@@ -206,6 +206,7 @@ export const ptBR = {
     newPassword: "Nova senha",
     confirmPassword: "Confirmar senha",
     passwordsMismatch: "As senhas não coincidem",
+    passwordMinLength: "Senha deve ter pelo menos 6 caracteres",
     passwordUpdated: "Senha atualizada com sucesso!",
     passwordUpdatedDesc: "Você já pode fazer login com sua nova senha.",
     updatePassword: "Atualizar senha",
