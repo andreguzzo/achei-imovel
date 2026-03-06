@@ -59,6 +59,8 @@ interface PropertyRecord {
   status: string;
   listing_type: string;
   title: string;
+  sold_price: number | null;
+  sold_commission: number | null;
 }
 
 const STAGE_ORDER = [
@@ -105,7 +107,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
           .eq("broker_id", userId),
         supabase
           .from("properties")
-          .select("id, price, status, listing_type, title")
+          .select("id, price, status, listing_type, title, sold_price, sold_commission")
           .eq("user_id", userId),
       ]);
       setSales((salesRes.data as SaleRecord[]) ?? []);
@@ -129,22 +131,30 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
       .reduce((sum, p) => sum + p.price, 0);
   }, [properties]);
 
-  // VGV Realizado: sum of prices of sold properties
+  // VGV Realizado: sum of sold properties (use sold_price when available)
   const vgvRealizado = useMemo(() => {
     const soldIds = new Set(
       sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
     );
     return properties
       .filter((p) => soldIds.has(p.id) || p.status === "sold")
-      .reduce((sum, p) => sum + p.price, 0);
+      .reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
   }, [properties, sales]);
 
-  // Commission totals
+  // Commission totals: from sales pipeline + from properties marked as sold directly
   const totalCommission = useMemo(() => {
-    return filteredSales
+    const pipelineCommission = filteredSales
       .filter((s) => s.stage === "closed_won")
       .reduce((sum, s) => sum + (s.commission_value ?? 0), 0);
-  }, [filteredSales]);
+    // Add commissions from properties marked sold that aren't in the pipeline
+    const pipelinePropIds = new Set(
+      sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
+    );
+    const directSoldCommission = properties
+      .filter((p) => p.status === "sold" && p.sold_commission && !pipelinePropIds.has(p.id))
+      .reduce((sum, p) => sum + (p.sold_commission ?? 0), 0);
+    return pipelineCommission + directSoldCommission;
+  }, [filteredSales, properties, sales]);
 
   // Pipeline funnel
   const funnelData = useMemo(() => {
