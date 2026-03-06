@@ -28,6 +28,7 @@ interface BrokerPhoto {
   url: string;
   position: number;
   is_cover: boolean;
+  is_banner: boolean;
 }
 
 const Dashboard = () => {
@@ -246,11 +247,19 @@ const Dashboard = () => {
 
   const handleSetCover = async (photo: BrokerPhoto) => {
     if (!user) return;
-    await supabase.from("broker_photos").update({ is_cover: false }).eq("user_id", user.id);
-    await supabase.from("broker_photos").update({ is_cover: true }).eq("id", photo.id);
+    await supabase.from("broker_photos").update({ is_cover: false } as any).eq("user_id", user.id);
+    await supabase.from("broker_photos").update({ is_cover: true } as any).eq("id", photo.id);
     await supabase.from("profiles").update({ avatar_url: photo.url }).eq("user_id", user.id);
     await fetchPhotos();
-    toast({ title: pt ? "Foto de capa atualizada!" : "Cover photo updated!" });
+    toast({ title: pt ? "Foto de perfil atualizada!" : "Profile photo updated!" });
+  };
+
+  const handleSetBanner = async (photo: BrokerPhoto) => {
+    if (!user) return;
+    await supabase.from("broker_photos").update({ is_banner: false } as any).eq("user_id", user.id);
+    await supabase.from("broker_photos").update({ is_banner: true } as any).eq("id", photo.id);
+    await fetchPhotos();
+    toast({ title: pt ? "Banner atualizado!" : "Banner updated!" });
   };
 
   const handleDeletePhoto = async (photo: BrokerPhoto) => {
@@ -491,16 +500,28 @@ const Dashboard = () => {
                         <img src={photo.url} alt="" className="h-full w-full object-cover" />
                         {photo.is_cover && (
                           <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                            {pt ? "Capa" : "Cover"}
+                            {pt ? "Perfil" : "Profile"}
                           </span>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!photo.is_cover && (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-white" onClick={() => handleSetCover(photo)}>
-                              <Camera className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-white" onClick={() => handleDeletePhoto(photo)}>
+                        {photo.is_banner && (
+                          <span className="absolute right-1 top-1 rounded bg-accent-foreground px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                            Banner
+                          </span>
+                        )}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1">
+                            {!photo.is_cover && (
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-white px-1.5" onClick={() => handleSetCover(photo)}>
+                                {pt ? "Perfil" : "Profile"}
+                              </Button>
+                            )}
+                            {!photo.is_banner && (
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-white px-1.5" onClick={() => handleSetBanner(photo)}>
+                                Banner
+                              </Button>
+                            )}
+                          </div>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-white" onClick={() => handleDeletePhoto(photo)}>
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -517,7 +538,7 @@ const Dashboard = () => {
                     )}
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {pt ? "A foto de capa será sua foto de perfil. Máximo 10 fotos." : "Cover photo will be your profile picture. Max 10 photos."}
+                    {pt ? "Escolha qual foto será o perfil e qual será o banner da sua página pública. Máximo 10 fotos." : "Choose which photo is your profile pic and which is the banner. Max 10 photos."}
                   </p>
                 </CardContent>
               </Card>
