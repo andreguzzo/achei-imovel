@@ -331,7 +331,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("vgv_ativo")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -341,13 +341,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(vgvAtivo)}</p>
             <p className="text-xs text-muted-foreground">
-              {properties.filter((p) => p.status === "active" && p.listing_type === "sale").length}{" "}
-              {pt ? "imóveis à venda" : "properties for sale"}
+              {activeForSale.length} {pt ? "imóveis à venda" : "properties for sale"}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("vgv_realizado")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -357,13 +356,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(vgvRealizado)}</p>
             <p className="text-xs text-muted-foreground">
-              {filteredSales.filter((s) => s.stage === "closed_won").length}{" "}
-              {pt ? "vendas fechadas" : "closed sales"}
+              {soldProperties.length} {pt ? "imóveis vendidos" : "properties sold"}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("commissions")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -372,7 +370,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
               <DollarSign className="h-4 w-4 text-primary" />
             </div>
             <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(totalCommission)}</p>
-            <p className="text-xs text-muted-foreground">{pt ? "no período selecionado" : "in selected period"}</p>
+            <p className="text-xs text-muted-foreground">{pt ? "clique para detalhes" : "click for details"}</p>
           </CardContent>
         </Card>
 
