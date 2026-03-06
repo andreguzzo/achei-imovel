@@ -331,7 +331,7 @@ const Dashboard = () => {
                     ? { active: "Ativo", inactive: "Fora de negociação", sold: "Vendido", rented: "Alugado" }
                     : { active: "Active", inactive: "Withdrawn", sold: "Sold", rented: "Rented" };
                   return (
-                    <Card key={p.id}>
+                    <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate(`/imovel/${p.id}`)}>
                       <CardContent className="flex items-center gap-4 p-4">
                         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {p.property_images?.[0]?.url ? (
@@ -358,7 +358,7 @@ const Dashboard = () => {
                             <span className="text-sm font-semibold">{p.view_count ?? 0}</span>
                           </div>
                         )}
-                        <div className="flex gap-2 shrink-0">
+                        <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" onClick={() => handleOpenStatusDialog(p)}>
                             {pt ? "Status" : "Status"}
                           </Button>
