@@ -76,6 +76,10 @@ const BrokerProfile = () => {
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
+  const displayName = broker?.commercial_name || broker?.full_name || "Corretor";
+  const coverPhoto = photos.find(p => p.is_cover);
+  const avatarSrc = coverPhoto?.url || broker?.avatar_url || undefined;
+
   useEffect(() => {
     if (!username) return;
     const fetchBroker = async () => {
@@ -121,6 +125,21 @@ const BrokerProfile = () => {
     fetchBroker();
   }, [username]);
 
+  // SEO: set document title
+  useEffect(() => {
+    if (!broker) return;
+    document.title = `${displayName} — Corretor de Imóveis`;
+    return () => { document.title = "Lares Digital"; };
+  }, [displayName, broker]);
+
+  // Close lightbox on Escape
+  useEffect(() => {
+    if (!showGallery) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowGallery(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showGallery]);
+
   if (loading) {
     return <BrokerProfileSkeleton />;
   }
@@ -137,26 +156,9 @@ const BrokerProfile = () => {
     );
   }
 
-  const displayName = broker.commercial_name || broker.full_name || "Corretor";
   const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
   const bannerPhoto = photos.find(p => p.is_banner);
-  const coverPhoto = photos.find(p => p.is_cover);
-  const avatarSrc = coverPhoto?.url || broker.avatar_url || undefined;
   const galleryPhotos = photos.filter(p => !p.is_cover && !p.is_banner);
-
-  // SEO: set document title
-  useEffect(() => {
-    document.title = `${displayName} — Corretor de Imóveis`;
-    return () => { document.title = "Lares Digital"; };
-  }, [displayName]);
-
-  // Close lightbox on Escape
-  useEffect(() => {
-    if (!showGallery) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowGallery(false); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [showGallery]);
 
   return (
     <div className="min-h-screen">
