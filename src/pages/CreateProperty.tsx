@@ -184,6 +184,7 @@ const StatusChangeDialog = ({ pt, open, onOpenChange, statusAction, setStatusAct
           <SelectContent>
             <SelectItem value="active">{pt ? "Ativo (disponível)" : "Active (available)"}</SelectItem>
             <SelectItem value="sold">{pt ? "Vendido (por mim)" : "Sold (by me)"}</SelectItem>
+            <SelectItem value="rented">{pt ? "Alugado" : "Rented"}</SelectItem>
             <SelectItem value="inactive">{pt ? "Fora de negociação" : "Withdrawn"}</SelectItem>
             <SelectItem value="sold_by_other">{pt ? "Vendido por outro corretor" : "Sold by another broker"}</SelectItem>
           </SelectContent>
@@ -289,7 +290,7 @@ const CreateProperty = () => {
   const [generatingAI, setGeneratingAI] = useState(false);
 
   const handleGenerateAI = async () => {
-    if (!city && !propertyType) {
+    if (!city || !propertyType) {
       toast({ title: pt ? "Preencha pelo menos tipo e cidade" : "Fill at least type and city", variant: "destructive" });
       return;
     }
@@ -609,8 +610,8 @@ const CreateProperty = () => {
   };
 
   const statusLabel: Record<string, string> = pt
-    ? { active: "Ativo", sold: "Vendido", inactive: "Fora de negociação" }
-    : { active: "Active", sold: "Sold", inactive: "Withdrawn" };
+    ? { active: "Ativo", sold: "Vendido", rented: "Alugado", inactive: "Fora de negociação" }
+    : { active: "Active", sold: "Sold", rented: "Rented", inactive: "Withdrawn" };
 
   if (editLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -767,6 +768,11 @@ const CreateProperty = () => {
                     <button
                       type="button"
                       onClick={async () => {
+                        // Extract storage path from public URL
+                        const urlParts = img.url.split("/property-images/");
+                        if (urlParts.length === 2) {
+                          await supabase.storage.from("property-images").remove([urlParts[1]]);
+                        }
                         await supabase.from("property_images").delete().eq("id", img.id);
                         setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
                       }}
