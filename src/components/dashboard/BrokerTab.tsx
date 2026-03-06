@@ -191,26 +191,20 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
     if (!selectedBroker) return;
     setSendingProposal(true);
 
-    // We need a group_id. Create a dummy group or find one.
-    // For simplicity, create a partnership-only group
-    const { data: group } = await supabase
-      .from("property_groups")
-      .insert({
-        canonical_address: `partnership-${userId}-${selectedBroker.user_id}`,
-        city: "N/A",
-        state: "N/A",
-      })
-      .select()
-      .single();
+    // Use RPC to create partnership group (property_groups has no INSERT RLS for regular users)
+    const { data: groupId, error: groupErr } = await supabase.rpc("create_partnership_group", {
+      _broker_a: userId,
+      _broker_b: selectedBroker.user_id,
+    });
 
-    if (!group) {
-      toast({ title: pt ? "Erro" : "Error", variant: "destructive" });
+    if (groupErr || !groupId) {
+      toast({ title: pt ? "Erro ao criar grupo" : "Error creating group", description: groupErr?.message, variant: "destructive" });
       setSendingProposal(false);
       return;
     }
 
     const { error } = await supabase.from("broker_partnerships").insert({
-      group_id: group.id,
+      group_id: groupId,
       broker_a_id: userId,
       broker_b_id: selectedBroker.user_id,
       commission_split: Number(commSplit),

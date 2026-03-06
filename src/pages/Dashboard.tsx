@@ -570,6 +570,7 @@ const Dashboard = () => {
               <SelectContent>
                 <SelectItem value="active">{pt ? "Ativo (disponível)" : "Active"}</SelectItem>
                 <SelectItem value="sold">{pt ? "Vendido (por mim)" : "Sold (by me)"}</SelectItem>
+                <SelectItem value="rented">{pt ? "Alugado" : "Rented"}</SelectItem>
                 <SelectItem value="inactive">{pt ? "Fora de negociação" : "Withdrawn"}</SelectItem>
                 <SelectItem value="sold_by_other">{pt ? "Vendido por outro corretor" : "Sold by other"}</SelectItem>
               </SelectContent>
