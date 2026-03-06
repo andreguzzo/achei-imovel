@@ -54,17 +54,12 @@ const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLanguage();
   const { user } = useAuth();
+  const pt = locale === "pt-BR";
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
-  const [partnerBrokers, setPartnerBrokers] = useState<PartnerBroker[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
-
-  // Partnership form
-  const [partnerBrokerId, setPartnerBrokerId] = useState<string | null>(null);
-  const [commissionSplit, setCommissionSplit] = useState("50");
-  const [terms, setTerms] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   // Increment view count
   useEffect(() => {
