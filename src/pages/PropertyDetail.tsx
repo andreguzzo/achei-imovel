@@ -158,47 +158,46 @@ const PropertyDetail = () => {
         if (ownerProf) setOwnerProfile(ownerProf as BrokerProfile);
 
         // Fetch group members (other brokers listing same property)
-        const { data: members } = await supabase
+        const { data: memberWithGroup } = await supabase
           .from("property_group_members")
-          .select("broker_id, property_id")
-          .eq("property_id", id);
+          .select("group_id")
+          .eq("property_id", id)
+          .limit(1)
+          .single();
 
-        if (members && members.length > 0) {
-          const { data: memberWithGroup } = await supabase
+        if (memberWithGroup) {
+          const { data: allMembers } = await supabase
             .from("property_group_members")
-            .select("group_id")
-            .eq("property_id", id)
-            .single();
+            .select("broker_id, property_id")
+            .eq("group_id", memberWithGroup.group_id)
+            .neq("broker_id", (prop as Property).user_id);
 
-          if (memberWithGroup) {
-            const { data: allMembers } = await supabase
-              .from("property_group_members")
-              .select("broker_id, property_id")
-              .eq("group_id", memberWithGroup.group_id);
+          if (allMembers && allMembers.length > 0) {
+            // Batch fetch all broker profiles and property prices
+            const brokerIds = allMembers.map((m) => m.broker_id);
+            const propertyIds = allMembers.map((m) => m.property_id);
 
-            if (allMembers && allMembers.length > 1) {
-              const brokers: GroupBroker[] = [];
-              for (const m of allMembers) {
-                if (m.broker_id === (prop as Property).user_id) continue; // skip owner, already shown
-                const { data: brokerProp } = await supabase
-                  .from("properties")
-                  .select("price")
-                  .eq("id", m.property_id)
-                  .single();
-                const { data: profile } = await supabase
-                  .from("profiles")
-                  .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
-                  .eq("user_id", m.broker_id)
-                  .single();
-                brokers.push({
-                  broker_id: m.broker_id,
-                  property_id: m.property_id,
-                  price: brokerProp?.price ?? 0,
-                  profile: (profile as BrokerProfile) ?? null,
-                });
-              }
-              setGroupBrokers(brokers);
-            }
+            const [profilesRes, pricesRes] = await Promise.all([
+              supabase
+                .from("profiles")
+                .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+                .in("user_id", brokerIds),
+              supabase
+                .from("properties")
+                .select("id, price")
+                .in("id", propertyIds),
+            ]);
+
+            const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.user_id, p]));
+            const priceMap = new Map((pricesRes.data ?? []).map((p) => [p.id, p.price]));
+
+            const brokers: GroupBroker[] = allMembers.map((m) => ({
+              broker_id: m.broker_id,
+              property_id: m.property_id,
+              price: priceMap.get(m.property_id) ?? 0,
+              profile: (profileMap.get(m.broker_id) as BrokerProfile) ?? null,
+            }));
+            setGroupBrokers(brokers);
           }
         }
       }
