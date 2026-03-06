@@ -42,7 +42,7 @@ const ResetPassword = () => {
       return;
     }
     if (password.length < 6) {
-      toast({ title: t.common.error, description: "Senha deve ter pelo menos 6 caracteres", variant: "destructive" });
+      toast({ title: t.common.error, description: t.auth.passwordMinLength, variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -52,7 +52,7 @@ const ResetPassword = () => {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
     } else {
       toast({ title: t.auth.passwordUpdated, description: t.auth.passwordUpdatedDesc });
-      navigate("/login");
+      navigate("/");
     }
   };
 
