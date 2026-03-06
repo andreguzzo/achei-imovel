@@ -280,7 +280,7 @@ const PropertyDetail = () => {
                   <Heart className={`h-5 w-5 ${id && isFavFn(id) ? "fill-destructive text-destructive" : ""}`} />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={handleShare} className="h-9 w-9">
-                  {copied ? <Check className="h-5 w-5 text-green-500" /> : <Share2 className="h-5 w-5" />}
+                  {copied ? <Check className="h-5 w-5 text-primary" /> : <Share2 className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
