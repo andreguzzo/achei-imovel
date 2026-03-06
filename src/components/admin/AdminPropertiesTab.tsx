@@ -84,7 +84,23 @@ const AdminPropertiesTab = () => {
 
   const handleDeleteProperty = async (prop: Property) => {
     try {
-      // Delete related data first
+      // Delete images from storage bucket
+      for (const img of prop.property_images ?? []) {
+        const urlParts = img.url.split("/property-images/");
+        if (urlParts.length === 2) {
+          await supabase.storage.from("property-images").remove([urlParts[1]]);
+        }
+      }
+      // Delete sale_documents via sales_pipeline
+      const { data: pipelines } = await supabase.from("sales_pipeline").select("id").eq("property_id", prop.id);
+      if (pipelines && pipelines.length > 0) {
+        for (const pl of pipelines) {
+          await supabase.from("sale_documents").delete().eq("pipeline_id", pl.id);
+          await supabase.from("broker_appointments").delete().eq("pipeline_id", pl.id);
+        }
+        await supabase.from("sales_pipeline").delete().eq("property_id", prop.id);
+      }
+      // Delete related data
       await supabase.from("property_images").delete().eq("property_id", prop.id);
       await supabase.from("property_private_data").delete().eq("property_id", prop.id);
       await supabase.from("property_documents").delete().eq("property_id", prop.id);
