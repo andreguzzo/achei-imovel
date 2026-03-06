@@ -71,7 +71,7 @@ const AdminMetricsTab = () => {
     { label: "Imóveis Totais", value: metrics.totalProperties, icon: Building2, color: "text-violet-500" },
     { label: "Imóveis Ativos", value: metrics.activeProperties, icon: TrendingUp, color: "text-green-500" },
     { label: "Imóveis Vendidos", value: metrics.soldProperties, icon: Building2, color: "text-orange-500" },
-    { label: "Visualizações", value: metrics.totalViews, icon: Eye, color: "text-cyan-500" },
+    { label: "Negociações", value: metrics.totalPipeline, icon: TrendingUp, color: "text-cyan-500" },
     { label: "Contatos", value: metrics.totalContacts, icon: MessageSquare, color: "text-pink-500" },
     { label: "Suporte Aberto", value: metrics.openSupport, icon: MessageCircle, color: "text-red-500" },
   ];
