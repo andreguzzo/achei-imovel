@@ -42,7 +42,7 @@ const formatPrice = (price: number, listingType: string) => {
 };
 
 const getEmbedUrl = (url: string): string => {
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]+)/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
