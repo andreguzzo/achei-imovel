@@ -246,7 +246,7 @@ const PropertyDetail = () => {
           <div className="space-y-2">
             <div className="aspect-[16/9] overflow-hidden rounded-xl bg-muted">
               {images.length > 0 ? (
-                <img src={images[selectedImage]?.url} alt={property.title} className="h-full w-full object-cover" />
+                <img src={images[selectedImage]?.url} alt={property.title} className="h-full w-full object-cover" loading="eager" decoding="async" fetchPriority="high" />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">Sem foto</div>
               )}
@@ -259,7 +259,7 @@ const PropertyDetail = () => {
                     onClick={() => setSelectedImage(i)}
                     className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${i === selectedImage ? "border-primary" : "border-transparent"}`}
                   >
-                    <img src={img.url} alt="" className="h-full w-full object-cover" />
+                    <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                   </button>
                 ))}
               </div>
