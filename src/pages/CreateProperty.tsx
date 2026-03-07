@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
+import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
 
 const propertySchema = z.object({
@@ -545,11 +546,11 @@ const CreateProperty = () => {
         .eq("property_id", propId);
     }
 
-    // Upload new images
+    // Upload new images (compressed)
     if (imageFiles.length > 0) {
       const startPos = existingImages.length;
       for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
+        const file = await compressImage(imageFiles[i]);
         const ext = file.name.split(".").pop();
         const path = `${propId}/${Date.now()}-${i}.${ext}`;
         const { error: uploadErr } = await supabase.storage
