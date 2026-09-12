@@ -93,14 +93,15 @@ Deno.serve(async (req) => {
       limit: 1,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId = null;
-    let subscriptionEnd = null;
+    const hasStripeSub = subscriptions.data.length > 0;
+    const hasActiveSub = hasStripeSub || !!override;
+    let productId: string | null = override?.product_id ?? null;
+    let subscriptionEnd: string | null = override?.subscription_end ?? null;
 
-    if (hasActiveSub) {
+    if (hasStripeSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product;
+      productId = subscription.items.data[0].price.product as string;
       logStep("Active subscription found", { productId });
     }
 
