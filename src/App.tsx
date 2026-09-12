@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -62,7 +62,8 @@ const App = () => (
                     <Route path="/redefinir-senha" element={<ResetPassword />} />
 
                     <Route element={<RequireAuth />}>
-                      <Route path="/corretor/vendas" element={<BrokerSales />} />
+                      <Route path="/corretor/vendas" element={<Navigate to="/painel" replace />} />
+
                       <Route path="/anunciar" element={<CreateProperty />} />
                       <Route path="/editar/:id" element={<CreateProperty />} />
                       <Route path="/painel" element={<Dashboard />} />
