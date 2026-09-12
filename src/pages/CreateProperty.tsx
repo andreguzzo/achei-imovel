@@ -885,14 +885,14 @@ const CreateProperty = () => {
               <div className="flex flex-col gap-2">
                 <Button
                   type="button"
-                  onClick={() => { setDupChoice("request"); setDupGroup((g) => g); handleSubmit(undefined, "request"); setDupGroupClosed(); }}
+                  onClick={() => { setDupChoice("request"); void handleSubmit(undefined, "request"); setDupGroup(null); }}
                 >
                   {pt ? "Solicitar participação" : "Request to join"}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => { setDupChoice("separate"); handleSubmit(undefined, "separate"); setDupGroupClosed(); }}
+                  onClick={() => { setDupChoice("separate"); void handleSubmit(undefined, "separate"); setDupGroup(null); }}
                 >
                   {pt ? "É outro imóvel, publicar separado" : "Different property, publish separately"}
                 </Button>
