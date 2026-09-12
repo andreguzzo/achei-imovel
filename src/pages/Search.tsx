@@ -10,7 +10,9 @@ import SearchFilters, {
   type SearchFiltersState,
   defaultFilters,
 } from "@/components/SearchFilters";
+import { dedupeByGroup, type GroupInfo } from "@/lib/partnerships";
 import type { Tables } from "@/integrations/supabase/types";
+
 
 type PropertyWithImages = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
