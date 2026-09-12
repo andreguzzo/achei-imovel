@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle,
+  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle, Instagram,
 } from "lucide-react";
+import SocialPostExporter from "@/components/social/SocialPostExporter";
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
 import EmailVerification from "@/components/dashboard/EmailVerification";
