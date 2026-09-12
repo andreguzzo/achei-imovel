@@ -12,6 +12,8 @@ import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, Mes
 import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
+import { getEmbedUrl } from "@/lib/video";
+
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
