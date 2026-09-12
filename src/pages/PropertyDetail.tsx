@@ -193,19 +193,21 @@ const PropertyDetail = () => {
         if (ownerProf) setOwnerProfile({ ...ownerProf, phone: null, whatsapp: null } as BrokerProfile);
 
 
-        // Fetch group members (other brokers listing same property)
+        // Fetch group members (other brokers listing the same property)
         const { data: memberWithGroup } = await supabase
           .from("property_group_members")
           .select("group_id")
           .eq("property_id", id)
+          .eq("status", "approved")
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (memberWithGroup) {
           const { data: allMembers } = await supabase
             .from("property_group_members")
-            .select("broker_id, property_id")
+            .select("broker_id, property_id, role, partnership_type")
             .eq("group_id", memberWithGroup.group_id)
+            .eq("status", "approved")
             .neq("broker_id", (prop as Property).user_id);
 
           if (allMembers && allMembers.length > 0) {
@@ -231,6 +233,8 @@ const PropertyDetail = () => {
               broker_id: m.broker_id,
               property_id: m.property_id,
               price: priceMap.get(m.property_id) ?? 0,
+              role: m.role,
+              partnership_type: m.partnership_type,
               profile: profileMap.has(m.broker_id)
                 ? ({ ...profileMap.get(m.broker_id), phone: null, whatsapp: null } as BrokerProfile)
                 : null,
@@ -239,6 +243,7 @@ const PropertyDetail = () => {
             setGroupBrokers(brokers);
           }
         }
+
       }
       setLoading(false);
     };
