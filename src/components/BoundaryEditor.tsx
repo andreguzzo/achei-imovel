@@ -30,13 +30,18 @@ const BoundaryEditor = ({ boundary, onChange, center, pt = true }: BoundaryEdito
 
   const t = (ptText: string, enText: string) => (pt ? ptText : enText);
 
+  // Keep the initial center out of the effect deps so the map is created once
+  const initialCenterRef = useRef(center ?? null);
+  if (!mapInstanceRef.current && center) initialCenterRef.current = center;
+
   // Initialize map
   useEffect(() => {
     if (!ready || !mapRef.current || mapInstanceRef.current) return;
 
+    const initialCenter = initialCenterRef.current;
     const map = new google.maps.Map(mapRef.current, {
-      center: center ?? { lat: -14.24, lng: -51.93 },
-      zoom: center ? 15 : 4,
+      center: initialCenter ?? { lat: -14.24, lng: -51.93 },
+      zoom: initialCenter ? 15 : 4,
       mapTypeId: "hybrid",
       mapTypeControl: true,
       fullscreenControl: true,
