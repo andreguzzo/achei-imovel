@@ -17,6 +17,21 @@ import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlPars
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
+import {
+  PARTNERSHIP_KINDS,
+  partnershipKindHint,
+  partnershipKindLabel,
+  type PartnershipKind,
+} from "@/lib/partnerships";
+
+type DupGroup = {
+  group_id: string;
+  member_count: number;
+  primary_broker_id: string;
+  primary_broker_name: string;
+  exclusive: boolean;
+};
+
 
 const propertySchema = z.object({
   title: z.string().trim().min(5, "Título deve ter pelo menos 5 caracteres").max(200),
