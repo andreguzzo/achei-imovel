@@ -79,6 +79,74 @@ const AdminSubscriptionsTab = () => {
 
   useEffect(() => { fetchPaidUsers(); }, []);
 
+  // ---- Subscription management ----
+  const { plans } = usePlans(true);
+  const [manageEmail, setManageEmail] = useState("");
+  const [managePlan, setManagePlan] = useState("");
+  const [manageExpiry, setManageExpiry] = useState("");
+  const [manageNotes, setManageNotes] = useState("");
+  const [managing, setManaging] = useState<string | null>(null);
+
+  type AuditEntry = {
+    id: string;
+    action: string;
+    target_email: string | null;
+    created_at: string;
+    after_state: unknown;
+  };
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+
+  const fetchAudit = async () => {
+    const { data } = await supabase
+      .from("subscription_audit_log")
+      .select("id, action, target_email, created_at, after_state")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setAudit((data ?? []) as AuditEntry[]);
+  };
+
+  useEffect(() => { fetchAudit(); }, []);
+
+  const runManage = async (action: "set_plan" | "set_expiry" | "cancel") => {
+    if (!manageEmail.trim()) {
+      toast({ title: "Informe o e-mail do usuário", variant: "destructive" });
+      return;
+    }
+    if (action === "set_plan" && !managePlan) {
+      toast({ title: "Escolha o plano", variant: "destructive" });
+      return;
+    }
+    if (action === "set_expiry" && !manageExpiry) {
+      toast({ title: "Escolha a nova data de validade", variant: "destructive" });
+      return;
+    }
+    setManaging(action);
+    const { data, error } = await supabase.functions.invoke("admin-manage-subscription", {
+      body: {
+        email: manageEmail.trim(),
+        action,
+        planSlug: managePlan || undefined,
+        expiresAt: manageExpiry || undefined,
+        notes: manageNotes || undefined,
+      },
+    });
+    const failure = error?.message ?? (data as { error?: string } | null)?.error;
+    if (failure) {
+      toast({ title: "Erro", description: failure, variant: "destructive" });
+    } else {
+      toast({
+        title: action === "cancel" ? "Assinatura cancelada"
+          : action === "set_plan" ? "Plano alterado"
+          : "Validade atualizada",
+      });
+      await Promise.all([fetchPaidUsers(), fetchAudit()]);
+    }
+    setManaging(null);
+  };
+
+  const actionLabel = (a: string) =>
+    a === "set_plan" ? "Troca de plano" : a === "set_expiry" ? "Ajuste de validade" : a === "cancel" ? "Cancelamento" : a;
+
   const tierLabel = (productId: string | null) => {
     const t = getTierByProductId(productId);
     if (t === "free") return "Gratuito";
