@@ -43,6 +43,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isBroker, setIsBroker] = useState(false);
+  const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
 
   // Profile form
   const [fullName, setFullName] = useState("");
