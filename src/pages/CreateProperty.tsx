@@ -844,6 +844,63 @@ const CreateProperty = () => {
           onConfirm={handleStatusConfirm}
         />
 
+        {/* Duplicate listing / partnership dialog */}
+        <Dialog open={!!dupGroup} onOpenChange={(o) => { if (!o) setDupGroup(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{pt ? "Este imóvel já está anunciado" : "This property is already listed"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {pt
+                  ? `O imóvel já foi captado por ${dupGroup?.primary_broker_name ?? "outro corretor"}. Para evitar anúncios duplicados, solicite participação nesta captação.`
+                  : `This property was already captured by ${dupGroup?.primary_broker_name ?? "another broker"}. To avoid duplicate listings, request to join it.`}
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{pt ? "Tipo de parceria" : "Partnership type"}</label>
+                <Select value={dupKind} onValueChange={(v) => setDupKind(v as PartnershipKind)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PARTNERSHIP_KINDS.map((k) => (
+                      <SelectItem key={k} value={k}>{partnershipKindLabel(k, pt)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{partnershipKindHint(dupKind, pt)}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">{pt ? "Sua comissão (%)" : "Your commission (%)"}</label>
+                  <Input type="number" min="0" max="100" value={dupSplit} onChange={(e) => setDupSplit(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">{pt ? "Termos" : "Terms"}</label>
+                <Textarea value={dupTerms} onChange={(e) => setDupTerms(e.target.value)} placeholder={pt ? "Descreva os termos da parceria..." : "Describe the partnership terms..."} />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={() => { setDupChoice("request"); setDupGroup((g) => g); handleSubmit(undefined, "request"); setDupGroupClosed(); }}
+                >
+                  {pt ? "Solicitar participação" : "Request to join"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { setDupChoice("separate"); handleSubmit(undefined, "separate"); setDupGroupClosed(); }}
+                >
+                  {pt ? "É outro imóvel, publicar separado" : "Different property, publish separately"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Show existing images in edit mode */}
         {isEditMode && existingImages.length > 0 && (
           <Card>
