@@ -488,8 +488,9 @@ const CreateProperty = () => {
     toast({ title: `Status: ${labels[statusAction]}` });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, choiceOverride?: "request" | "separate") => {
+    e?.preventDefault();
+    const choice = choiceOverride ?? dupChoice;
     const parsed = propertySchema.safeParse({ title, city, state, price: Number(price) });
     if (!parsed.success) {
       toast({ title: "Erro", description: parsed.error.errors[0]?.message, variant: "destructive" });
@@ -497,7 +498,7 @@ const CreateProperty = () => {
     }
 
     // Detect an existing consolidated listing for the same property
-    if (!isEditMode && !dupChoice && address.trim() && user) {
+    if (!isEditMode && !choice && address.trim() && user) {
       const { data: found } = await supabase.rpc("find_property_group", {
         _address: address,
         _city: city,
@@ -578,7 +579,7 @@ const CreateProperty = () => {
       propId = prop.id;
 
       // Consolidated listing handling
-      if (dupChoice === "request" && dupGroup) {
+      if (choice === "request" && dupGroup) {
         const { error: reqErr } = await supabase.rpc("request_group_membership", {
           _group_id: dupGroup.group_id,
           _property_id: propId,
@@ -596,7 +597,7 @@ const CreateProperty = () => {
               : "Your listing appears as a partnership once approved.",
           });
         }
-      } else if (dupChoice === "separate") {
+      } else if (choice === "separate") {
         const { error: detErr } = await supabase.rpc("detach_property_group", { _property_id: propId });
         if (detErr) console.warn("detach error", detErr.message);
       }
