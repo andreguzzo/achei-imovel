@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Gift, Search, Loader2, Crown, RefreshCw, Sparkles } from "lucide-react";
+import { Gift, Search, Loader2, Crown, RefreshCw, Sparkles, Settings2, History, CalendarClock, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIERS, getTierByProductId } from "@/hooks/useAuth";
+import { usePlans } from "@/hooks/usePlans";
 
 type SubscribedUser = {
   email: string;
