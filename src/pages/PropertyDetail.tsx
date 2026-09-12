@@ -572,17 +572,33 @@ const PropertyDetail = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-4 w-4 text-primary" />
-                {allBrokerProfiles.length > 1
-                  ? (pt ? "Corretores" : "Brokers")
+                {brokerEntries.length > 1
+                  ? (pt ? "Corretores deste imóvel" : "Brokers for this listing")
                   : (pt ? "Corretor responsável" : "Listing agent")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {allBrokerProfiles.map((bp) => (
-                <BrokerCard key={bp.user_id} profile={bp} propertyTitle={property.title} pt={pt} />
+              {brokerEntries.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  {pt
+                    ? "Este imóvel é anunciado em parceria. Fale com qualquer um dos corretores abaixo."
+                    : "This listing is shared in partnership. Contact any of the brokers below."}
+                </p>
+              )}
+              {brokerEntries.map((e) => (
+                <BrokerCard
+                  key={e.profile.user_id}
+                  profile={e.profile}
+                  propertyTitle={property.title}
+                  pt={pt}
+                  tagline={e.tagline}
+                  price={e.price}
+                  highlight={e.highlight}
+                />
               ))}
-              {allBrokerProfiles.length === 0 && (
+              {brokerEntries.length === 0 && (
                 <p className="text-sm text-muted-foreground">{pt ? "Informações do corretor não disponíveis." : "Broker info not available."}</p>
+
               )}
             </CardContent>
           </Card>
