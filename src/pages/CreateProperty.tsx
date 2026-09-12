@@ -680,7 +680,7 @@ const CreateProperty = () => {
     }
 
     toast({ title: isEditMode ? (pt ? "Anúncio atualizado!" : "Listing updated!") : (pt ? "Anúncio criado com sucesso!" : "Listing created!") });
-    navigate(`/imovel/${propId}`);
+    navigate(adminMode ? "/admin" : `/imovel/${propId}`);
     setSubmitting(false);
   };
 
