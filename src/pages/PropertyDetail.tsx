@@ -219,6 +219,37 @@ const PropertyDetail = () => {
     fetchData();
   }, [id]);
 
+  // Contact details (phone/WhatsApp) are only available to signed-in visitors
+  const ownerId = ownerProfile?.user_id;
+  const groupBrokerIds = groupBrokers.map((b) => b.broker_id).join(",");
+  useEffect(() => {
+    if (!user || !ownerId) return;
+    let cancelled = false;
+    const ids = [ownerId, ...groupBrokerIds.split(",").filter(Boolean)];
+    const load = async () => {
+      const results = await Promise.all(
+        ids.map((uid) => supabase.rpc("get_broker_contact", { _user_id: uid })),
+      );
+      if (cancelled) return;
+      const contacts = new Map<string, { phone: string | null; whatsapp: string | null }>();
+      results.forEach((res) => {
+        const row = (res.data as { user_id: string; phone: string | null; whatsapp: string | null }[] | null)?.[0];
+        if (row) contacts.set(row.user_id, { phone: row.phone, whatsapp: row.whatsapp });
+      });
+      setOwnerProfile((prev) => (prev && contacts.has(prev.user_id) ? { ...prev, ...contacts.get(prev.user_id)! } : prev));
+      setGroupBrokers((prev) =>
+        prev.map((b) =>
+          b.profile && contacts.has(b.broker_id)
+            ? { ...b, profile: { ...b.profile, ...contacts.get(b.broker_id)! } }
+            : b,
+        ),
+      );
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user, ownerId, groupBrokerIds]);
+
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
