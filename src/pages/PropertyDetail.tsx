@@ -16,6 +16,8 @@ import { getEmbedUrl } from "@/lib/video";
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { partnershipKindLabel, type MemberRole, type PartnershipKind } from "@/lib/partnerships";
+
 
 type Property = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
