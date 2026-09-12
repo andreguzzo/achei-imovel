@@ -862,12 +862,67 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      brokers_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          commercial_name: string | null
+          created_at: string | null
+          creci: string | null
+          facebook: string | null
+          full_name: string | null
+          instagram: string | null
+          linkedin: string | null
+          tiktok: string | null
+          user_id: string | null
+          username: string | null
+          youtube: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          commercial_name?: string | null
+          created_at?: string | null
+          creci?: string | null
+          facebook?: string | null
+          full_name?: string | null
+          instagram?: string | null
+          linkedin?: string | null
+          tiktok?: string | null
+          user_id?: string | null
+          username?: string | null
+          youtube?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          commercial_name?: string | null
+          created_at?: string | null
+          creci?: string | null
+          facebook?: string | null
+          full_name?: string | null
+          instagram?: string | null
+          linkedin?: string | null
+          tiktok?: string | null
+          user_id?: string | null
+          username?: string | null
+          youtube?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_partnership_group: {
         Args: { _broker_a: string; _broker_b: string }
         Returns: string
+      }
+      get_broker_contact: {
+        Args: { _user_id: string }
+        Returns: {
+          phone: string
+          user_id: string
+          whatsapp: string
+        }[]
       }
       has_role: {
         Args: {
