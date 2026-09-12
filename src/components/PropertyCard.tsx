@@ -77,9 +77,23 @@ const PropertyCard = ({
             <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
           </button>
         )}
+        {brokerCount != null && brokerCount > 1 && (
+          <Badge
+            variant="secondary"
+            className="absolute bottom-3 left-3 gap-1 text-[11px] backdrop-blur-sm"
+          >
+            <Users className="h-3 w-3" />
+            {brokerCount} {pt ? "corretores" : "brokers"}
+          </Badge>
+        )}
       </div>
       <div className="space-y-1.5 p-4">
-        <p className="text-lg font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
+        <p className="text-lg font-bold text-primary">
+          {hasRange
+            ? `${currency(priceFrom!)} – ${currency(priceTo!)}${property.listing_type === "rent" ? "/mês" : ""}`
+            : formatPrice(property.price, property.listing_type)}
+        </p>
+
         <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{property.title}</h3>
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {property.neighborhood ? `${property.neighborhood}, ` : ""}{property.city} - {property.state}
