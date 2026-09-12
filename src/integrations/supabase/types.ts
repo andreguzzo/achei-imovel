@@ -305,6 +305,7 @@ export type Database = {
           area: number | null
           bathrooms: number | null
           bedrooms: number | null
+          boundary: Json | null
           city: string
           condo_fee: number | null
           created_at: string
@@ -337,6 +338,7 @@ export type Database = {
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
+          boundary?: Json | null
           city: string
           condo_fee?: number | null
           created_at?: string
@@ -369,6 +371,7 @@ export type Database = {
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
+          boundary?: Json | null
           city?: string
           condo_fee?: number | null
           created_at?: string
