@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Navigation } from "lucide-react";
@@ -14,10 +13,11 @@ interface LocationPickerProps {
 }
 
 const LocationPicker = ({ latitude, longitude, onLatChange, onLngChange, pt = true }: LocationPickerProps) => {
+  const ready = useGoogleMaps();
   const [showMap, setShowMap] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
 
   const lat = latitude ? parseFloat(latitude) : null;
   const lng = longitude ? parseFloat(longitude) : null;
@@ -25,76 +25,91 @@ const LocationPicker = ({ latitude, longitude, onLatChange, onLngChange, pt = tr
 
   // Initialize / destroy map
   useEffect(() => {
-    if (!showMap || !mapRef.current || mapInstanceRef.current) return;
+    if (!ready || !showMap || !mapRef.current || mapInstanceRef.current) return;
 
-    const center: [number, number] = hasCoords ? [lat!, lng!] : [-14.24, -51.93];
+    const center = hasCoords ? { lat: lat!, lng: lng! } : { lat: -14.24, lng: -51.93 };
     const zoom = hasCoords ? 15 : 4;
 
-    const map = L.map(mapRef.current, { center, zoom, zoomControl: true });
-
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 20,
-      subdomains: "abcd",
-    }).addTo(map);
+    const map = new google.maps.Map(mapRef.current, {
+      center,
+      zoom,
+      mapTypeControl: false,
+      fullscreenControl: false,
+      streetViewControl: false,
+      clickableIcons: false,
+    });
 
     // Place marker if coords exist
     if (hasCoords) {
-      markerRef.current = L.marker([lat!, lng!], { draggable: true }).addTo(map);
-      markerRef.current.on("dragend", () => {
-        const pos = markerRef.current!.getLatLng();
-        onLatChange(pos.lat.toFixed(6));
-        onLngChange(pos.lng.toFixed(6));
+      markerRef.current = new google.maps.Marker({
+        position: center,
+        map,
+        draggable: true,
+      });
+      markerRef.current.addListener("dragend", () => {
+        const pos = markerRef.current!.getPosition()!;
+        onLatChange(pos.lat().toFixed(6));
+        onLngChange(pos.lng().toFixed(6));
       });
     }
 
     // Click to place/move marker
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      const { lat: cLat, lng: cLng } = e.latlng;
+    map.addListener("click", (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng) return;
+      const cLat = e.latLng.lat();
+      const cLng = e.latLng.lng();
       onLatChange(cLat.toFixed(6));
       onLngChange(cLng.toFixed(6));
 
       if (markerRef.current) {
-        markerRef.current.setLatLng(e.latlng);
+        markerRef.current.setPosition(e.latLng);
       } else {
-        markerRef.current = L.marker(e.latlng, { draggable: true }).addTo(map);
-        markerRef.current.on("dragend", () => {
-          const pos = markerRef.current!.getLatLng();
-          onLatChange(pos.lat.toFixed(6));
-          onLngChange(pos.lng.toFixed(6));
+        markerRef.current = new google.maps.Marker({
+          position: e.latLng,
+          map,
+          draggable: true,
+        });
+        markerRef.current.addListener("dragend", () => {
+          const pos = markerRef.current!.getPosition()!;
+          onLatChange(pos.lat().toFixed(6));
+          onLngChange(pos.lng().toFixed(6));
         });
       }
     });
 
     mapInstanceRef.current = map;
 
-    // Fix map size after render
-    setTimeout(() => map.invalidateSize(), 200);
-
     return () => {
-      map.remove();
-      mapInstanceRef.current = null;
+      markerRef.current?.setMap(null);
       markerRef.current = null;
+      mapInstanceRef.current = null;
     };
-  }, [showMap]);
+  }, [ready, showMap, hasCoords, lat, lng, onLatChange, onLngChange]);
 
   // Sync marker when coords change externally (manual input)
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !ready) return;
+
     if (hasCoords) {
+      const position = { lat: lat!, lng: lng! };
       if (markerRef.current) {
-        markerRef.current.setLatLng([lat!, lng!]);
+        markerRef.current.setPosition(position);
       } else {
-        markerRef.current = L.marker([lat!, lng!], { draggable: true }).addTo(mapInstanceRef.current);
-        markerRef.current.on("dragend", () => {
-          const pos = markerRef.current!.getLatLng();
-          onLatChange(pos.lat.toFixed(6));
-          onLngChange(pos.lng.toFixed(6));
+        markerRef.current = new google.maps.Marker({
+          position,
+          map: mapInstanceRef.current,
+          draggable: true,
+        });
+        markerRef.current.addListener("dragend", () => {
+          const pos = markerRef.current!.getPosition()!;
+          onLatChange(pos.lat().toFixed(6));
+          onLngChange(pos.lng().toFixed(6));
         });
       }
-      mapInstanceRef.current.setView([lat!, lng!], Math.max(mapInstanceRef.current.getZoom(), 13));
+      mapInstanceRef.current.setCenter(position);
+      mapInstanceRef.current.setZoom(Math.max(mapInstanceRef.current.getZoom() ?? 13, 13));
     }
-  }, [latitude, longitude]);
+  }, [latitude, longitude, ready, hasCoords, lat, lng, onLatChange, onLngChange]);
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) return;

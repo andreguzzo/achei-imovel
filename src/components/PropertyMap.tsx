@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster";
-import "leaflet.markercluster/dist/MarkerCluster.css";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -27,236 +25,217 @@ const formatPriceShort = (price: number) => {
   return `R$${price}`;
 };
 
-const CLUSTER_STYLE = `
-  .marker-cluster-custom {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 800;
-    font-size: 13px;
-    color: white;
-    border: 3px solid white;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
-    cursor: pointer;
-  }
-  .marker-cluster-small {
-    background: hsl(215, 25%, 35%);
-    width: 36px; height: 36px;
-  }
-  .marker-cluster-medium {
-    background: hsl(215, 25%, 25%);
-    width: 42px; height: 42px;
-  }
-  .marker-cluster-large {
-    background: hsl(215, 25%, 15%);
-    width: 50px; height: 50px;
-  }
-  .custom-price-marker {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .custom-price-marker > div {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-`;
+const createPriceIcon = (priceText: string, isSale: boolean, isSelected: boolean): google.maps.Icon => {
+  const bgColor = isSale ? "#dc2626" : "#9333ea";
+  const borderColor = isSelected ? "#ffffff" : isSale ? "#b91c1c" : "#7e22ce";
+  const width = Math.max(60, priceText.length * 8 + 20);
+  const height = 28;
+
+  const shadowFilter = isSelected
+    ? `<filter id="s" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="white"/><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.35)"/></filter>`
+    : `<filter id="s" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.2)"/></filter>`;
+
+  const svg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <defs>${shadowFilter}</defs>
+      <rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="14" fill="${bgColor}" stroke="${borderColor}" stroke-width="${isSelected ? 3 : 2}" filter="url(#s)"/>
+      <text x="${width / 2}" y="${height / 2 + 4}" font-family="DM Sans, sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle" letter-spacing="0.02em">${priceText}</text>
+    </svg>`
+  )}`;
+
+  return {
+    url: svg,
+    scaledSize: new google.maps.Size(width, height),
+    anchor: new google.maps.Point(width / 2, height / 2),
+  };
+};
+
+const clusterRenderer = {
+  render: (cluster: { count: number; position: google.maps.LatLng | google.maps.LatLngLiteral }) => {
+    const count = cluster.count;
+    let size = 36;
+    let bg = "#475569";
+    if (count >= 20) {
+      size = 50;
+      bg = "#1e293b";
+    } else if (count >= 5) {
+      size = 42;
+      bg = "#334155";
+    }
+
+    const svg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="${bg}" stroke="white" stroke-width="3"/>
+        <text x="${size / 2}" y="${size / 2 + 4}" font-family="DM Sans, sans-serif" font-size="13" font-weight="800" fill="white" text-anchor="middle">+${count}</text>
+      </svg>`
+    )}`;
+
+    return new google.maps.Marker({
+      position: cluster.position,
+      icon: {
+        url: svg,
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size / 2, size / 2),
+      },
+      zIndex: 1000 + count,
+    });
+  },
+};
 
 const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect }: PropertyMapProps) => {
+  const ready = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
-  const styleRef = useRef<HTMLStyleElement | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const clustererRef = useRef<MarkerClusterer | null>(null);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const prevPropertyIdsRef = useRef<string>("");
 
+  // Initialize / destroy map
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!ready || !mapRef.current || mapInstanceRef.current) return;
 
-    // Inject cluster styles
-    const style = document.createElement("style");
-    style.textContent = CLUSTER_STYLE;
-    document.head.appendChild(style);
-    styleRef.current = style;
-
-    const map = L.map(mapRef.current, {
-      center,
+    const map = new google.maps.Map(mapRef.current, {
+      center: { lat: center[0], lng: center[1] },
       zoom,
-      zoomControl: true,
+      mapTypeControl: false,
+      fullscreenControl: false,
+      streetViewControl: false,
+      clickableIcons: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 20,
-      subdomains: "abcd",
-    }).addTo(map);
-
     mapInstanceRef.current = map;
+    infoWindowRef.current = new google.maps.InfoWindow();
 
     if (onBoundsChange) {
-      map.on("moveend", () => {
+      const reportBounds = () => {
         const b = map.getBounds();
+        if (!b) return;
+        const ne = b.getNorthEast();
+        const sw = b.getSouthWest();
         onBoundsChange({
-          north: b.getNorth(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          west: b.getWest(),
+          north: ne.lat(),
+          south: sw.lat(),
+          east: ne.lng(),
+          west: sw.lng(),
         });
-      });
-      setTimeout(() => {
-        const b = map.getBounds();
-        onBoundsChange({
-          north: b.getNorth(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          west: b.getWest(),
-        });
-      }, 500);
+      };
+      map.addListener("idle", reportBounds);
+      setTimeout(reportBounds, 500);
     }
 
     return () => {
-      map.remove();
+      clustererRef.current?.clearMarkers();
+      clustererRef.current = null;
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      infoWindowRef.current?.close();
+      infoWindowRef.current = null;
       mapInstanceRef.current = null;
-      styleRef.current?.remove();
     };
-  }, []);
+  }, [ready, center, zoom, onBoundsChange]);
 
   // Update markers when properties change
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !ready) return;
 
-    // Remove old cluster group
-    if (clusterRef.current) {
-      mapInstanceRef.current.removeLayer(clusterRef.current);
-    }
+    const map = mapInstanceRef.current;
 
-    const cluster = L.markerClusterGroup({
-      maxClusterRadius: 45,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      iconCreateFunction: (c) => {
-        const count = c.getChildCount();
-        let size: "small" | "medium" | "large" = "small";
-        if (count >= 20) size = "large";
-        else if (count >= 5) size = "medium";
-        return L.divIcon({
-          html: `<div class="marker-cluster-custom marker-cluster-${size}">+${count}</div>`,
-          className: "custom-price-marker",
-          iconSize: L.point(size === "large" ? 50 : size === "medium" ? 42 : 36, size === "large" ? 50 : size === "medium" ? 42 : 36),
-        });
-      },
-    });
+    // Clear existing markers
+    clustererRef.current?.clearMarkers();
+    clustererRef.current = null;
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    infoWindowRef.current?.close();
 
     const propsWithCoords = properties.filter((p) => p.latitude && p.longitude);
 
-    propsWithCoords.forEach((p) => {
+    const markers = propsWithCoords.map((p) => {
       const isSelected = p.id === selectedId;
       const isSale = p.listing_type === "sale";
+      const priceText = formatPriceShort(p.price);
+      const position = { lat: p.latitude!, lng: p.longitude! };
 
-      // Always solid color: red for sale, purple for rent
-      const bgColor = isSale ? "hsl(0, 72%, 50%)" : "hsl(270, 60%, 50%)";
-      const borderColor = isSelected
-        ? "white"
-        : (isSale ? "hsl(0, 72%, 38%)" : "hsl(270, 60%, 38%)");
-      const shadow = isSelected
-        ? "0 0 0 3px white, 0 4px 14px rgba(0,0,0,0.35)"
-        : "0 2px 8px rgba(0,0,0,0.2)";
-      const scale = isSelected ? "scale(1.2)" : "scale(1)";
-
-      const icon = L.divIcon({
-        className: "custom-price-marker",
-        html: `<div style="
-          background: ${bgColor};
-          color: white;
-          padding: 5px 12px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.02em;
-          white-space: nowrap;
-          box-shadow: ${shadow};
-          border: 2px solid ${borderColor};
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          ${isSelected ? "transform: translate(-50%, -50%) scale(1.2);" : "transform: translate(-50%, -50%);"}
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          text-align: center;
-        ">${formatPriceShort(p.price)}</div>`,
-        iconSize: [80, 28],
-        iconAnchor: [40, 14],
+      const marker = new google.maps.Marker({
+        position,
+        map,
+        icon: createPriceIcon(priceText, isSale, isSelected),
+        zIndex: isSelected ? 1000 : 1,
       });
 
-      const marker = L.marker([p.latitude!, p.longitude!], { icon });
-
-      marker.on("click", () => {
+      marker.addListener("click", () => {
         onSelect?.(p.id);
-      });
 
-      // Popup with share button
-      const mapsUrl = `https://www.google.com/maps?q=${p.latitude},${p.longitude}`;
-      const shareId = `share-${p.id}`;
-      const imgHtml = p.property_images?.[0]?.url
-        ? `<img src="${p.property_images[0].url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
-        : "";
-      const popup = L.popup({ maxWidth: 250 }).setContent(
-        `<div style="min-width:180px;font-family:'DM Sans',sans-serif;">
-          ${imgHtml}
-          <div style="font-weight:700;font-size:14px;color:${isSale ? 'hsl(0,72%,50%)' : 'hsl(270,60%,50%)'};">${formatPriceFull(p.price)}</div>
-          <div style="font-size:13px;font-weight:600;margin-top:2px;">${p.title}</div>
-          <div style="font-size:11px;color:#888;margin-top:2px;">${p.neighborhood ? p.neighborhood + ", " : ""}${p.city} - ${p.state}</div>
-          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-            <a href="/imovel/${p.id}" style="font-size:12px;color:hsl(213,80%,50%);font-weight:600;">Ver detalhes →</a>
-            <button id="${shareId}" style="
-              background:hsl(215,25%,27%);color:white;border:none;border-radius:6px;
-              padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
-              display:inline-flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;
-            ">📍 Compartilhar</button>
+        const mapsUrl = `https://www.google.com/maps?q=${p.latitude},${p.longitude}`;
+        const imgHtml = p.property_images?.[0]?.url
+          ? `<img src="${p.property_images[0].url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
+          : "";
+
+        const content = `
+          <div style="min-width:180px;font-family:'DM Sans',sans-serif;">
+            ${imgHtml}
+            <div style="font-weight:700;font-size:14px;color:${isSale ? "#dc2626" : "#9333ea"};">${formatPriceFull(p.price)}</div>
+            <div style="font-size:13px;font-weight:600;margin-top:2px;">${p.title}</div>
+            <div style="font-size:11px;color:#888;margin-top:2px;">${p.neighborhood ? p.neighborhood + ", " : ""}${p.city} - ${p.state}</div>
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+              <a href="/imovel/${p.id}" style="font-size:12px;color:#2563eb;font-weight:600;">Ver detalhes →</a>
+              <button id="share-${p.id}" style="
+                background:#334155;color:white;border:none;border-radius:6px;
+                padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+                display:inline-flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;
+              ">📍 Compartilhar</button>
+            </div>
+            <span id="share-${p.id}-feedback" style="font-size:10px;color:#16a34a;display:none;margin-top:4px;">Link copiado!</span>
           </div>
-          <span id="${shareId}-feedback" style="font-size:10px;color:hsl(150,60%,40%);display:none;margin-top:4px;">Link copiado!</span>
-        </div>`
-      );
+        `;
 
-      popup.on("add", () => {
-        const btn = document.getElementById(shareId);
-        btn?.addEventListener("click", async () => {
-          const shareData = { title: p.title, text: `${p.title} — ${formatPriceFull(p.price)}`, url: mapsUrl };
-          try {
-            if (navigator.share) {
-              await navigator.share(shareData);
-            } else {
-              await navigator.clipboard.writeText(mapsUrl);
-              const fb = document.getElementById(`${shareId}-feedback`);
-              if (fb) { fb.style.display = "inline"; setTimeout(() => { fb.style.display = "none"; }, 2000); }
+        infoWindowRef.current?.setContent(content);
+        infoWindowRef.current?.open(map, marker);
+
+        google.maps.event.addListenerOnce(infoWindowRef.current!, "domready", () => {
+          const btn = document.getElementById(`share-${p.id}`);
+          btn?.addEventListener("click", async () => {
+            const shareData = { title: p.title, text: `${p.title} — ${formatPriceFull(p.price)}`, url: mapsUrl };
+            try {
+              if (navigator.share) {
+                await navigator.share(shareData);
+              } else {
+                await navigator.clipboard.writeText(mapsUrl);
+                const fb = document.getElementById(`share-${p.id}-feedback`);
+                if (fb) {
+                  (fb as HTMLElement).style.display = "inline";
+                  setTimeout(() => { (fb as HTMLElement).style.display = "none"; }, 2000);
+                }
+              }
+            } catch {
+              // user cancelled
             }
-          } catch { /* user cancelled */ }
+          });
         });
       });
 
-      marker.bindPopup(popup);
-
-      cluster.addLayer(marker);
+      return marker;
     });
 
-    mapInstanceRef.current.addLayer(cluster);
-    clusterRef.current = cluster;
+    markersRef.current = markers;
+
+    if (markers.length > 0) {
+      clustererRef.current = new MarkerClusterer({
+        map,
+        markers,
+        renderer: clusterRenderer,
+      });
+    }
 
     // Only fit bounds when the set of properties actually changes
     const currentIds = propsWithCoords.map((p) => p.id).sort().join(",");
     if (currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
       prevPropertyIdsRef.current = currentIds;
-      const group = L.featureGroup(
-        propsWithCoords.map((p) => L.marker([p.latitude!, p.longitude!]))
-      );
-      mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1), { maxZoom: 14 });
+      const bounds = new google.maps.LatLngBounds();
+      propsWithCoords.forEach((p) => bounds.extend({ lat: p.latitude!, lng: p.longitude! }));
+      map.fitBounds(bounds, 40);
     }
-  }, [properties, selectedId, onSelect]);
+  }, [properties, selectedId, onSelect, ready]);
 
   return <div ref={mapRef} className="h-full w-full" />;
 };
