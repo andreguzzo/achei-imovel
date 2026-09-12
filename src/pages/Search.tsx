@@ -112,9 +112,13 @@ const Search = () => {
     }
 
     const { data } = await q.limit(100);
-    setProperties((data as PropertyWithImages[]) ?? []);
+    const rows = (data as PropertyWithImages[]) ?? [];
+    const { items, groupInfo } = await dedupeByGroup(rows);
+    setProperties(items);
+    setGroupInfo(groupInfo);
     setLoading(false);
   }, []);
+
 
   // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
