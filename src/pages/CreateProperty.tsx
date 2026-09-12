@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
+import BoundaryEditor from "@/components/BoundaryEditor";
+import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
@@ -273,6 +275,7 @@ const CreateProperty = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [boundary, setBoundary] = useState<BoundaryGeometry | null>(null);
 
   // Private info
   const [owners, setOwners] = useState<OwnerEntry[]>([emptyOwner()]);
@@ -356,6 +359,7 @@ const CreateProperty = () => {
       setVideoUrl(prop.video_url ?? "");
       setLatitude(prop.latitude?.toString() ?? "");
       setLongitude(prop.longitude?.toString() ?? "");
+      setBoundary(asBoundary(prop.boundary));
       setPropertyStatus(prop.status);
       setStatusAction(prop.status === "sold" ? "sold" : prop.status);
       setSoldPrice(prop.sold_price?.toString() ?? "");
@@ -496,6 +500,7 @@ const CreateProperty = () => {
       video_url: videoUrl || null,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
+      boundary: boundary as unknown as null,
       status: finalStatus as "active" | "inactive" | "sold" | "rented",
       sold_price: statusAction === "sold" ? Number(soldPrice) : null,
       sold_commission: statusAction === "sold" ? Number(soldCommission) : null,
@@ -663,6 +668,22 @@ const CreateProperty = () => {
                 longitude={longitude}
                 onLatChange={setLatitude}
                 onLngChange={setLongitude}
+                pt={pt}
+              />
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-2">{pt ? "Área do Imóvel" : "Property Area"}</h4>
+              <BoundaryEditor
+                boundary={boundary}
+                onChange={setBoundary}
+                center={
+                  boundary
+                    ? boundaryCenter(boundary)
+                    : latitude && longitude
+                      ? { lat: Number(latitude), lng: Number(longitude) }
+                      : null
+                }
                 pt={pt}
               />
             </div>
