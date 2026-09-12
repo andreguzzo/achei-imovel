@@ -23,7 +23,7 @@ import NotFound from "./pages/NotFound";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Admin = lazy(() => import("./pages/Admin"));
 const CreateProperty = lazy(() => import("./pages/CreateProperty"));
-const BrokerSales = lazy(() => import("./pages/BrokerSales"));
+
 const BrokerProfile = lazy(() => import("./pages/BrokerProfile"));
 const Financing = lazy(() => import("./pages/Financing"));
 const Plans = lazy(() => import("./pages/Plans"));
