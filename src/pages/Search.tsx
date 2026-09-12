@@ -205,7 +205,16 @@ const Search = () => {
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((p) => (
-                <PropertyCard key={p.id} property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
+                <PropertyCard
+                  key={p.id}
+                  property={p}
+                  favorited={isFavorited(p.id)}
+                  onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+                  brokerCount={groupInfo.get(p.id)?.brokerCount}
+                  priceFrom={groupInfo.get(p.id)?.priceFrom}
+                  priceTo={groupInfo.get(p.id)?.priceTo}
+                />
+
               ))}
             </div>
           )}
