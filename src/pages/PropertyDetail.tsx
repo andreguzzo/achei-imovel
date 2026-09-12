@@ -146,6 +146,9 @@ const PropertyDetail = () => {
   const [loading, setLoading] = useState(true);
   const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
+  const [ownerRole, setOwnerRole] = useState<MemberRole | null>(null);
+  const [ownerPartnershipType, setOwnerPartnershipType] = useState<PartnershipKind | null>(null);
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [copied, setCopied] = useState(false);
   const { isFavorited: isFavFn, toggle: toggleFav } = useFavorites();
