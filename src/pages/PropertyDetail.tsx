@@ -189,8 +189,8 @@ const PropertyDetail = () => {
 
             const [profilesRes, pricesRes] = await Promise.all([
               supabase
-                .from("profiles")
-                .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+                .from("brokers_public")
+                .select("user_id, full_name, creci, avatar_url, username, commercial_name")
                 .in("user_id", brokerIds),
               supabase
                 .from("properties")
@@ -205,8 +205,11 @@ const PropertyDetail = () => {
               broker_id: m.broker_id,
               property_id: m.property_id,
               price: priceMap.get(m.property_id) ?? 0,
-              profile: (profileMap.get(m.broker_id) as BrokerProfile) ?? null,
+              profile: profileMap.has(m.broker_id)
+                ? ({ ...profileMap.get(m.broker_id), phone: null, whatsapp: null } as BrokerProfile)
+                : null,
             }));
+
             setGroupBrokers(brokers);
           }
         }
