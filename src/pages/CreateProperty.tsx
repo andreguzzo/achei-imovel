@@ -576,7 +576,32 @@ const CreateProperty = () => {
         return;
       }
       propId = prop.id;
+
+      // Consolidated listing handling
+      if (dupChoice === "request" && dupGroup) {
+        const { error: reqErr } = await supabase.rpc("request_group_membership", {
+          _group_id: dupGroup.group_id,
+          _property_id: propId,
+          _partnership_type: dupKind,
+          _commission_split: Number(dupSplit) || undefined,
+          _terms: dupTerms || undefined,
+        });
+        if (reqErr) {
+          toast({ title: pt ? "Erro na solicitação de parceria" : "Partnership request failed", description: reqErr.message, variant: "destructive" });
+        } else {
+          toast({
+            title: pt ? "Solicitação enviada ao captador" : "Request sent to the listing broker",
+            description: pt
+              ? "Seu anúncio ficará visível como parceria após a aprovação."
+              : "Your listing appears as a partnership once approved.",
+          });
+        }
+      } else if (dupChoice === "separate") {
+        const { error: detErr } = await supabase.rpc("detach_property_group", { _property_id: propId });
+        if (detErr) console.warn("detach error", detErr.message);
+      }
     }
+
 
     // If sold by broker, also close any matching pipeline entries
     if (statusAction === "sold" && soldPrice) {
