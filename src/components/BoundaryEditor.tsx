@@ -56,7 +56,7 @@ const BoundaryEditor = ({ boundary, onChange, center, pt = true }: BoundaryEdito
       polygonsRef.current = [];
       mapInstanceRef.current = null;
     };
-  }, [ready, center]);
+  }, [ready]);
 
   // Render the saved boundary
   useEffect(() => {
