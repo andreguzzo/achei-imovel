@@ -169,7 +169,15 @@ const Search = () => {
                       onMouseEnter={() => setSelectedPropertyId(p.id)}
                       onMouseLeave={() => setSelectedPropertyId(undefined)}
                     >
-                      <PropertyCard property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
+                      <PropertyCard
+                        property={p}
+                        favorited={isFavorited(p.id)}
+                        onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+                        brokerCount={groupInfo.get(p.id)?.brokerCount}
+                        priceFrom={groupInfo.get(p.id)?.priceFrom}
+                        priceTo={groupInfo.get(p.id)?.priceTo}
+                      />
+
                     </div>
                   ))}
                 </div>
