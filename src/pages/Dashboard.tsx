@@ -615,6 +615,35 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Social post exporter */}
+      <SocialPostExporter
+        open={!!socialTarget}
+        onOpenChange={(o) => !o && setSocialTarget(null)}
+        broker={{ name: commercialName || fullName || "", creci, phone: whatsapp || phone }}
+        property={
+          socialTarget
+            ? {
+                id: socialTarget.id,
+                title: socialTarget.title,
+                price: socialTarget.price,
+                listing_type: socialTarget.listing_type,
+                property_type: socialTarget.property_type,
+                city: socialTarget.city,
+                state: socialTarget.state,
+                neighborhood: socialTarget.neighborhood,
+                bedrooms: socialTarget.bedrooms,
+                bathrooms: socialTarget.bathrooms,
+                parking_spots: socialTarget.parking_spots,
+                area: socialTarget.area,
+                description: socialTarget.description,
+                images: [...(socialTarget.property_images ?? [])]
+                  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((i) => i.url),
+              }
+            : null
+        }
+      />
     </div>
   );
 };
