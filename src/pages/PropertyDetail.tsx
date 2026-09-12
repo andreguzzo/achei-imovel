@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check } from "lucide-react";
 import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
+import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -228,6 +229,14 @@ const PropertyDetail = () => {
     "pt-BR": { apartment: "Apartamento", house: "Casa", land: "Terreno", commercial: "Comercial" },
     en: { apartment: "Apartment", house: "House", land: "Land", commercial: "Commercial" },
   };
+
+  const propertyBoundary = asBoundary((property as { boundary?: unknown }).boundary);
+  const mapCenter =
+    property.latitude != null && property.longitude != null
+      ? { lat: Number(property.latitude), lng: Number(property.longitude) }
+      : propertyBoundary
+        ? boundaryCenter(propertyBoundary)
+        : null;
 
   const allBrokerProfiles: BrokerProfile[] = [];
   if (ownerProfile) allBrokerProfiles.push(ownerProfile);
