@@ -196,13 +196,16 @@ const PropertyDetail = () => {
         // Fetch group members (other brokers listing the same property)
         const { data: memberWithGroup } = await supabase
           .from("property_group_members")
-          .select("group_id")
+          .select("group_id, role, partnership_type")
           .eq("property_id", id)
           .eq("status", "approved")
           .limit(1)
           .maybeSingle();
 
         if (memberWithGroup) {
+          setOwnerRole(memberWithGroup.role);
+          setOwnerPartnershipType(memberWithGroup.partnership_type);
+
           const { data: allMembers } = await supabase
             .from("property_group_members")
             .select("broker_id, property_id, role, partnership_type")
