@@ -78,7 +78,7 @@ const BrokerCard = ({
 
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
+    <div className={`flex items-start gap-3 rounded-xl border bg-card p-4 ${highlight ? "border-primary/40 bg-primary/5" : ""}`}>
       <Link to={profile.username ? `/corretor/${profile.username}` : "#"}>
         <Avatar className="h-14 w-14 border-2 border-primary/20">
           <AvatarImage src={profile.avatar_url ?? undefined} />
@@ -92,9 +92,20 @@ const BrokerCard = ({
         >
           {profile.commercial_name || profile.full_name || "Corretor"}
         </Link>
+        {tagline && (
+          <Badge variant={highlight ? "default" : "outline"} className="ml-2 align-middle text-[10px]">
+            {tagline}
+          </Badge>
+        )}
+        {price != null && price > 0 && (
+          <p className="text-sm font-semibold text-primary">
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price)}
+          </p>
+        )}
         {profile.creci && (
           <p className="text-xs text-muted-foreground">CRECI: {profile.creci}</p>
         )}
+
         {profile.phone && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
             <PhoneIcon className="h-3 w-3" /> {profile.phone}
