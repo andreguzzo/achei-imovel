@@ -441,25 +441,52 @@ export type Database = {
       }
       property_group_members: {
         Row: {
+          approved_at: string | null
           broker_id: string
+          commission_split: number | null
           group_id: string
           id: string
           joined_at: string
+          partnership_type:
+            | Database["public"]["Enums"]["partnership_kind"]
+            | null
           property_id: string
+          requested_by: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          status: Database["public"]["Enums"]["member_status"]
+          terms: string | null
         }
         Insert: {
+          approved_at?: string | null
           broker_id: string
+          commission_split?: number | null
           group_id: string
           id?: string
           joined_at?: string
+          partnership_type?:
+            | Database["public"]["Enums"]["partnership_kind"]
+            | null
           property_id: string
+          requested_by?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          terms?: string | null
         }
         Update: {
+          approved_at?: string | null
           broker_id?: string
+          commission_split?: number | null
           group_id?: string
           id?: string
           joined_at?: string
+          partnership_type?:
+            | Database["public"]["Enums"]["partnership_kind"]
+            | null
           property_id?: string
+          requested_by?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          terms?: string | null
         }
         Relationships: [
           {
@@ -484,8 +511,11 @@ export type Database = {
           canonical_address: string
           city: string
           created_at: string
+          exclusive: boolean
           id: string
+          is_partnership_only: boolean
           neighborhood: string | null
+          primary_broker_id: string | null
           property_type: Database["public"]["Enums"]["property_type"]
           state: string
         }
@@ -494,8 +524,11 @@ export type Database = {
           canonical_address: string
           city: string
           created_at?: string
+          exclusive?: boolean
           id?: string
+          is_partnership_only?: boolean
           neighborhood?: string | null
+          primary_broker_id?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           state: string
         }
@@ -504,8 +537,11 @@ export type Database = {
           canonical_address?: string
           city?: string
           created_at?: string
+          exclusive?: boolean
           id?: string
+          is_partnership_only?: boolean
           neighborhood?: string | null
+          primary_broker_id?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           state?: string
         }
@@ -916,6 +952,24 @@ export type Database = {
         Args: { _broker_a: string; _broker_b: string }
         Returns: string
       }
+      find_property_group: {
+        Args: {
+          _address: string
+          _area?: number
+          _city: string
+          _property_type: Database["public"]["Enums"]["property_type"]
+          _state: string
+        }
+        Returns: {
+          exclusive: boolean
+          group_id: string
+          member_count: number
+          primary_broker_id: string
+          primary_broker_name: string
+          sample_property_id: string
+          sample_title: string
+        }[]
+      }
       get_broker_contact: {
         Args: { _user_id: string }
         Returns: {
@@ -935,6 +989,26 @@ export type Database = {
         Args: { _property_id: string }
         Returns: undefined
       }
+      request_group_membership: {
+        Args: {
+          _commission_split?: number
+          _group_id: string
+          _partnership_type: Database["public"]["Enums"]["partnership_kind"]
+          _property_id: string
+          _terms?: string
+        }
+        Returns: string
+      }
+      respond_group_membership: {
+        Args: {
+          _approve: boolean
+          _commission_split?: number
+          _member_id: string
+          _partnership_type?: Database["public"]["Enums"]["partnership_kind"]
+          _terms?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "broker" | "user"
@@ -946,6 +1020,9 @@ export type Database = {
         | "follow_up"
         | "other"
       listing_type: "sale" | "rent"
+      member_role: "captador" | "parceiro"
+      member_status: "pending" | "approved" | "declined"
+      partnership_kind: "co_listing" | "sale_partnership" | "non_exclusive"
       partnership_status: "pending" | "active" | "declined" | "completed"
       pipeline_stage:
         | "lead"
@@ -1095,6 +1172,9 @@ export const Constants = {
         "other",
       ],
       listing_type: ["sale", "rent"],
+      member_role: ["captador", "parceiro"],
+      member_status: ["pending", "approved", "declined"],
+      partnership_kind: ["co_listing", "sale_partnership", "non_exclusive"],
       partnership_status: ["pending", "active", "declined", "completed"],
       pipeline_stage: [
         "lead",
