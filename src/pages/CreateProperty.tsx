@@ -290,6 +290,14 @@ const CreateProperty = () => {
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
   const [propertyStatus, setPropertyStatus] = useState<string>("active");
 
+  // Duplicate listing / partnership flow
+  const [dupGroup, setDupGroup] = useState<DupGroup | null>(null);
+  const [dupChoice, setDupChoice] = useState<"request" | "separate" | null>(null);
+  const [dupKind, setDupKind] = useState<PartnershipKind>("sale_partnership");
+  const [dupSplit, setDupSplit] = useState("50");
+  const [dupTerms, setDupTerms] = useState("");
+
+
   // AI generation
   const [generatingAI, setGeneratingAI] = useState(false);
 
