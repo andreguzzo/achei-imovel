@@ -952,6 +952,7 @@ export type Database = {
         Args: { _broker_a: string; _broker_b: string }
         Returns: string
       }
+      detach_property_group: { Args: { _property_id: string }; Returns: string }
       find_property_group: {
         Args: {
           _address: string
