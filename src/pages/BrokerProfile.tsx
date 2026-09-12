@@ -213,7 +213,15 @@ const BrokerProfile = () => {
                 </Button>
               </a>
             )}
+            {!broker.whatsapp && !broker.phone && (
+              <Link to="/login">
+                <Button variant="outline" className="gap-2">
+                  <Phone className="h-4 w-4" /> {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
+                </Button>
+              </Link>
+            )}
           </div>
+
         </motion.div>
 
         {/* Bio */}
