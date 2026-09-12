@@ -90,6 +90,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
   const markersRef = useRef<google.maps.Marker[]>([]);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const polygonsRef = useRef<google.maps.Polygon[]>([]);
   const prevPropertyIdsRef = useRef<string>("");
 
   // Initialize / destroy map
@@ -130,6 +131,8 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       clustererRef.current = null;
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
+      polygonsRef.current.forEach((poly) => poly.setMap(null));
+      polygonsRef.current = [];
       infoWindowRef.current?.close();
       infoWindowRef.current = null;
       mapInstanceRef.current = null;
@@ -228,12 +231,35 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       });
     }
 
+    // Draw rural boundaries when properties carry one
+    polygonsRef.current.forEach((poly) => poly.setMap(null));
+    polygonsRef.current = properties.flatMap((p) => {
+      const geometry = asBoundary((p as { boundary?: unknown }).boundary);
+      if (!geometry) return [];
+      const paths = boundaryToPaths(geometry);
+      if (paths.length === 0) return [];
+      return [
+        new google.maps.Polygon({
+          paths,
+          map,
+          strokeColor: "#2563eb",
+          strokeWeight: 2,
+          fillColor: "#2563eb",
+          fillOpacity: 0.18,
+          clickable: false,
+        }),
+      ];
+    });
+
     // Only fit bounds when the set of properties actually changes
     const currentIds = propsWithCoords.map((p) => p.id).sort().join(",");
     if (currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
       prevPropertyIdsRef.current = currentIds;
       const bounds = new google.maps.LatLngBounds();
       propsWithCoords.forEach((p) => bounds.extend({ lat: p.latitude!, lng: p.longitude! }));
+      polygonsRef.current.forEach((poly) =>
+        poly.getPaths().forEach((ring) => ring.forEach((pt) => bounds.extend(pt)))
+      );
       map.fitBounds(bounds, 40);
     }
   }, [properties, selectedId, onSelect, ready]);
