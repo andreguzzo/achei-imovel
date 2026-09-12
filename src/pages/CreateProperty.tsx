@@ -250,7 +250,10 @@ const CreateProperty = () => {
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
+  const { pathname } = useLocation();
   const isEditMode = !!editId;
+  // Admins edit any listing through /admin/imovel/:id — no ownership or plan limits
+  const adminMode = pathname.startsWith("/admin/imovel");
   const pt = locale === "pt-BR";
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
