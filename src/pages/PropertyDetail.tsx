@@ -85,7 +85,7 @@ const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; pr
             <PhoneIcon className="h-3 w-3" /> {profile.phone}
           </p>
         )}
-        {whatsappNumber && (
+        {whatsappNumber ? (
           <a
             href={buildWhatsAppUrl(whatsappNumber, propertyTitle)}
             target="_blank"
@@ -97,7 +97,15 @@ const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; pr
               {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
             </Button>
           </a>
+        ) : (
+          <Link to="/login" className="mt-2 inline-flex">
+            <Button size="sm" variant="outline" className="gap-1.5">
+              <PhoneIcon className="h-4 w-4" />
+              {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
+            </Button>
+          </Link>
         )}
+
       </div>
     </div>
   );
