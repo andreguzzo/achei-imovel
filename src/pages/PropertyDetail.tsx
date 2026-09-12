@@ -345,7 +345,7 @@ const PropertyDetail = () => {
           )}
 
           {/* Map */}
-          {property.latitude != null && property.longitude != null && (
+          {mapCenter && (
             <div>
               <h2 className="font-display text-lg font-semibold flex items-center gap-2">
                 <MapPin className="h-5 w-5" /> {pt ? "Localização" : "Location"}
@@ -353,12 +353,19 @@ const PropertyDetail = () => {
               <div className="mt-2 h-64 rounded-lg overflow-hidden border">
                 <PropertyMap
                   properties={[property as any]}
-                  center={[Number(property.latitude), Number(property.longitude)]}
+                  center={[mapCenter.lat, mapCenter.lng]}
                   zoom={15}
                 />
               </div>
+              {propertyBoundary && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {pt
+                    ? "A área destacada em azul indica os limites aproximados da propriedade."
+                    : "The blue highlighted area shows the approximate property boundaries."}
+                </p>
+              )}
               <a
-                href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
+                href={`https://www.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
