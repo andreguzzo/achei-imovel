@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { asBoundary, boundaryToPaths } from "@/lib/kmlParser";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
