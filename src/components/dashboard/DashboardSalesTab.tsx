@@ -360,7 +360,14 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
 
         {/* Partnerships Tab */}
         <TabsContent value="partnerships">
-          <div className="space-y-4">
+          <PropertyPartnerships userId={userId} />
+          <div className="mt-6 space-y-4">
+            {partnerships.length > 0 && (
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {pt ? "Parcerias entre corretores" : "Broker-to-broker partnerships"}
+              </h3>
+            )}
+
             {partnerships.length === 0 ? (
               <p className="py-10 text-center text-muted-foreground">
                 {pt ? "Nenhuma parceria encontrada." : "No partnerships found."}
