@@ -54,6 +54,7 @@ const Admin = () => {
         <TabsContent value="metrics"><AdminMetricsTab /></TabsContent>
         <TabsContent value="users"><AdminUsersTab /></TabsContent>
         <TabsContent value="properties"><AdminPropertiesTab /></TabsContent>
+        <TabsContent value="plans"><AdminPlansTab /></TabsContent>
         <TabsContent value="subscriptions"><AdminSubscriptionsTab /></TabsContent>
         <TabsContent value="support"><AdminSupportTab /></TabsContent>
       </Tabs>
