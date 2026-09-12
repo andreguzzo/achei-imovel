@@ -490,6 +490,28 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Connected social accounts (coming soon) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{pt ? "Publicação em redes sociais" : "Social media publishing"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {pt
+                    ? "Hoje você já pode exportar cada imóvel como post pronto (imagem + legenda) na aba Imóveis. A publicação automática na sua conta será liberada em breve."
+                    : "You can already export each property as a ready-to-post image and caption in the Properties tab. Automatic publishing to your account is coming soon."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" disabled className="gap-1.5">
+                    <Instagram className="h-4 w-4" /> {pt ? "Conectar Instagram (em breve)" : "Connect Instagram (soon)"}
+                  </Button>
+                  <Button variant="outline" size="sm" disabled className="gap-1.5">
+                    <ExternalLink className="h-4 w-4" /> {pt ? "Conectar Facebook (em breve)" : "Connect Facebook (soon)"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Email Verification */}
             <EmailVerification
               email={email}
