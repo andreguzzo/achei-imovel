@@ -60,7 +60,9 @@ const Search = () => {
   const { isFavorited, toggle: toggleFav } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
+  const [groupInfo, setGroupInfo] = useState<Map<string, GroupInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+
   const [showMap, setShowMap] = useState(searchParams.get("mapa") !== "false");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>();
   const [filters, setFilters] = useState<SearchFiltersState>(() => paramsToFilters(searchParams));
