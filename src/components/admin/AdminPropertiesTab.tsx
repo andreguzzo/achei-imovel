@@ -261,8 +261,11 @@ const AdminPropertiesTab = () => {
                 </div>
               </div>
               <div className="border-t pt-3 flex gap-2 flex-wrap">
+                <Button className="gap-1" onClick={() => navigate(`/admin/imovel/${selected.id}`)}>
+                  <Edit className="h-4 w-4" /> Editar tudo
+                </Button>
                 <Button variant="outline" className="gap-1" onClick={() => { setSelected(null); openEdit(selected); }}>
-                  <Edit className="h-4 w-4" /> Editar
+                  <Edit className="h-4 w-4" /> Edição rápida
                 </Button>
                 <a href={`/imovel/${selected.id}`} target="_blank" rel="noreferrer">
                   <Button variant="outline" className="gap-1">
