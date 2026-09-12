@@ -17,6 +17,21 @@ import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlPars
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
+import {
+  PARTNERSHIP_KINDS,
+  partnershipKindHint,
+  partnershipKindLabel,
+  type PartnershipKind,
+} from "@/lib/partnerships";
+
+type DupGroup = {
+  group_id: string;
+  member_count: number;
+  primary_broker_id: string;
+  primary_broker_name: string;
+  exclusive: boolean;
+};
+
 
 const propertySchema = z.object({
   title: z.string().trim().min(5, "Título deve ter pelo menos 5 caracteres").max(200),
@@ -290,6 +305,14 @@ const CreateProperty = () => {
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
   const [propertyStatus, setPropertyStatus] = useState<string>("active");
 
+  // Duplicate listing / partnership flow
+  const [dupGroup, setDupGroup] = useState<DupGroup | null>(null);
+  const [dupChoice, setDupChoice] = useState<"request" | "separate" | null>(null);
+  const [dupKind, setDupKind] = useState<PartnershipKind>("sale_partnership");
+  const [dupSplit, setDupSplit] = useState("50");
+  const [dupTerms, setDupTerms] = useState("");
+
+
   // AI generation
   const [generatingAI, setGeneratingAI] = useState(false);
 
@@ -465,15 +488,33 @@ const CreateProperty = () => {
     toast({ title: `Status: ${labels[statusAction]}` });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, choiceOverride?: "request" | "separate") => {
+    e?.preventDefault();
+    const choice = choiceOverride ?? dupChoice;
     const parsed = propertySchema.safeParse({ title, city, state, price: Number(price) });
     if (!parsed.success) {
       toast({ title: "Erro", description: parsed.error.errors[0]?.message, variant: "destructive" });
       return;
     }
 
+    // Detect an existing consolidated listing for the same property
+    if (!isEditMode && !choice && address.trim() && user) {
+      const { data: found } = await supabase.rpc("find_property_group", {
+        _address: address,
+        _city: city,
+        _state: state,
+        _property_type: propertyType as "apartment" | "house" | "land" | "commercial",
+        _area: area ? Number(area) : undefined,
+      });
+      const group = (found as DupGroup[] | null)?.[0];
+      if (group && group.primary_broker_id !== user.id) {
+        setDupGroup(group);
+        return;
+      }
+    }
+
     setSubmitting(true);
+
 
     const isSoldByOther = statusAction === "sold_by_other";
     const finalStatus = isSoldByOther ? "sold" : propertyStatus;
@@ -536,7 +577,32 @@ const CreateProperty = () => {
         return;
       }
       propId = prop.id;
+
+      // Consolidated listing handling
+      if (choice === "request" && dupGroup) {
+        const { error: reqErr } = await supabase.rpc("request_group_membership", {
+          _group_id: dupGroup.group_id,
+          _property_id: propId,
+          _partnership_type: dupKind,
+          _commission_split: Number(dupSplit) || undefined,
+          _terms: dupTerms || undefined,
+        });
+        if (reqErr) {
+          toast({ title: pt ? "Erro na solicitação de parceria" : "Partnership request failed", description: reqErr.message, variant: "destructive" });
+        } else {
+          toast({
+            title: pt ? "Solicitação enviada ao captador" : "Request sent to the listing broker",
+            description: pt
+              ? "Seu anúncio ficará visível como parceria após a aprovação."
+              : "Your listing appears as a partnership once approved.",
+          });
+        }
+      } else if (choice === "separate") {
+        const { error: detErr } = await supabase.rpc("detach_property_group", { _property_id: propId });
+        if (detErr) console.warn("detach error", detErr.message);
+      }
     }
+
 
     // If sold by broker, also close any matching pipeline entries
     if (statusAction === "sold" && soldPrice) {
@@ -777,6 +843,63 @@ const CreateProperty = () => {
           setSoldByOtherPrice={setSoldByOtherPrice}
           onConfirm={handleStatusConfirm}
         />
+
+        {/* Duplicate listing / partnership dialog */}
+        <Dialog open={!!dupGroup} onOpenChange={(o) => { if (!o) setDupGroup(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{pt ? "Este imóvel já está anunciado" : "This property is already listed"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {pt
+                  ? `O imóvel já foi captado por ${dupGroup?.primary_broker_name ?? "outro corretor"}. Para evitar anúncios duplicados, solicite participação nesta captação.`
+                  : `This property was already captured by ${dupGroup?.primary_broker_name ?? "another broker"}. To avoid duplicate listings, request to join it.`}
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{pt ? "Tipo de parceria" : "Partnership type"}</label>
+                <Select value={dupKind} onValueChange={(v) => setDupKind(v as PartnershipKind)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PARTNERSHIP_KINDS.map((k) => (
+                      <SelectItem key={k} value={k}>{partnershipKindLabel(k, pt)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{partnershipKindHint(dupKind, pt)}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">{pt ? "Sua comissão (%)" : "Your commission (%)"}</label>
+                  <Input type="number" min="0" max="100" value={dupSplit} onChange={(e) => setDupSplit(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">{pt ? "Termos" : "Terms"}</label>
+                <Textarea value={dupTerms} onChange={(e) => setDupTerms(e.target.value)} placeholder={pt ? "Descreva os termos da parceria..." : "Describe the partnership terms..."} />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={() => { setDupChoice("request"); void handleSubmit(undefined, "request"); setDupGroup(null); }}
+                >
+                  {pt ? "Solicitar participação" : "Request to join"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { setDupChoice("separate"); void handleSubmit(undefined, "separate"); setDupGroup(null); }}
+                >
+                  {pt ? "É outro imóvel, publicar separado" : "Different property, publish separately"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Show existing images in edit mode */}
         {isEditMode && existingImages.length > 0 && (

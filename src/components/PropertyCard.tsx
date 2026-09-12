@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bed, Bath, Car, Maximize, Heart } from "lucide-react";
+import { Bed, Bath, Car, Maximize, Heart, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -8,8 +8,11 @@ type Property = Tables<"properties"> & {
   property_images?: Tables<"property_images">[];
 };
 
+const currency = (price: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
+
 const formatPrice = (price: number, listingType: string) => {
-  const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
+  const formatted = currency(price);
   return listingType === "rent" ? `${formatted}/mês` : formatted;
 };
 
@@ -22,12 +25,27 @@ interface PropertyCardProps {
   property: Property;
   favorited?: boolean;
   onToggleFavorite?: (e: React.MouseEvent) => void;
+  /** Number of brokers advertising this same property (consolidated listing) */
+  brokerCount?: number;
+  priceFrom?: number;
+  priceTo?: number;
 }
 
-const PropertyCard = ({ property, favorited = false, onToggleFavorite }: PropertyCardProps) => {
+const PropertyCard = ({
+  property,
+  favorited = false,
+  onToggleFavorite,
+  brokerCount,
+  priceFrom,
+  priceTo,
+}: PropertyCardProps) => {
   const { locale } = useLanguage();
+  const pt = locale === "pt-BR";
   const imageUrl = property.property_images?.[0]?.url;
   const label = typeLabels[locale]?.[property.property_type] ?? property.property_type;
+  const hasRange =
+    priceFrom != null && priceTo != null && priceTo > priceFrom;
+
 
   return (
     <Link
@@ -59,9 +77,23 @@ const PropertyCard = ({ property, favorited = false, onToggleFavorite }: Propert
             <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
           </button>
         )}
+        {brokerCount != null && brokerCount > 1 && (
+          <Badge
+            variant="secondary"
+            className="absolute bottom-3 left-3 gap-1 text-[11px] backdrop-blur-sm"
+          >
+            <Users className="h-3 w-3" />
+            {brokerCount} {pt ? "corretores" : "brokers"}
+          </Badge>
+        )}
       </div>
       <div className="space-y-1.5 p-4">
-        <p className="text-lg font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
+        <p className="text-lg font-bold text-primary">
+          {hasRange
+            ? `${currency(priceFrom!)} – ${currency(priceTo!)}${property.listing_type === "rent" ? "/mês" : ""}`
+            : formatPrice(property.price, property.listing_type)}
+        </p>
+
         <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{property.title}</h3>
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {property.neighborhood ? `${property.neighborhood}, ` : ""}{property.city} - {property.state}

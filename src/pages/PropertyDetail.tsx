@@ -16,6 +16,8 @@ import { getEmbedUrl } from "@/lib/video";
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { partnershipKindLabel, type MemberRole, type PartnershipKind } from "@/lib/partnerships";
+
 
 type Property = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
@@ -36,8 +38,11 @@ type GroupBroker = {
   broker_id: string;
   property_id: string;
   price: number;
+  role: MemberRole;
+  partnership_type: PartnershipKind | null;
   profile: BrokerProfile | null;
 };
+
 
 const formatPrice = (price: number, listingType: string) => {
   const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
@@ -56,11 +61,26 @@ const buildWhatsAppUrl = (phone: string, propertyTitle: string) => {
   return `https://wa.me/${number}?text=${msg}`;
 };
 
-const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; propertyTitle: string; pt: boolean }) => {
+const BrokerCard = ({
+  profile,
+  propertyTitle,
+  pt,
+  tagline,
+  price,
+  highlight = false,
+}: {
+  profile: BrokerProfile;
+  propertyTitle: string;
+  pt: boolean;
+  tagline?: string;
+  price?: number;
+  highlight?: boolean;
+}) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
 
+
   return (
-    <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
+    <div className={`flex items-start gap-3 rounded-xl border bg-card p-4 ${highlight ? "border-primary/40 bg-primary/5" : ""}`}>
       <Link to={profile.username ? `/corretor/${profile.username}` : "#"}>
         <Avatar className="h-14 w-14 border-2 border-primary/20">
           <AvatarImage src={profile.avatar_url ?? undefined} />
@@ -74,9 +94,20 @@ const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; pr
         >
           {profile.commercial_name || profile.full_name || "Corretor"}
         </Link>
+        {tagline && (
+          <Badge variant={highlight ? "default" : "outline"} className="ml-2 align-middle text-[10px]">
+            {tagline}
+          </Badge>
+        )}
+        {price != null && price > 0 && (
+          <p className="text-sm font-semibold text-primary">
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price)}
+          </p>
+        )}
         {profile.creci && (
           <p className="text-xs text-muted-foreground">CRECI: {profile.creci}</p>
         )}
+
         {profile.phone && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
             <PhoneIcon className="h-3 w-3" /> {profile.phone}
@@ -117,6 +148,9 @@ const PropertyDetail = () => {
   const [loading, setLoading] = useState(true);
   const [ownerProfile, setOwnerProfile] = useState<BrokerProfile | null>(null);
   const [groupBrokers, setGroupBrokers] = useState<GroupBroker[]>([]);
+  const [ownerRole, setOwnerRole] = useState<MemberRole | null>(null);
+  const [ownerPartnershipType, setOwnerPartnershipType] = useState<PartnershipKind | null>(null);
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [copied, setCopied] = useState(false);
   const { isFavorited: isFavFn, toggle: toggleFav } = useFavorites();
@@ -164,19 +198,24 @@ const PropertyDetail = () => {
         if (ownerProf) setOwnerProfile({ ...ownerProf, phone: null, whatsapp: null } as BrokerProfile);
 
 
-        // Fetch group members (other brokers listing same property)
+        // Fetch group members (other brokers listing the same property)
         const { data: memberWithGroup } = await supabase
           .from("property_group_members")
-          .select("group_id")
+          .select("group_id, role, partnership_type")
           .eq("property_id", id)
+          .eq("status", "approved")
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (memberWithGroup) {
+          setOwnerRole(memberWithGroup.role);
+          setOwnerPartnershipType(memberWithGroup.partnership_type);
+
           const { data: allMembers } = await supabase
             .from("property_group_members")
-            .select("broker_id, property_id")
+            .select("broker_id, property_id, role, partnership_type")
             .eq("group_id", memberWithGroup.group_id)
+            .eq("status", "approved")
             .neq("broker_id", (prop as Property).user_id);
 
           if (allMembers && allMembers.length > 0) {
@@ -202,6 +241,8 @@ const PropertyDetail = () => {
               broker_id: m.broker_id,
               property_id: m.property_id,
               price: priceMap.get(m.property_id) ?? 0,
+              role: m.role,
+              partnership_type: m.partnership_type,
               profile: profileMap.has(m.broker_id)
                 ? ({ ...profileMap.get(m.broker_id), phone: null, whatsapp: null } as BrokerProfile)
                 : null,
@@ -210,6 +251,7 @@ const PropertyDetail = () => {
             setGroupBrokers(brokers);
           }
         }
+
       }
       setLoading(false);
     };
@@ -340,9 +382,35 @@ const PropertyDetail = () => {
         ? boundaryCenter(propertyBoundary)
         : null;
 
-  const allBrokerProfiles: BrokerProfile[] = [];
-  if (ownerProfile) allBrokerProfiles.push(ownerProfile);
-  groupBrokers.forEach((gb) => { if (gb.profile) allBrokerProfiles.push(gb.profile); });
+  type BrokerEntry = { profile: BrokerProfile; tagline?: string; price?: number; highlight?: boolean };
+  const brokerEntries: BrokerEntry[] = [];
+  if (ownerProfile) {
+    brokerEntries.push({
+      profile: ownerProfile,
+      highlight: ownerRole === "captador",
+      tagline:
+        ownerRole === "captador"
+          ? pt ? "Captador" : "Listing broker"
+          : ownerRole === "parceiro"
+            ? partnershipKindLabel(ownerPartnershipType, pt)
+            : undefined,
+      price: groupBrokers.length > 0 ? property.price : undefined,
+    });
+  }
+  groupBrokers.forEach((gb) => {
+    if (!gb.profile) return;
+    brokerEntries.push({
+      profile: gb.profile,
+      highlight: gb.role === "captador",
+      tagline:
+        gb.role === "captador"
+          ? pt ? "Captador" : "Listing broker"
+          : partnershipKindLabel(gb.partnership_type, pt),
+      price: gb.price,
+    });
+  });
+  brokerEntries.sort((a, b) => Number(!!b.highlight) - Number(!!a.highlight));
+
 
   return (
     <div className="container py-8">
@@ -504,17 +572,33 @@ const PropertyDetail = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-4 w-4 text-primary" />
-                {allBrokerProfiles.length > 1
-                  ? (pt ? "Corretores" : "Brokers")
+                {brokerEntries.length > 1
+                  ? (pt ? "Corretores deste imóvel" : "Brokers for this listing")
                   : (pt ? "Corretor responsável" : "Listing agent")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {allBrokerProfiles.map((bp) => (
-                <BrokerCard key={bp.user_id} profile={bp} propertyTitle={property.title} pt={pt} />
+              {brokerEntries.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  {pt
+                    ? "Este imóvel é anunciado em parceria. Fale com qualquer um dos corretores abaixo."
+                    : "This listing is shared in partnership. Contact any of the brokers below."}
+                </p>
+              )}
+              {brokerEntries.map((e) => (
+                <BrokerCard
+                  key={e.profile.user_id}
+                  profile={e.profile}
+                  propertyTitle={property.title}
+                  pt={pt}
+                  tagline={e.tagline}
+                  price={e.price}
+                  highlight={e.highlight}
+                />
               ))}
-              {allBrokerProfiles.length === 0 && (
+              {brokerEntries.length === 0 && (
                 <p className="text-sm text-muted-foreground">{pt ? "Informações do corretor não disponíveis." : "Broker info not available."}</p>
+
               )}
             </CardContent>
           </Card>

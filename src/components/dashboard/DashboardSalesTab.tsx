@@ -17,6 +17,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import BrokerAnalytics from "@/components/dashboard/BrokerAnalytics";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 import BrokerProposals from "@/components/dashboard/BrokerProposals";
+import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
+
 import type { Tables } from "@/integrations/supabase/types";
 
 type ContactRequest = Tables<"contact_requests"> & {
@@ -360,12 +362,16 @@ const DashboardSalesTab = ({ userId }: DashboardSalesTabProps) => {
 
         {/* Partnerships Tab */}
         <TabsContent value="partnerships">
-          <div className="space-y-4">
-            {partnerships.length === 0 ? (
-              <p className="py-10 text-center text-muted-foreground">
-                {pt ? "Nenhuma parceria encontrada." : "No partnerships found."}
-              </p>
-            ) : (
+          <PropertyPartnerships userId={userId} />
+          <div className="mt-6 space-y-4">
+            {partnerships.length > 0 && (
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {pt ? "Parcerias entre corretores" : "Broker-to-broker partnerships"}
+              </h3>
+            )}
+
+            {partnerships.length === 0 ? null : (
+
               partnerships.map((p) => (
                 <Card key={p.id}>
                   <CardContent className="flex items-center justify-between p-4">

@@ -10,7 +10,9 @@ import SearchFilters, {
   type SearchFiltersState,
   defaultFilters,
 } from "@/components/SearchFilters";
+import { dedupeByGroup, type GroupInfo } from "@/lib/partnerships";
 import type { Tables } from "@/integrations/supabase/types";
+
 
 type PropertyWithImages = Tables<"properties"> & {
   property_images: Tables<"property_images">[];
@@ -60,7 +62,9 @@ const Search = () => {
   const { isFavorited, toggle: toggleFav } = useFavorites();
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
+  const [groupInfo, setGroupInfo] = useState<Map<string, GroupInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+
   const [showMap, setShowMap] = useState(searchParams.get("mapa") !== "false");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>();
   const [filters, setFilters] = useState<SearchFiltersState>(() => paramsToFilters(searchParams));
@@ -112,9 +116,13 @@ const Search = () => {
     }
 
     const { data } = await q.limit(100);
-    setProperties((data as PropertyWithImages[]) ?? []);
+    const rows = (data as PropertyWithImages[]) ?? [];
+    const { items, groupInfo } = await dedupeByGroup(rows);
+    setProperties(items);
+    setGroupInfo(groupInfo);
     setLoading(false);
   }, []);
+
 
   // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
@@ -161,7 +169,15 @@ const Search = () => {
                       onMouseEnter={() => setSelectedPropertyId(p.id)}
                       onMouseLeave={() => setSelectedPropertyId(undefined)}
                     >
-                      <PropertyCard property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
+                      <PropertyCard
+                        property={p}
+                        favorited={isFavorited(p.id)}
+                        onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+                        brokerCount={groupInfo.get(p.id)?.brokerCount}
+                        priceFrom={groupInfo.get(p.id)?.priceFrom}
+                        priceTo={groupInfo.get(p.id)?.priceTo}
+                      />
+
                     </div>
                   ))}
                 </div>
@@ -189,7 +205,16 @@ const Search = () => {
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((p) => (
-                <PropertyCard key={p.id} property={p} favorited={isFavorited(p.id)} onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }} />
+                <PropertyCard
+                  key={p.id}
+                  property={p}
+                  favorited={isFavorited(p.id)}
+                  onToggleFavorite={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+                  brokerCount={groupInfo.get(p.id)?.brokerCount}
+                  priceFrom={groupInfo.get(p.id)?.priceFrom}
+                  priceTo={groupInfo.get(p.id)?.priceTo}
+                />
+
               ))}
             </div>
           )}
