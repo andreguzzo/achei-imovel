@@ -232,6 +232,85 @@ const AdminSubscriptionsTab = () => {
         </CardContent>
       </Card>
 
+      {/* Manage a subscription */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Settings2 className="h-5 w-5 text-primary" /> Gerenciar Assinatura
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-xl">
+          <div>
+            <Label>E-mail do usuário</Label>
+            <Input placeholder="usuario@email.com" value={manageEmail} onChange={e => setManageEmail(e.target.value)} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Novo plano</Label>
+              <Select value={managePlan} onValueChange={setManagePlan}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {plans.map(p => <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Validade</Label>
+              <Input type="date" value={manageExpiry} onChange={e => setManageExpiry(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Observações (opcional)</Label>
+            <Input value={manageNotes} onChange={e => setManageNotes(e.target.value)} placeholder="Motivo da alteração" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => runManage("set_plan")} disabled={!!managing} className="gap-1">
+              {managing === "set_plan" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings2 className="h-4 w-4" />}
+              Trocar plano
+            </Button>
+            <Button variant="outline" onClick={() => runManage("set_expiry")} disabled={!!managing} className="gap-1">
+              {managing === "set_expiry" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+              Atualizar validade
+            </Button>
+            <Button variant="outline" onClick={() => runManage("cancel")} disabled={!!managing} className="gap-1 text-destructive">
+              {managing === "cancel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Cancelar assinatura
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Audit log */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" /> Histórico de Alterações
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={fetchAudit} className="gap-1">
+            <RefreshCw className="h-4 w-4" /> Atualizar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {audit.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma alteração registrada.</p>
+          ) : (
+            <div className="space-y-2">
+              {audit.map(entry => (
+                <div key={entry.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{entry.target_email ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">{actionLabel(entry.action)}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(entry.created_at).toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Paid users list */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
