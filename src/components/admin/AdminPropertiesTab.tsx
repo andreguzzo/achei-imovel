@@ -198,8 +198,11 @@ const AdminPropertiesTab = () => {
                     <Button size="icon" variant="ghost"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/admin/imovel/${p.id}`)} className="gap-2 cursor-pointer">
+                      <Edit className="h-4 w-4" /> Editar tudo
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => openEdit(p)} className="gap-2 cursor-pointer">
-                      <Edit className="h-4 w-4" /> Editar
+                      <Edit className="h-4 w-4" /> Edição rápida
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="gap-2 cursor-pointer">
                       <a href={`/imovel/${p.id}`} target="_blank" rel="noreferrer">
