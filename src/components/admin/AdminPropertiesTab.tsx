@@ -42,6 +42,7 @@ const statusColors: Record<string, string> = {
 };
 
 const AdminPropertiesTab = () => {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
