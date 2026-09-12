@@ -158,13 +158,14 @@ const PropertyDetail = () => {
       if (prop) {
         setProperty(prop as Property);
 
-        // Fetch owner profile
+        // Fetch owner public profile (contact details are loaded separately for signed-in users)
         const { data: ownerProf } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+          .from("brokers_public")
+          .select("user_id, full_name, creci, avatar_url, username, commercial_name")
           .eq("user_id", (prop as Property).user_id)
           .single();
-        if (ownerProf) setOwnerProfile(ownerProf as BrokerProfile);
+        if (ownerProf) setOwnerProfile({ ...ownerProf, phone: null, whatsapp: null } as BrokerProfile);
+
 
         // Fetch group members (other brokers listing same property)
         const { data: memberWithGroup } = await supabase
