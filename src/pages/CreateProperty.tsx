@@ -351,16 +351,16 @@ const CreateProperty = () => {
     if (!editId || !user) return;
     const loadProperty = async () => {
       setEditLoading(true);
-      const { data: prop } = await supabase
+      let query = supabase
         .from("properties")
         .select("*, property_images(*)")
-        .eq("id", editId)
-        .eq("user_id", user.id)
-        .single();
-      
+        .eq("id", editId);
+      if (!adminMode) query = query.eq("user_id", user.id);
+      const { data: prop } = await query.single();
+
       if (!prop) {
         toast({ title: pt ? "Imóvel não encontrado" : "Property not found", variant: "destructive" });
-        navigate("/painel");
+        navigate(adminMode ? "/admin" : "/painel");
         return;
       }
 
