@@ -1,14 +1,9 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Disallow: /painel
+Disallow: /admin
+Disallow: /anunciar
+Disallow: /editar
+Disallow: /corretor/vendas
+
+Sitemap: https://abitzo.lovable.app/sitemap.xml
