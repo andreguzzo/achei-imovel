@@ -359,6 +359,7 @@ const CreateProperty = () => {
       setVideoUrl(prop.video_url ?? "");
       setLatitude(prop.latitude?.toString() ?? "");
       setLongitude(prop.longitude?.toString() ?? "");
+      setBoundary(asBoundary(prop.boundary));
       setPropertyStatus(prop.status);
       setStatusAction(prop.status === "sold" ? "sold" : prop.status);
       setSoldPrice(prop.sold_price?.toString() ?? "");
@@ -499,6 +500,7 @@ const CreateProperty = () => {
       video_url: videoUrl || null,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
+      boundary: boundary as unknown as null,
       status: finalStatus as "active" | "inactive" | "sold" | "rented",
       sold_price: statusAction === "sold" ? Number(soldPrice) : null,
       sold_commission: statusAction === "sold" ? Number(soldCommission) : null,
@@ -666,6 +668,22 @@ const CreateProperty = () => {
                 longitude={longitude}
                 onLatChange={setLatitude}
                 onLngChange={setLongitude}
+                pt={pt}
+              />
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-2">{pt ? "Área do Imóvel" : "Property Area"}</h4>
+              <BoundaryEditor
+                boundary={boundary}
+                onChange={setBoundary}
+                center={
+                  boundary
+                    ? boundaryCenter(boundary)
+                    : latitude && longitude
+                      ? { lat: Number(latitude), lng: Number(longitude) }
+                      : null
+                }
                 pt={pt}
               />
             </div>
