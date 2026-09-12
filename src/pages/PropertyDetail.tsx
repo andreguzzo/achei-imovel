@@ -36,8 +36,11 @@ type GroupBroker = {
   broker_id: string;
   property_id: string;
   price: number;
+  role: MemberRole;
+  partnership_type: PartnershipKind | null;
   profile: BrokerProfile | null;
 };
+
 
 const formatPrice = (price: number, listingType: string) => {
   const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price);
@@ -56,8 +59,23 @@ const buildWhatsAppUrl = (phone: string, propertyTitle: string) => {
   return `https://wa.me/${number}?text=${msg}`;
 };
 
-const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; propertyTitle: string; pt: boolean }) => {
+const BrokerCard = ({
+  profile,
+  propertyTitle,
+  pt,
+  tagline,
+  price,
+  highlight = false,
+}: {
+  profile: BrokerProfile;
+  propertyTitle: string;
+  pt: boolean;
+  tagline?: string;
+  price?: number;
+  highlight?: boolean;
+}) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
+
 
   return (
     <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
