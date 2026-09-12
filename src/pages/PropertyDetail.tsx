@@ -380,9 +380,35 @@ const PropertyDetail = () => {
         ? boundaryCenter(propertyBoundary)
         : null;
 
-  const allBrokerProfiles: BrokerProfile[] = [];
-  if (ownerProfile) allBrokerProfiles.push(ownerProfile);
-  groupBrokers.forEach((gb) => { if (gb.profile) allBrokerProfiles.push(gb.profile); });
+  type BrokerEntry = { profile: BrokerProfile; tagline?: string; price?: number; highlight?: boolean };
+  const brokerEntries: BrokerEntry[] = [];
+  if (ownerProfile) {
+    brokerEntries.push({
+      profile: ownerProfile,
+      highlight: ownerRole === "captador",
+      tagline:
+        ownerRole === "captador"
+          ? pt ? "Captador" : "Listing broker"
+          : ownerRole === "parceiro"
+            ? partnershipKindLabel(ownerPartnershipType, pt)
+            : undefined,
+      price: groupBrokers.length > 0 ? property.price : undefined,
+    });
+  }
+  groupBrokers.forEach((gb) => {
+    if (!gb.profile) return;
+    brokerEntries.push({
+      profile: gb.profile,
+      highlight: gb.role === "captador",
+      tagline:
+        gb.role === "captador"
+          ? pt ? "Captador" : "Listing broker"
+          : partnershipKindLabel(gb.partnership_type, pt),
+      price: gb.price,
+    });
+  });
+  brokerEntries.sort((a, b) => Number(!!b.highlight) - Number(!!a.highlight));
+
 
   return (
     <div className="container py-8">
