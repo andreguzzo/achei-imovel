@@ -96,7 +96,7 @@ const SocialPostExporter = ({ property, open, onOpenChange, broker }: Props) => 
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, property, format, pt, broker.name, broker.creci, broker.phone]);
+  }, [open, property?.id, format, pt, broker.name, broker.creci, broker.phone]);
 
   const generateCaption = async () => {
     if (!property) return;
