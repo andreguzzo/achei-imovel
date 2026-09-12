@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle,
+  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle, Instagram,
 } from "lucide-react";
+import SocialPostExporter from "@/components/social/SocialPostExporter";
 import { toast } from "@/hooks/use-toast";
 import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
 import EmailVerification from "@/components/dashboard/EmailVerification";
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isBroker, setIsBroker] = useState(false);
+  const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
 
   // Profile form
   const [fullName, setFullName] = useState("");
@@ -376,6 +378,14 @@ const Dashboard = () => {
                           <Button size="sm" variant="outline" onClick={() => handleOpenStatusDialog(p)}>
                             {pt ? "Status" : "Status"}
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title={pt ? "Exportar post para redes sociais" : "Export social post"}
+                            onClick={() => setSocialTarget(p)}
+                          >
+                            <Instagram className="h-4 w-4" />
+                          </Button>
                           <Link to={`/editar/${p.id}`}>
                             <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
                           </Link>
@@ -477,6 +487,28 @@ const Dashboard = () => {
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {pt ? "Salvar" : "Save"}
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Connected social accounts (coming soon) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{pt ? "Publicação em redes sociais" : "Social media publishing"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {pt
+                    ? "Hoje você já pode exportar cada imóvel como post pronto (imagem + legenda) na aba Imóveis. A publicação automática na sua conta será liberada em breve."
+                    : "You can already export each property as a ready-to-post image and caption in the Properties tab. Automatic publishing to your account is coming soon."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" disabled className="gap-1.5">
+                    <Instagram className="h-4 w-4" /> {pt ? "Conectar Instagram (em breve)" : "Connect Instagram (soon)"}
+                  </Button>
+                  <Button variant="outline" size="sm" disabled className="gap-1.5">
+                    <ExternalLink className="h-4 w-4" /> {pt ? "Conectar Facebook (em breve)" : "Connect Facebook (soon)"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -605,6 +637,35 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Social post exporter */}
+      <SocialPostExporter
+        open={!!socialTarget}
+        onOpenChange={(o) => !o && setSocialTarget(null)}
+        broker={{ name: commercialName || fullName || "", creci, phone: whatsapp || phone }}
+        property={
+          socialTarget
+            ? {
+                id: socialTarget.id,
+                title: socialTarget.title,
+                price: socialTarget.price,
+                listing_type: socialTarget.listing_type,
+                property_type: socialTarget.property_type,
+                city: socialTarget.city,
+                state: socialTarget.state,
+                neighborhood: socialTarget.neighborhood,
+                bedrooms: socialTarget.bedrooms,
+                bathrooms: socialTarget.bathrooms,
+                parking_spots: socialTarget.parking_spots,
+                area: socialTarget.area,
+                description: socialTarget.description,
+                images: [...(socialTarget.property_images ?? [])]
+                  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((i) => i.url),
+              }
+            : null
+        }
+      />
     </div>
   );
 };

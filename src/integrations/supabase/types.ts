@@ -705,6 +705,80 @@ export type Database = {
         }
         Relationships: []
       }
+      social_accounts: {
+        Row: {
+          access_token: string | null
+          broker_id: string
+          created_at: string
+          external_id: string
+          id: string
+          page_id: string | null
+          provider: string
+          token_expires_at: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          broker_id: string
+          created_at?: string
+          external_id: string
+          id?: string
+          page_id?: string | null
+          provider: string
+          token_expires_at?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          broker_id?: string
+          created_at?: string
+          external_id?: string
+          id?: string
+          page_id?: string | null
+          provider?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      social_post_exports: {
+        Row: {
+          broker_id: string
+          caption: string | null
+          created_at: string
+          format: string
+          id: string
+          property_id: string
+        }
+        Insert: {
+          broker_id: string
+          caption?: string | null
+          created_at?: string
+          format: string
+          id?: string
+          property_id: string
+        }
+        Update: {
+          broker_id?: string
+          caption?: string | null
+          created_at?: string
+          format?: string
+          id?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_exports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_messages: {
         Row: {
           admin_reply: string | null
