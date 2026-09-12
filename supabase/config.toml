@@ -35,3 +35,15 @@ verify_jwt = false
 
 [functions.generate-social-caption]
 verify_jwt = false
+
+[functions.admin-list-users]
+verify_jwt = false
+
+[functions.admin-create-user]
+verify_jwt = false
+
+[functions.admin-set-user-status]
+verify_jwt = false
+
+[functions.admin-manage-subscription]
+verify_jwt = false

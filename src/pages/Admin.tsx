@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, Building2, BarChart3, CreditCard, Shield, MessageCircle } from "lucide-react";
+import { Loader2, Users, Building2, BarChart3, CreditCard, Shield, MessageCircle, Layers } from "lucide-react";
+import AdminPlansTab from "@/components/admin/AdminPlansTab";
 import AdminUsersTab from "@/components/admin/AdminUsersTab";
 import AdminPropertiesTab from "@/components/admin/AdminPropertiesTab";
 import AdminMetricsTab from "@/components/admin/AdminMetricsTab";
@@ -45,6 +46,7 @@ const Admin = () => {
           <TabsTrigger value="metrics" className="gap-1"><BarChart3 className="h-4 w-4" /> Métricas</TabsTrigger>
           <TabsTrigger value="users" className="gap-1"><Users className="h-4 w-4" /> Usuários</TabsTrigger>
           <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> Imóveis</TabsTrigger>
+          <TabsTrigger value="plans" className="gap-1"><Layers className="h-4 w-4" /> Planos</TabsTrigger>
           <TabsTrigger value="subscriptions" className="gap-1"><CreditCard className="h-4 w-4" /> Assinaturas</TabsTrigger>
           <TabsTrigger value="support" className="gap-1"><MessageCircle className="h-4 w-4" /> Suporte</TabsTrigger>
         </TabsList>
@@ -52,6 +54,7 @@ const Admin = () => {
         <TabsContent value="metrics"><AdminMetricsTab /></TabsContent>
         <TabsContent value="users"><AdminUsersTab /></TabsContent>
         <TabsContent value="properties"><AdminPropertiesTab /></TabsContent>
+        <TabsContent value="plans"><AdminPlansTab /></TabsContent>
         <TabsContent value="subscriptions"><AdminSubscriptionsTab /></TabsContent>
         <TabsContent value="support"><AdminSupportTab /></TabsContent>
       </Tabs>

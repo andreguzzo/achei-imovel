@@ -44,7 +44,14 @@ Deno.serve(async (req) => {
     const { email, tier, months } = await req.json();
     if (!email || !tier || !months) throw new Error("Missing parameters");
 
-    const priceId = TIER_PRICES[tier];
+    // Resolve the price from the editable plans catalogue, falling back to the legacy map
+    const { data: plan } = await supabaseAdmin
+      .from("subscription_plans")
+      .select("stripe_price_id")
+      .eq("slug", tier)
+      .maybeSingle();
+
+    const priceId = plan?.stripe_price_id ?? TIER_PRICES[tier];
     if (!priceId) throw new Error("Invalid tier");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });

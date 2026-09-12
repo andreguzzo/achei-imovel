@@ -38,15 +38,49 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims) throw new Error("Authentication failed");
 
     const email = claimsData.claims.email as string;
+    const authUserId = claimsData.claims.sub as string;
     if (!email) throw new Error("User email not found in token");
     logStep("User authenticated", { email });
+
+    // Manual/admin-granted subscription stored in our own tables
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    let override: { product_id: string | null; subscription_end: string } | null = null;
+    const { data: ov } = await serviceClient
+      .from("subscription_overrides")
+      .select("plan_slug, expires_at, cancelled_at")
+      .eq("user_id", authUserId)
+      .maybeSingle();
+
+    if (ov && !ov.cancelled_at && (!ov.expires_at || new Date(ov.expires_at) > new Date())) {
+      const { data: plan } = await serviceClient
+        .from("subscription_plans")
+        .select("stripe_product_id")
+        .eq("slug", ov.plan_slug)
+        .maybeSingle();
+      if (plan?.stripe_product_id) {
+        override = {
+          product_id: plan.stripe_product_id,
+          subscription_end: ov.expires_at ?? new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+        };
+        logStep("Manual subscription found", override);
+      }
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email, limit: 1 });
 
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({
+        subscribed: !!override,
+        product_id: override?.product_id ?? null,
+        subscription_end: override?.subscription_end ?? null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -59,14 +93,15 @@ Deno.serve(async (req) => {
       limit: 1,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId = null;
-    let subscriptionEnd = null;
+    const hasStripeSub = subscriptions.data.length > 0;
+    const hasActiveSub = hasStripeSub || !!override;
+    let productId: string | null = override?.product_id ?? null;
+    let subscriptionEnd: string | null = override?.subscription_end ?? null;
 
-    if (hasActiveSub) {
+    if (hasStripeSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product;
+      productId = subscription.items.data[0].price.product as string;
       logStep("Active subscription found", { productId });
     }
 

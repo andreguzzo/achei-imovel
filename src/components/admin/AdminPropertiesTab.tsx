@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ const statusColors: Record<string, string> = {
 };
 
 const AdminPropertiesTab = () => {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -196,8 +198,11 @@ const AdminPropertiesTab = () => {
                     <Button size="icon" variant="ghost"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/admin/imovel/${p.id}`)} className="gap-2 cursor-pointer">
+                      <Edit className="h-4 w-4" /> Editar tudo
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => openEdit(p)} className="gap-2 cursor-pointer">
-                      <Edit className="h-4 w-4" /> Editar
+                      <Edit className="h-4 w-4" /> Edição rápida
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="gap-2 cursor-pointer">
                       <a href={`/imovel/${p.id}`} target="_blank" rel="noreferrer">
@@ -256,8 +261,11 @@ const AdminPropertiesTab = () => {
                 </div>
               </div>
               <div className="border-t pt-3 flex gap-2 flex-wrap">
+                <Button className="gap-1" onClick={() => navigate(`/admin/imovel/${selected.id}`)}>
+                  <Edit className="h-4 w-4" /> Editar tudo
+                </Button>
                 <Button variant="outline" className="gap-1" onClick={() => { setSelected(null); openEdit(selected); }}>
-                  <Edit className="h-4 w-4" /> Editar
+                  <Edit className="h-4 w-4" /> Edição rápida
                 </Button>
                 <a href={`/imovel/${selected.id}`} target="_blank" rel="noreferrer">
                   <Button variant="outline" className="gap-1">

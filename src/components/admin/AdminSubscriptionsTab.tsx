@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Gift, Search, Loader2, Crown, RefreshCw, Sparkles } from "lucide-react";
+import { Gift, Search, Loader2, Crown, RefreshCw, Sparkles, Settings2, History, CalendarClock, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIERS, getTierByProductId } from "@/hooks/useAuth";
+import { usePlans } from "@/hooks/usePlans";
 
 type SubscribedUser = {
   email: string;
@@ -77,6 +78,74 @@ const AdminSubscriptionsTab = () => {
   };
 
   useEffect(() => { fetchPaidUsers(); }, []);
+
+  // ---- Subscription management ----
+  const { plans } = usePlans(true);
+  const [manageEmail, setManageEmail] = useState("");
+  const [managePlan, setManagePlan] = useState("");
+  const [manageExpiry, setManageExpiry] = useState("");
+  const [manageNotes, setManageNotes] = useState("");
+  const [managing, setManaging] = useState<string | null>(null);
+
+  type AuditEntry = {
+    id: string;
+    action: string;
+    target_email: string | null;
+    created_at: string;
+    after_state: unknown;
+  };
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+
+  const fetchAudit = async () => {
+    const { data } = await supabase
+      .from("subscription_audit_log")
+      .select("id, action, target_email, created_at, after_state")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setAudit((data ?? []) as AuditEntry[]);
+  };
+
+  useEffect(() => { fetchAudit(); }, []);
+
+  const runManage = async (action: "set_plan" | "set_expiry" | "cancel") => {
+    if (!manageEmail.trim()) {
+      toast({ title: "Informe o e-mail do usuário", variant: "destructive" });
+      return;
+    }
+    if (action === "set_plan" && !managePlan) {
+      toast({ title: "Escolha o plano", variant: "destructive" });
+      return;
+    }
+    if (action === "set_expiry" && !manageExpiry) {
+      toast({ title: "Escolha a nova data de validade", variant: "destructive" });
+      return;
+    }
+    setManaging(action);
+    const { data, error } = await supabase.functions.invoke("admin-manage-subscription", {
+      body: {
+        email: manageEmail.trim(),
+        action,
+        planSlug: managePlan || undefined,
+        expiresAt: manageExpiry || undefined,
+        notes: manageNotes || undefined,
+      },
+    });
+    const failure = error?.message ?? (data as { error?: string } | null)?.error;
+    if (failure) {
+      toast({ title: "Erro", description: failure, variant: "destructive" });
+    } else {
+      toast({
+        title: action === "cancel" ? "Assinatura cancelada"
+          : action === "set_plan" ? "Plano alterado"
+          : "Validade atualizada",
+      });
+      await Promise.all([fetchPaidUsers(), fetchAudit()]);
+    }
+    setManaging(null);
+  };
+
+  const actionLabel = (a: string) =>
+    a === "set_plan" ? "Troca de plano" : a === "set_expiry" ? "Ajuste de validade" : a === "cancel" ? "Cancelamento" : a;
 
   const tierLabel = (productId: string | null) => {
     const t = getTierByProductId(productId);
@@ -160,6 +229,85 @@ const AdminSubscriptionsTab = () => {
             {granting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
             Conceder assinatura gratuita
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Manage a subscription */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Settings2 className="h-5 w-5 text-primary" /> Gerenciar Assinatura
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-xl">
+          <div>
+            <Label>E-mail do usuário</Label>
+            <Input placeholder="usuario@email.com" value={manageEmail} onChange={e => setManageEmail(e.target.value)} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Novo plano</Label>
+              <Select value={managePlan} onValueChange={setManagePlan}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {plans.map(p => <SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Validade</Label>
+              <Input type="date" value={manageExpiry} onChange={e => setManageExpiry(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Observações (opcional)</Label>
+            <Input value={manageNotes} onChange={e => setManageNotes(e.target.value)} placeholder="Motivo da alteração" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => runManage("set_plan")} disabled={!!managing} className="gap-1">
+              {managing === "set_plan" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings2 className="h-4 w-4" />}
+              Trocar plano
+            </Button>
+            <Button variant="outline" onClick={() => runManage("set_expiry")} disabled={!!managing} className="gap-1">
+              {managing === "set_expiry" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+              Atualizar validade
+            </Button>
+            <Button variant="outline" onClick={() => runManage("cancel")} disabled={!!managing} className="gap-1 text-destructive">
+              {managing === "cancel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Cancelar assinatura
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Audit log */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" /> Histórico de Alterações
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={fetchAudit} className="gap-1">
+            <RefreshCw className="h-4 w-4" /> Atualizar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {audit.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma alteração registrada.</p>
+          ) : (
+            <div className="space-y-2">
+              {audit.map(entry => (
+                <div key={entry.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{entry.target_email ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">{actionLabel(entry.action)}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(entry.created_at).toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

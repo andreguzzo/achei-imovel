@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, getMaxProperties } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -250,7 +250,10 @@ const CreateProperty = () => {
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
+  const { pathname } = useLocation();
   const isEditMode = !!editId;
+  // Admins edit any listing through /admin/imovel/:id — no ownership or plan limits
+  const adminMode = pathname.startsWith("/admin/imovel");
   const pt = locale === "pt-BR";
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -348,16 +351,16 @@ const CreateProperty = () => {
     if (!editId || !user) return;
     const loadProperty = async () => {
       setEditLoading(true);
-      const { data: prop } = await supabase
+      let query = supabase
         .from("properties")
         .select("*, property_images(*)")
-        .eq("id", editId)
-        .eq("user_id", user.id)
-        .single();
-      
+        .eq("id", editId);
+      if (!adminMode) query = query.eq("user_id", user.id);
+      const { data: prop } = await query.single();
+
       if (!prop) {
         toast({ title: pt ? "Imóvel não encontrado" : "Property not found", variant: "destructive" });
-        navigate("/painel");
+        navigate(adminMode ? "/admin" : "/painel");
         return;
       }
 
@@ -423,7 +426,7 @@ const CreateProperty = () => {
       setEditLoading(false);
     };
     loadProperty();
-  }, [editId, user]);
+  }, [editId, user, adminMode]);
 
   if (!user) {
     return (
@@ -677,7 +680,7 @@ const CreateProperty = () => {
     }
 
     toast({ title: isEditMode ? (pt ? "Anúncio atualizado!" : "Listing updated!") : (pt ? "Anúncio criado com sucesso!" : "Listing created!") });
-    navigate(`/imovel/${propId}`);
+    navigate(adminMode ? "/admin" : `/imovel/${propId}`);
     setSubmitting(false);
   };
 

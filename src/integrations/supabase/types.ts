@@ -250,6 +250,7 @@ export type Database = {
           instagram: string | null
           linkedin: string | null
           phone: string | null
+          suspended_at: string | null
           tiktok: string | null
           updated_at: string
           user_id: string
@@ -270,6 +271,7 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           phone?: string | null
+          suspended_at?: string | null
           tiktok?: string | null
           updated_at?: string
           user_id: string
@@ -290,6 +292,7 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           phone?: string | null
+          suspended_at?: string | null
           tiktok?: string | null
           updated_at?: string
           user_id?: string
@@ -814,6 +817,132 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          id: string
+          target_email: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          target_email?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          target_email?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_overrides: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          notes: string | null
+          plan_slug: string
+          source: string
+          starts_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_slug: string
+          source?: string
+          starts_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_slug?: string
+          source?: string
+          starts_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          features: Json
+          highlighted: boolean
+          id: string
+          max_properties: number | null
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          features?: Json
+          highlighted?: boolean
+          id?: string
+          max_properties?: number | null
+          name: string
+          price_cents?: number
+          slug: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          features?: Json
+          highlighted?: boolean
+          id?: string
+          max_properties?: number | null
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       support_messages: {
         Row: {
