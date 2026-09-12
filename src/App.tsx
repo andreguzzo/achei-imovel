@@ -68,6 +68,7 @@ const App = () => (
                       <Route path="/editar/:id" element={<CreateProperty />} />
                       <Route path="/painel" element={<Dashboard />} />
                       <Route path="/admin" element={<Admin />} />
+                      <Route path="/admin/imovel/:id" element={<CreateProperty />} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />
