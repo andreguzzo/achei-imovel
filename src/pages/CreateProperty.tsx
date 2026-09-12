@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react";
 import LocationPicker from "@/components/LocationPicker";
+import BoundaryEditor from "@/components/BoundaryEditor";
+import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
@@ -273,6 +275,7 @@ const CreateProperty = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [boundary, setBoundary] = useState<BoundaryGeometry | null>(null);
 
   // Private info
   const [owners, setOwners] = useState<OwnerEntry[]>([emptyOwner()]);
