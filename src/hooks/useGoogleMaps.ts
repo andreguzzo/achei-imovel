@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"; // Shared Google Maps script loader
+import { useEffect, useState } from "react";
 
 const SCRIPT_ID = "google-maps-script";
 
