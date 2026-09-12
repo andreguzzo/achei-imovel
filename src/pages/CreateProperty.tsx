@@ -496,7 +496,24 @@ const CreateProperty = () => {
       return;
     }
 
+    // Detect an existing consolidated listing for the same property
+    if (!isEditMode && !dupChoice && address.trim() && user) {
+      const { data: found } = await supabase.rpc("find_property_group", {
+        _address: address,
+        _city: city,
+        _state: state,
+        _property_type: propertyType as "apartment" | "house" | "land" | "commercial",
+        _area: area ? Number(area) : undefined,
+      });
+      const group = (found as DupGroup[] | null)?.[0];
+      if (group && group.primary_broker_id !== user.id) {
+        setDupGroup(group);
+        return;
+      }
+    }
+
     setSubmitting(true);
+
 
     const isSoldByOther = statusAction === "sold_by_other";
     const finalStatus = isSoldByOther ? "sold" : propertyStatus;
