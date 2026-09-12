@@ -123,7 +123,7 @@ const BrokerProfile = () => {
       );
       if (partnerIds.length > 0) {
         const { data: partnerProfiles } = await supabase
-          .from("profiles")
+          .from("brokers_public")
           .select("full_name, avatar_url, creci, username")
           .in("user_id", partnerIds);
         setPartners((partnerProfiles as any) ?? []);
