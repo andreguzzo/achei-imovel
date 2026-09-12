@@ -85,8 +85,8 @@ const BrokerProfile = () => {
     const fetchBroker = async () => {
       setLoading(true);
       const { data: profileData } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, bio, creci, commercial_name, username, whatsapp, instagram, facebook, youtube, tiktok, linkedin")
+        .from("brokers_public")
+        .select("user_id, full_name, avatar_url, bio, creci, commercial_name, username, instagram, facebook, youtube, tiktok, linkedin")
         .eq("username", username.toLowerCase())
         .single();
 
@@ -96,8 +96,17 @@ const BrokerProfile = () => {
         return;
       }
 
-      const profile = profileData as any as BrokerData;
+      const profile = { ...profileData, phone: null, whatsapp: null } as any as BrokerData;
       setBroker(profile);
+
+      // Contact details are only available to signed-in visitors
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        const { data: contact } = await supabase.rpc("get_broker_contact", { _user_id: profile.user_id });
+        const row = (contact as { phone: string | null; whatsapp: string | null }[] | null)?.[0];
+        if (row) setBroker((prev) => (prev ? { ...prev, phone: row.phone, whatsapp: row.whatsapp } : prev));
+      }
+
 
       const [photosRes, propsRes, partnershipsRes] = await Promise.all([
         supabase.from("broker_photos").select("id, url, is_cover, is_banner").eq("user_id", profile.user_id).order("position"),
@@ -114,7 +123,7 @@ const BrokerProfile = () => {
       );
       if (partnerIds.length > 0) {
         const { data: partnerProfiles } = await supabase
-          .from("profiles")
+          .from("brokers_public")
           .select("full_name, avatar_url, creci, username")
           .in("user_id", partnerIds);
         setPartners((partnerProfiles as any) ?? []);
@@ -213,7 +222,15 @@ const BrokerProfile = () => {
                 </Button>
               </a>
             )}
+            {!broker.whatsapp && !broker.phone && (
+              <Link to="/login">
+                <Button variant="outline" className="gap-2">
+                  <Phone className="h-4 w-4" /> {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
+                </Button>
+              </Link>
+            )}
           </div>
+
         </motion.div>
 
         {/* Bio */}

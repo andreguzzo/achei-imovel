@@ -12,6 +12,8 @@ import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, Mes
 import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
+import { getEmbedUrl } from "@/lib/video";
+
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -42,13 +44,8 @@ const formatPrice = (price: number, listingType: string) => {
   return listingType === "rent" ? `${formatted}/mês` : formatted;
 };
 
-const getEmbedUrl = (url: string): string => {
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]+)/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  return url;
-};
+
+
 
 const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
 
@@ -85,7 +82,7 @@ const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; pr
             <PhoneIcon className="h-3 w-3" /> {profile.phone}
           </p>
         )}
-        {whatsappNumber && (
+        {whatsappNumber ? (
           <a
             href={buildWhatsAppUrl(whatsappNumber, propertyTitle)}
             target="_blank"
@@ -97,7 +94,15 @@ const BrokerCard = ({ profile, propertyTitle, pt }: { profile: BrokerProfile; pr
               {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
             </Button>
           </a>
+        ) : (
+          <Link to="/login" className="mt-2 inline-flex">
+            <Button size="sm" variant="outline" className="gap-1.5">
+              <PhoneIcon className="h-4 w-4" />
+              {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
+            </Button>
+          </Link>
         )}
+
       </div>
     </div>
   );
@@ -150,13 +155,14 @@ const PropertyDetail = () => {
       if (prop) {
         setProperty(prop as Property);
 
-        // Fetch owner profile
+        // Fetch owner public profile (contact details are loaded separately for signed-in users)
         const { data: ownerProf } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+          .from("brokers_public")
+          .select("user_id, full_name, creci, avatar_url, username, commercial_name")
           .eq("user_id", (prop as Property).user_id)
           .single();
-        if (ownerProf) setOwnerProfile(ownerProf as BrokerProfile);
+        if (ownerProf) setOwnerProfile({ ...ownerProf, phone: null, whatsapp: null } as BrokerProfile);
+
 
         // Fetch group members (other brokers listing same property)
         const { data: memberWithGroup } = await supabase
@@ -180,8 +186,8 @@ const PropertyDetail = () => {
 
             const [profilesRes, pricesRes] = await Promise.all([
               supabase
-                .from("profiles")
-                .select("user_id, full_name, creci, avatar_url, phone, whatsapp, username, commercial_name")
+                .from("brokers_public")
+                .select("user_id, full_name, creci, avatar_url, username, commercial_name")
                 .in("user_id", brokerIds),
               supabase
                 .from("properties")
@@ -196,8 +202,11 @@ const PropertyDetail = () => {
               broker_id: m.broker_id,
               property_id: m.property_id,
               price: priceMap.get(m.property_id) ?? 0,
-              profile: (profileMap.get(m.broker_id) as BrokerProfile) ?? null,
+              profile: profileMap.has(m.broker_id)
+                ? ({ ...profileMap.get(m.broker_id), phone: null, whatsapp: null } as BrokerProfile)
+                : null,
             }));
+
             setGroupBrokers(brokers);
           }
         }
@@ -206,6 +215,99 @@ const PropertyDetail = () => {
     };
     fetchData();
   }, [id]);
+
+  // Contact details (phone/WhatsApp) are only available to signed-in visitors
+  const ownerId = ownerProfile?.user_id;
+  const groupBrokerIds = groupBrokers.map((b) => b.broker_id).join(",");
+  useEffect(() => {
+    if (!user || !ownerId) return;
+    let cancelled = false;
+    const ids = [ownerId, ...groupBrokerIds.split(",").filter(Boolean)];
+    const load = async () => {
+      const results = await Promise.all(
+        ids.map((uid) => supabase.rpc("get_broker_contact", { _user_id: uid })),
+      );
+      if (cancelled) return;
+      const contacts = new Map<string, { phone: string | null; whatsapp: string | null }>();
+      results.forEach((res) => {
+        const row = (res.data as { user_id: string; phone: string | null; whatsapp: string | null }[] | null)?.[0];
+        if (row) contacts.set(row.user_id, { phone: row.phone, whatsapp: row.whatsapp });
+      });
+      setOwnerProfile((prev) => (prev && contacts.has(prev.user_id) ? { ...prev, ...contacts.get(prev.user_id)! } : prev));
+      setGroupBrokers((prev) =>
+        prev.map((b) =>
+          b.profile && contacts.has(b.broker_id)
+            ? { ...b, profile: { ...b.profile, ...contacts.get(b.broker_id)! } }
+            : b,
+        ),
+      );
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user, ownerId, groupBrokerIds]);
+
+  // SEO: title, description, canonical and structured data
+  useEffect(() => {
+    if (!property) return;
+    const url = window.location.href.split("?")[0];
+    const prevTitle = document.title;
+    document.title = `${property.title} — ${property.city}/${property.state} | Abitzo`;
+
+    const desc = document.querySelector('meta[name="description"]');
+    const prevDesc = desc?.getAttribute("content") ?? "";
+    desc?.setAttribute(
+      "content",
+      `${property.title} em ${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}/${property.state}. ${formatPrice(Number(property.price), property.listing_type)}.`,
+    );
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const createdCanonical = !canonical;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    const prevCanonical = canonical.href;
+    canonical.href = url;
+
+    const ld = document.createElement("script");
+    ld.type = "application/ld+json";
+    ld.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": property.listing_type === "rent" ? "Apartment" : "SingleFamilyResidence",
+      name: property.title,
+      description: property.description ?? undefined,
+      url,
+      image: property.property_images?.map((i) => i.url).slice(0, 5),
+      numberOfBedrooms: property.bedrooms ?? undefined,
+      numberOfBathroomsTotal: property.bathrooms ?? undefined,
+      floorSize: property.area ? { "@type": "QuantitativeValue", value: property.area, unitCode: "MTK" } : undefined,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: property.address ?? undefined,
+        addressLocality: property.city,
+        addressRegion: property.state,
+        postalCode: property.zip_code ?? undefined,
+        addressCountry: "BR",
+      },
+      offers: {
+        "@type": "Offer",
+        price: Number(property.price),
+        priceCurrency: "BRL",
+        availability: property.status === "active" ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+      },
+    });
+    document.head.appendChild(ld);
+
+    return () => {
+      document.title = prevTitle;
+      desc?.setAttribute("content", prevDesc);
+      if (createdCanonical) canonical?.remove();
+      else if (canonical) canonical.href = prevCanonical;
+      ld.remove();
+    };
+  }, [property]);
+
 
   if (loading) {
     return (
