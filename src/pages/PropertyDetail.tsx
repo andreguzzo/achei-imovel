@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,7 +119,6 @@ const BrokerCard = ({
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLanguage();
-  const { user } = useAuth();
   const pt = locale === "pt-BR";
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
