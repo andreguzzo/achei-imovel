@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle, FileText } from "lucide-react";
 import { authorizationStatus, authorizationBadgeText } from "@/lib/saleAuthorization";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
 import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
+import OwnerReportDialog from "@/components/dashboard/OwnerReportDialog";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -35,6 +36,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [loading, setLoading] = useState(true);
   const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
   const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
+  const [reportTarget, setReportTarget] = useState<PropertyWithImages | null>(null);
   const [authEnds, setAuthEnds] = useState<Record<string, string>>({});
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -288,6 +290,16 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                       <Users className="h-4 w-4" />
                     </Button>
                     <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      title={pt ? "Relatório ao proprietário" : "Owner report"}
+                      onClick={() => setReportTarget(p)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden sm:inline">{pt ? "Relatório ao proprietário" : "Owner report"}</span>
+                    </Button>
+                    <Button
                       size="icon"
                       variant="ghost"
                       title={pt ? "Exportar post para redes sociais" : "Export social post"}
@@ -377,6 +389,8 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <OwnerReportDialog property={reportTarget} broker={broker} onClose={() => setReportTarget(null)} />
 
       <PropertyMatchingLeads
         open={!!leadsTarget}
