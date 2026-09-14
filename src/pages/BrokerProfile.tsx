@@ -87,14 +87,22 @@ const BrokerProfile = () => {
     if (!username) return;
     const fetchBroker = async () => {
       setLoading(true);
-      const { data: profileData } = await supabase
+      setError(false);
+      setNotFound(false);
+      const { data: profileData, error: profileError } = await supabase
         .from("brokers_public")
         .select("user_id, full_name, avatar_url, bio, creci, commercial_name, username, instagram, facebook, youtube, tiktok, linkedin")
         .eq("username", username.toLowerCase())
         .single();
 
       if (!profileData) {
-        setNotFound(true);
+        // PGRST116 = no rows found; anything else is a real failure
+        if (profileError && profileError.code !== "PGRST116") {
+          console.warn("Broker profile error:", profileError.message);
+          setError(true);
+        } else {
+          setNotFound(true);
+        }
         setLoading(false);
         return;
       }
