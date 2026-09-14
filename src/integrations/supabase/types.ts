@@ -629,6 +629,213 @@ export type Database = {
           },
         ]
       }
+      rental_charges: {
+        Row: {
+          admin_fee_amount: number
+          broker_id: string
+          charges_amount: number
+          competence: string
+          contract_id: string
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          paid_at: string | null
+          payment_link: string | null
+          payout_amount: number
+          rent_amount: number
+          status: Database["public"]["Enums"]["rental_charge_status"]
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          admin_fee_amount?: number
+          broker_id: string
+          charges_amount?: number
+          competence: string
+          contract_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_link?: string | null
+          payout_amount?: number
+          rent_amount?: number
+          status?: Database["public"]["Enums"]["rental_charge_status"]
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_fee_amount?: number
+          broker_id?: string
+          charges_amount?: number
+          competence?: string
+          contract_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_link?: string | null
+          payout_amount?: number
+          rent_amount?: number
+          status?: Database["public"]["Enums"]["rental_charge_status"]
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_charges_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "rental_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_contracts: {
+        Row: {
+          adjustment_index: Database["public"]["Enums"]["rental_index"]
+          admin_fee_percent: number
+          broker_id: string
+          condo_fee: number
+          created_at: string
+          due_day: number
+          end_date: string
+          guarantee_details: string | null
+          guarantee_type: Database["public"]["Enums"]["rental_guarantee"]
+          id: string
+          iptu: number
+          next_adjustment_date: string | null
+          notes: string | null
+          other_charges: number
+          owner_name: string | null
+          owner_phone: string | null
+          property_id: string | null
+          property_label: string | null
+          rent_amount: number
+          start_date: string
+          status: Database["public"]["Enums"]["rental_contract_status"]
+          tenant_cpf: string | null
+          tenant_email: string | null
+          tenant_name: string
+          tenant_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          adjustment_index?: Database["public"]["Enums"]["rental_index"]
+          admin_fee_percent?: number
+          broker_id: string
+          condo_fee?: number
+          created_at?: string
+          due_day?: number
+          end_date: string
+          guarantee_details?: string | null
+          guarantee_type?: Database["public"]["Enums"]["rental_guarantee"]
+          id?: string
+          iptu?: number
+          next_adjustment_date?: string | null
+          notes?: string | null
+          other_charges?: number
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_id?: string | null
+          property_label?: string | null
+          rent_amount: number
+          start_date: string
+          status?: Database["public"]["Enums"]["rental_contract_status"]
+          tenant_cpf?: string | null
+          tenant_email?: string | null
+          tenant_name: string
+          tenant_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adjustment_index?: Database["public"]["Enums"]["rental_index"]
+          admin_fee_percent?: number
+          broker_id?: string
+          condo_fee?: number
+          created_at?: string
+          due_day?: number
+          end_date?: string
+          guarantee_details?: string | null
+          guarantee_type?: Database["public"]["Enums"]["rental_guarantee"]
+          id?: string
+          iptu?: number
+          next_adjustment_date?: string | null
+          notes?: string | null
+          other_charges?: number
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_id?: string | null
+          property_label?: string | null
+          rent_amount?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["rental_contract_status"]
+          tenant_cpf?: string | null
+          tenant_email?: string | null
+          tenant_name?: string
+          tenant_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_inspections: {
+        Row: {
+          broker_id: string
+          contract_id: string
+          created_at: string
+          id: string
+          inspection_date: string
+          inspection_type: Database["public"]["Enums"]["rental_inspection_type"]
+          notes: string | null
+          photos: Json
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          contract_id: string
+          created_at?: string
+          id?: string
+          inspection_date?: string
+          inspection_type: Database["public"]["Enums"]["rental_inspection_type"]
+          notes?: string | null
+          photos?: Json
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          contract_id?: string
+          created_at?: string
+          id?: string
+          inspection_date?: string
+          inspection_type?: Database["public"]["Enums"]["rental_inspection_type"]
+          notes?: string | null
+          photos?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_inspections_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "rental_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_documents: {
         Row: {
           document_type: string | null
@@ -1100,6 +1307,10 @@ export type Database = {
           sample_title: string
         }[]
       }
+      generate_rental_charges: {
+        Args: { _contract_id: string; _from?: string }
+        Returns: number
+      }
       get_broker_contact: {
         Args: { _user_id: string }
         Returns: {
@@ -1165,6 +1376,16 @@ export type Database = {
         | "closed_lost"
       property_status: "active" | "inactive" | "sold" | "rented"
       property_type: "apartment" | "house" | "land" | "commercial"
+      rental_charge_status: "pending" | "paid" | "overdue" | "cancelled"
+      rental_contract_status: "draft" | "active" | "notice" | "ended"
+      rental_guarantee:
+        | "none"
+        | "fiador"
+        | "caucao"
+        | "seguro_fianca"
+        | "titulo_capitalizacao"
+      rental_index: "none" | "igpm" | "ipca" | "inpc"
+      rental_inspection_type: "entrada" | "saida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1318,6 +1539,17 @@ export const Constants = {
       ],
       property_status: ["active", "inactive", "sold", "rented"],
       property_type: ["apartment", "house", "land", "commercial"],
+      rental_charge_status: ["pending", "paid", "overdue", "cancelled"],
+      rental_contract_status: ["draft", "active", "notice", "ended"],
+      rental_guarantee: [
+        "none",
+        "fiador",
+        "caucao",
+        "seguro_fianca",
+        "titulo_capitalizacao",
+      ],
+      rental_index: ["none", "igpm", "ipca", "inpc"],
+      rental_inspection_type: ["entrada", "saida"],
     },
   },
 } as const

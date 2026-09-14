@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, Users, CalendarDays, FileText, Handshake, Building2, DollarSign, Plus, ArrowRight, Clock, Mail,
+  KeyRound, Receipt, TrendingUp,
 } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { DashboardSection } from "@/components/dashboard/DashboardSidebar";
@@ -33,6 +34,29 @@ interface Counts {
   partnerships: number;
   activeListings: number;
   commission: number;
+  rentalActive: number;
+  rentalDueSoon: number;
+  rentalOverdue: number;
+  rentalOverdueAmount: number;
+  rentalRevenue: number;
+  contractsEnding: number;
+  adjustmentsDue: number;
+}
+
+interface RentalContractRow {
+  id: string;
+  status: string;
+  end_date: string;
+  next_adjustment_date: string | null;
+  rent_amount: number;
+  admin_fee_percent: number;
+}
+
+interface RentalChargeRow {
+  id: string;
+  status: string;
+  due_date: string;
+  total_amount: number;
 }
 
 const brl = (v: number) =>
@@ -44,6 +68,8 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<Counts>({
     leads: 0, contacts: 0, proposals: 0, partnerships: 0, activeListings: 0, commission: 0,
+    rentalActive: 0, rentalDueSoon: 0, rentalOverdue: 0, rentalOverdueAmount: 0,
+    rentalRevenue: 0, contractsEnding: 0, adjustmentsDue: 0,
   });
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
@@ -53,7 +79,10 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     const today = new Date().toISOString().split("T")[0];
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes] = await Promise.all([
+    const in90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+    const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes, contractsRes, chargesRes] = await Promise.all([
       supabase.from("sales_pipeline").select("id, stage, commission_value").eq("broker_id", userId),
       supabase
         .from("broker_appointments")
@@ -73,6 +102,19 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       isBroker
         ? supabase.from("property_group_members").select("group_id, role").eq("broker_id", userId)
         : Promise.resolve({ data: [] as { group_id: string; role: string }[] }),
+      isBroker
+        ? supabase
+            .from("rental_contracts")
+            .select("id, status, end_date, next_adjustment_date, rent_amount, admin_fee_percent")
+            .eq("broker_id", userId)
+        : Promise.resolve({ data: [] as RentalContractRow[] }),
+      isBroker
+        ? supabase
+            .from("rental_charges")
+            .select("id, status, due_date, total_amount")
+            .eq("broker_id", userId)
+            .eq("status", "pending")
+        : Promise.resolve({ data: [] as RentalChargeRow[] }),
     ]);
 
     const pipeline = pipelineRes.data ?? [];
@@ -99,6 +141,11 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       .filter((p) => p.stage === "closed_won")
       .reduce((acc, p) => acc + (p.commission_value ?? 0), 0);
 
+    const rentalContracts = (contractsRes.data ?? []) as RentalContractRow[];
+    const pendingCharges = (chargesRes.data ?? []) as RentalChargeRow[];
+    const runningContracts = rentalContracts.filter((c) => c.status === "active" || c.status === "notice");
+    const overdueCharges = pendingCharges.filter((c) => c.due_date < today);
+
     setCounts({
       leads: pipeline.filter((p) => p.stage === "lead").length,
       contacts: contacts.length,
@@ -106,6 +153,18 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       partnerships,
       activeListings: props.filter((p) => p.status === "active").length,
       commission: soldCommission + pipelineCommission,
+      rentalActive: runningContracts.length,
+      rentalDueSoon: pendingCharges.filter((c) => c.due_date >= today && c.due_date <= in30).length,
+      rentalOverdue: overdueCharges.length,
+      rentalOverdueAmount: overdueCharges.reduce((acc, c) => acc + Number(c.total_amount), 0),
+      rentalRevenue: runningContracts.reduce(
+        (acc, c) => acc + (Number(c.rent_amount) * Number(c.admin_fee_percent)) / 100,
+        0,
+      ),
+      contractsEnding: runningContracts.filter((c) => c.end_date <= in90).length,
+      adjustmentsDue: runningContracts.filter(
+        (c) => c.next_adjustment_date && c.next_adjustment_date <= in30,
+      ).length,
     });
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
@@ -125,6 +184,9 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     { label: pt ? "Parcerias pendentes" : "Pending partnerships", value: counts.partnerships, icon: Handshake, section: "parcerias" },
     { label: pt ? "Anúncios ativos" : "Active listings", value: counts.activeListings, icon: Building2, section: "imoveis" },
     { label: pt ? "Comissão realizada" : "Earned commission", value: brl(counts.commission), icon: DollarSign, section: "relatorios" },
+    { label: pt ? "Locações administradas" : "Managed rentals", value: counts.rentalActive, icon: KeyRound, section: "contratos" },
+    { label: pt ? "Aluguéis a vencer (30 dias)" : "Rent due (30 days)", value: counts.rentalDueSoon, icon: Receipt, section: "alugueis" },
+    { label: pt ? "Receita de administração / mês" : "Management revenue / month", value: brl(counts.rentalRevenue), icon: TrendingUp, section: "relatorios_locacao" },
   ];
 
   const visibleKpis = isBroker ? kpis : kpis.filter((k) => k.section === "imoveis");
@@ -147,6 +209,29 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       label: pt ? `${counts.partnerships} solicitações de parceria para aprovar` : `${counts.partnerships} partnership requests to approve`,
       section: "parcerias" as DashboardSection,
       icon: Handshake,
+    },
+    counts.rentalOverdue > 0 && {
+      label: pt
+        ? `${counts.rentalOverdue} aluguéis em atraso`
+        : `${counts.rentalOverdue} rent charges overdue`,
+      hint: pt ? `Total de ${brl(counts.rentalOverdueAmount)}` : `${brl(counts.rentalOverdueAmount)} total`,
+      section: "alugueis" as DashboardSection,
+      icon: Receipt,
+    },
+    counts.contractsEnding > 0 && {
+      label: pt
+        ? `${counts.contractsEnding} contratos vencendo em 90 dias`
+        : `${counts.contractsEnding} contracts ending within 90 days`,
+      hint: pt ? "Fale com inquilino e proprietário sobre a renovação." : "Talk to tenant and owner about renewal.",
+      section: "contratos" as DashboardSection,
+      icon: KeyRound,
+    },
+    counts.adjustmentsDue > 0 && {
+      label: pt
+        ? `${counts.adjustmentsDue} reajustes a aplicar`
+        : `${counts.adjustmentsDue} rent adjustments to apply`,
+      section: "contratos" as DashboardSection,
+      icon: TrendingUp,
     },
   ].filter(Boolean) as { label: string; hint?: string; section: DashboardSection; icon: typeof Mail }[];
 
