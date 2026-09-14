@@ -11,6 +11,7 @@ import { Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, Chevr
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { motion, AnimatePresence } from "framer-motion";
 import Seo from "@/components/Seo";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 interface BrokerData {
   user_id: string;
@@ -236,16 +237,24 @@ const BrokerProfile = () => {
           </div>
           {/* CTA buttons */}
           <div className="flex flex-wrap gap-2 justify-center sm:justify-end shrink-0">
-            {broker.whatsapp && (
-              <a
-                href={`https://wa.me/${broker.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(pt ? "Olá! Vi seu perfil e gostaria de conversar." : "Hi! I saw your profile and would like to chat.")}`}
-                target="_blank" rel="noopener noreferrer"
-              >
-                <Button className="gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white shadow-md">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </Button>
-              </a>
-            )}
+            {broker.whatsapp && (() => {
+              const waUrl = buildWhatsAppUrl(
+                broker.whatsapp,
+                pt ? "Olá! Vi seu perfil e gostaria de conversar." : "Hi! I saw your profile and would like to chat.",
+              );
+              return waUrl ? (
+                <a href={waUrl} target="_blank" rel="noopener noreferrer">
+                  <Button className="gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white shadow-md">
+                    <MessageCircle className="h-4 w-4" /> WhatsApp
+                  </Button>
+                </a>
+              ) : (
+                <p className="self-center text-xs text-muted-foreground">
+                  {formatBrPhone(broker.whatsapp)} —{" "}
+                  {pt ? "número não válido para WhatsApp" : "number not valid for WhatsApp"}
+                </p>
+              );
+            })()}
             {broker.phone && (
               <a href={`tel:${broker.phone}`}>
                 <Button variant="outline" className="gap-2">

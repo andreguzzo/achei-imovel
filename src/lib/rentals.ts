@@ -1,4 +1,5 @@
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import { buildWhatsAppUrl } from "@/lib/phone";
 
 export type RentalContract = Tables<"rental_contracts">;
 export type RentalCharge = Tables<"rental_charges">;
@@ -114,5 +115,5 @@ export const chargeMessage = (
       }.\nAmount: ${total}\nDue: ${due}${link}${pix}${notes}`;
 };
 
-export const whatsappUrl = (phone: string, message: string) =>
-  `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+/** @deprecated use buildWhatsAppUrl from "@/lib/phone" */
+export const whatsappUrl = buildWhatsAppUrl;

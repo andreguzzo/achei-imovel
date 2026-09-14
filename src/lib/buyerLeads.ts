@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { featureLabel } from "@/lib/propertyFeatures";
+import { buildWhatsAppUrl } from "@/lib/phone";
 
 export type BuyerLead = Tables<"buyer_leads">;
 
@@ -195,5 +196,5 @@ export function buildPropertyMessage(property: MatchableProperty, leadName: stri
   return lines.join("\n");
 }
 
-export const whatsappLink = (phone: string | null, message: string) =>
-  `https://wa.me/${(phone ?? "").replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+/** @deprecated use buildWhatsAppUrl from "@/lib/phone" */
+export const whatsappLink = buildWhatsAppUrl;

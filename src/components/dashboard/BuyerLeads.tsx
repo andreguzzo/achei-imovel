@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildWhatsAppUrl, formatBrPhone, maskBrPhone, normalizeBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import BuyerLeadMatches from "@/components/dashboard/BuyerLeadMatches";
 import { PROPERTY_FEATURES } from "@/lib/propertyFeatures";
 import {
   BUYER_STATUSES, BUYER_URGENCIES, FINANCING_TYPES,
-  financingLabel, parseCriteria, statusLabel, urgencyLabel, whatsappLink,
+  financingLabel, parseCriteria, statusLabel, urgencyLabel,
   fetchAvailableStock, propertyMatchesLead,
   type BuyerCriteria, type BuyerLead, type MatchableProperty,
 } from "@/lib/buyerLeads";
@@ -142,6 +143,14 @@ const BuyerLeads = ({ userId }: Props) => {
   const handleSave = async () => {
     if (!form.name.trim()) {
       toast({ title: pt ? "Informe o nome do cliente" : "Enter the client name", variant: "destructive" });
+      return;
+    }
+    if (form.phone.trim() && !normalizeBrPhone(form.phone)) {
+      toast({
+        title: pt ? "Telefone inválido" : "Invalid phone",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
       return;
     }
     setSaving(true);
@@ -301,19 +310,25 @@ const BuyerLeads = ({ userId }: Props) => {
                 </div>
 
                 <div className="flex shrink-0 gap-1">
-                  {lead.phone && (
+                  {lead.phone && (buildWhatsAppUrl(lead.phone) ? (
                     <Button
                       size="icon"
                       variant="ghost"
                       title={pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
                       onClick={() => {
-                        window.open(whatsappLink(lead.phone, pt ? `Olá ${lead.name}!` : `Hi ${lead.name}!`), "_blank");
+                        const url = buildWhatsAppUrl(lead.phone, pt ? `Olá ${lead.name}!` : `Hi ${lead.name}!`);
+                        if (!url) return;
+                        window.open(url, "_blank");
                         registerContact(lead);
                       }}
                     >
                       <MessageCircle className="h-4 w-4" />
                     </Button>
-                  )}
+                  ) : (
+                    <span className="self-center text-xs text-muted-foreground" title={pt ? "Número não válido para WhatsApp" : "Number not valid for WhatsApp"}>
+                      {formatBrPhone(lead.phone)}
+                    </span>
+                  ))}
                   <Button size="icon" variant="ghost" onClick={() => openEdit(lead)}><Edit className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(lead)}>
                     <Trash2 className="h-4 w-4" />
@@ -371,7 +386,7 @@ const BuyerLeads = ({ userId }: Props) => {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">{pt ? "Telefone / WhatsApp" : "Phone / WhatsApp"}</label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: maskBrPhone(e.target.value) })} placeholder="(27) 99999-8888" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">E-mail</label>

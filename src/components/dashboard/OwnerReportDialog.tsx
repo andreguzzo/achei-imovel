@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import {
   brl,
   buildReportUrl,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type OwnerReportComparison,
   type OwnerReportMetrics,
 } from "@/lib/ownerReport";
@@ -162,7 +163,16 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
     if (!reportUrl || !ownerPhone) return;
     const greeting = ownerName ? `Olá, ${ownerName}!` : "Olá!";
     const msg = `${greeting} Preparei o relatório de performance do imóvel "${property?.title}". Você pode acessar aqui: ${reportUrl}`;
-    window.open(whatsappLink(ownerPhone, msg), "_blank", "noopener");
+    const url = buildWhatsAppUrl(ownerPhone, msg);
+    if (!url) {
+      toast({
+        title: "Telefone do proprietário inválido para WhatsApp",
+        description: `O número ${formatBrPhone(ownerPhone)} não permite envio pelo WhatsApp.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    window.open(url, "_blank", "noopener");
   };
 
   return (
@@ -251,16 +261,21 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
                     >
                       <Copy className="h-3.5 w-3.5" /> Copiar link
                     </Button>
-                    <Button size="sm" className="gap-1" disabled={!ownerPhone} onClick={sendWhatsapp}>
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      {ownerPhone ? "Enviar ao proprietário" : "Sem telefone cadastrado"}
-                    </Button>
+                    {buildWhatsAppUrl(ownerPhone) && (
+                      <Button size="sm" className="gap-1" onClick={sendWhatsapp}>
+                        <MessageCircle className="h-3.5 w-3.5" /> Enviar ao proprietário
+                      </Button>
+                    )}
                   </div>
-                  {!ownerPhone && (
+                  {!ownerPhone ? (
                     <p className="text-xs text-muted-foreground">
                       Cadastre o telefone do proprietário nos dados privados do imóvel para enviar por WhatsApp.
                     </p>
-                  )}
+                  ) : !buildWhatsAppUrl(ownerPhone) ? (
+                    <p className="text-xs text-muted-foreground">
+                      {formatBrPhone(ownerPhone)} — número cadastrado não é válido para WhatsApp.
+                    </p>
+                  ) : null}
                 </div>
               )}
 

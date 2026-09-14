@@ -1,3 +1,5 @@
+import { buildWhatsAppUrl } from "@/lib/phone";
+
 export interface OwnerReportComparison {
   sample_count: number;
   avg_price: number | null;
@@ -44,10 +46,7 @@ export const reportDate = (value: string) =>
 
 export const buildReportUrl = (token: string) => `${window.location.origin}/relatorio/${token}`;
 
-export const onlyDigits = (v: string) => v.replace(/\D/g, "");
+export { onlyDigits } from "@/lib/phone";
 
-export const whatsappLink = (phone: string, message: string) => {
-  const digits = onlyDigits(phone);
-  const full = digits.length <= 11 ? `55${digits}` : digits;
-  return `https://wa.me/${full}?text=${encodeURIComponent(message)}`;
-};
+/** @deprecated use buildWhatsAppUrl from "@/lib/phone" */
+export const whatsappLink = buildWhatsAppUrl;

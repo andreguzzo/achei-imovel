@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { maskBrPhone, normalizeBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -287,9 +288,14 @@ const PrivateInfoCard = ({
             </label>
             <Input
               value={owner.phone}
-              onChange={(e) => updateOwner(idx, "phone", e.target.value)}
-              placeholder="(11) 99999-9999"
+              onChange={(e) => updateOwner(idx, "phone", maskBrPhone(e.target.value))}
+              placeholder="(27) 99999-8888"
             />
+            {owner.phone.trim() && !normalizeBrPhone(owner.phone) && (
+              <p className="mt-1 text-xs text-destructive">
+                {pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888."}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">

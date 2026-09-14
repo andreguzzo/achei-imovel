@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { maskBrPhone, normalizeBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,22 @@ const DashboardProfile = ({ userId, email, isBroker, profile, onProfileSaved }: 
     }
     if (!phone.trim()) {
       toast({ title: pt ? "Telefone é obrigatório" : "Phone is required", variant: "destructive" });
+      return;
+    }
+    if (!normalizeBrPhone(phone)) {
+      toast({
+        title: pt ? "Telefone inválido" : "Invalid phone",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (whatsapp.trim() && !normalizeBrPhone(whatsapp)) {
+      toast({
+        title: pt ? "WhatsApp inválido" : "Invalid WhatsApp",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
       return;
     }
     if (username.trim() && !/^[a-zA-Z0-9._-]{3,30}$/.test(username.trim())) {

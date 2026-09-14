@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ExternalLink, Loader2 } from "lucide-react";
@@ -9,7 +10,7 @@ import {
   buildPropertyMessage,
   fetchAvailableStock,
   propertyMatchesLead,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type BuyerLead,
   type MatchableProperty,
 } from "@/lib/buyerLeads";
@@ -90,17 +91,24 @@ const BuyerLeadMatches = ({ lead, brokerId, agencyId, stock }: Props) => {
                 <ExternalLink className="h-4 w-4" />
               </Button>
             </Link>
-            <Button
-              size="sm"
-              className="gap-1.5"
-              disabled={!lead.phone}
-              onClick={() =>
-                window.open(whatsappLink(lead.phone, buildPropertyMessage(p, lead.name, pt)), "_blank")
-              }
-            >
-              <MessageCircle className="h-4 w-4" />
-              {pt ? "Enviar por WhatsApp" : "Send on WhatsApp"}
-            </Button>
+            {buildWhatsAppUrl(lead.phone) ? (
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  const url = buildWhatsAppUrl(lead.phone, buildPropertyMessage(p, lead.name, pt));
+                  if (url) window.open(url, "_blank");
+                }}
+              >
+                <MessageCircle className="h-4 w-4" />
+                {pt ? "Enviar por WhatsApp" : "Send on WhatsApp"}
+              </Button>
+            ) : (
+              <span className="self-center text-xs text-muted-foreground">
+                {lead.phone ? formatBrPhone(lead.phone) : ""} —{" "}
+                {pt ? "sem WhatsApp válido" : "no valid WhatsApp"}
+              </span>
+            )}
           </div>
         </div>
       ))}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import {
   propertyMatchesLead,
   statusLabel,
   urgencyLabel,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type BuyerLead,
   type MatchableProperty,
 } from "@/lib/buyerLeads";
@@ -70,18 +71,23 @@ const PropertyMatchingLeads = ({ open, onOpenChange, brokerId, property }: Props
                     {statusLabel(l.status, pt)} • {urgencyLabel(l.urgency, pt)}
                   </p>
                 </div>
-                {l.phone ? (
+                {buildWhatsAppUrl(l.phone) ? (
                   <Button
                     size="sm"
                     className="gap-1.5"
-                    onClick={() =>
-                      property &&
-                      window.open(whatsappLink(l.phone, buildPropertyMessage(property, l.name, pt)), "_blank")
-                    }
+                    onClick={() => {
+                      if (!property) return;
+                      const url = buildWhatsAppUrl(l.phone, buildPropertyMessage(property, l.name, pt));
+                      if (url) window.open(url, "_blank");
+                    }}
                   >
                     <MessageCircle className="h-4 w-4" />
                     {pt ? "Enviar" : "Send"}
                   </Button>
+                ) : l.phone ? (
+                  <Badge variant="secondary">
+                    {formatBrPhone(l.phone)} — {pt ? "sem WhatsApp válido" : "no valid WhatsApp"}
+                  </Badge>
                 ) : (
                   <Badge variant="secondary">{pt ? "Sem telefone" : "No phone"}</Badge>
                 )}

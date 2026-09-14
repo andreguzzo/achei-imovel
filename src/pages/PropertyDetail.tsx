@@ -16,6 +16,7 @@ import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
 import Seo from "@/components/Seo";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -55,14 +56,11 @@ const formatPrice = (price: number, listingType: string) => {
 
 
 
-const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
-
-const buildWhatsAppUrl = (phone: string, propertyTitle: string) => {
-  const cleaned = cleanPhone(phone);
-  const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-  const msg = encodeURIComponent(`Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`);
-  return `https://wa.me/${number}?text=${msg}`;
-};
+const brokerWhatsAppUrl = (phone: string, propertyTitle: string) =>
+  buildWhatsAppUrl(
+    phone,
+    `Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`,
+  );
 
 const BrokerCard = ({
   profile,
@@ -80,6 +78,7 @@ const BrokerCard = ({
   highlight?: boolean;
 }) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
+  const waUrl = whatsappNumber ? brokerWhatsAppUrl(whatsappNumber, propertyTitle) : null;
 
 
   return (
@@ -113,12 +112,12 @@ const BrokerCard = ({
 
         {profile.phone && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <PhoneIcon className="h-3 w-3" /> {profile.phone}
+            <PhoneIcon className="h-3 w-3" /> {formatBrPhone(profile.phone)}
           </p>
         )}
-        {whatsappNumber ? (
+        {waUrl ? (
           <a
-            href={buildWhatsAppUrl(whatsappNumber, propertyTitle)}
+            href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-flex"
@@ -128,6 +127,11 @@ const BrokerCard = ({
               {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
             </Button>
           </a>
+        ) : whatsappNumber ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {formatBrPhone(whatsappNumber)} —{" "}
+            {pt ? "número não válido para WhatsApp" : "number not valid for WhatsApp"}
+          </p>
         ) : (
           <Link to="/login" className="mt-2 inline-flex">
             <Button size="sm" variant="outline" className="gap-1.5">

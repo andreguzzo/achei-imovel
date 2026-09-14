@@ -12,11 +12,12 @@ import { CheckCircle2, Copy, Link2, Loader2, QrCode, Receipt, Undo2, MessageCirc
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import {
   brl, chargeMessage, chargeStatusClass, chargeStatusLabel, effectiveChargeStatus,
-  formatCompetence, formatDate, monthKey, whatsappUrl,
+  formatCompetence, formatDate, monthKey,
   type ChargeStatus, type RentalCharge,
 } from "@/lib/rentals";
 import { buildPixPayload } from "@/lib/pix";
 import { canGeneratePix, canIssueCharges, fetchBillingSettings, type RentalBillingSettings } from "./RentalBilling";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 interface ChargeRow extends RentalCharge {
   rental_contracts: {
@@ -191,7 +192,16 @@ const RentalCharges = ({ userId }: Props) => {
       toast.error(pt ? "Este inquilino não tem WhatsApp cadastrado." : "This tenant has no WhatsApp number.");
       return;
     }
-    window.open(whatsappUrl(contract.tenant_phone, chargeMessage(charge, contract, pt, extrasFor(charge))), "_blank");
+    const url = buildWhatsAppUrl(contract.tenant_phone, chargeMessage(charge, contract, pt, extrasFor(charge)));
+    if (!url) {
+      toast.error(
+        pt
+          ? `O telefone ${formatBrPhone(contract.tenant_phone)} não é válido para WhatsApp.`
+          : `The phone ${formatBrPhone(contract.tenant_phone)} is not valid for WhatsApp.`,
+      );
+      return;
+    }
+    window.open(url, "_blank");
   };
 
   const copyMessage = async (charge: ChargeRow) => {
