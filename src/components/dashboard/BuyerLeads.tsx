@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
+import { buildWhatsAppUrl, formatBrPhone, maskBrPhone, normalizeBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
