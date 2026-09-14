@@ -30,8 +30,7 @@ import {
   AlertTriangle,
   Undo2,
 } from "lucide-react";
-import SectionHeader from "@/components/dashboard/SectionHeader";
-import EmptyState from "@/components/admin/EmptyState";
+import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 
 interface Transaction {
   id: string;
