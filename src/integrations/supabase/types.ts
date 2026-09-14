@@ -732,33 +732,39 @@ export type Database = {
         Row: {
           broker_id: string
           created_at: string
+          expires_at: string
           id: string
           metrics: Json
           period_end: string
           period_start: string
           property_id: string
+          share_token: string
           summary: string | null
           updated_at: string
         }
         Insert: {
           broker_id: string
           created_at?: string
+          expires_at?: string
           id?: string
           metrics?: Json
           period_end: string
           period_start: string
           property_id: string
+          share_token?: string
           summary?: string | null
           updated_at?: string
         }
         Update: {
           broker_id?: string
           created_at?: string
+          expires_at?: string
           id?: string
           metrics?: Json
           period_end?: string
           period_start?: string
           property_id?: string
+          share_token?: string
           summary?: string | null
           updated_at?: string
         }

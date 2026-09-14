@@ -65,7 +65,7 @@ const App = () => (
                     <Route path="/esqueci-senha" element={<ForgotPassword />} />
                     <Route path="/redefinir-senha" element={<ResetPassword />} />
                     <Route path="/convite/:token" element={<AcceptInvite />} />
-                    <Route path="/relatorio/:id" element={<OwnerReport />} />
+                    <Route path="/relatorio/:token" element={<OwnerReport />} />
                     <Route path="/privacidade" element={<Privacy />} />
                     <Route path="/termos" element={<Terms />} />
 

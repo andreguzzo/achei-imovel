@@ -42,7 +42,7 @@ export const brl = (v: number) =>
 export const reportDate = (value: string) =>
   new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
 
-export const buildReportUrl = (id: string) => `${window.location.origin}/relatorio/${id}`;
+export const buildReportUrl = (token: string) => `${window.location.origin}/relatorio/${token}`;
 
 export const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
