@@ -11,7 +11,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import {
   brl,
   buildReportUrl,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type OwnerReportComparison,
   type OwnerReportMetrics,
 } from "@/lib/ownerReport";

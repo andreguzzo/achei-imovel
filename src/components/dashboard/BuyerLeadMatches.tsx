@@ -9,7 +9,7 @@ import {
   buildPropertyMessage,
   fetchAvailableStock,
   propertyMatchesLead,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type BuyerLead,
   type MatchableProperty,
 } from "@/lib/buyerLeads";

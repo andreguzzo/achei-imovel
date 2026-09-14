@@ -10,7 +10,7 @@ import {
   propertyMatchesLead,
   statusLabel,
   urgencyLabel,
-  whatsappLink,
+  // whatsappLink replaced by buildWhatsAppUrl
   type BuyerLead,
   type MatchableProperty,
 } from "@/lib/buyerLeads";
