@@ -92,6 +92,23 @@ const Search = () => {
       else setLoading(true);
       setError(false);
 
+      // Reference code shortcut: "AB-00001" (also accepts "ab 1" / "ab00001")
+      const refMatch = f.query.trim().match(/^ab[-\s]?(\d{1,5})$/i);
+      if (refMatch) {
+        const code = `AB-${refMatch[1].padStart(5, "0")}`;
+        const { data: byCode } = await supabase
+          .from("properties")
+          .select("id")
+          .eq("reference_code", code)
+          .maybeSingle();
+        if (byCode?.id) {
+          setLoading(false);
+          setLoadingMore(false);
+          navigate(`/imovel/${byCode.id}`);
+          return;
+        }
+      }
+
       // Build sorting
       let orderCol = "created_at";
       let orderAsc = false;
