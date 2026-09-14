@@ -19,11 +19,16 @@ import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
+import RentalContracts from "@/components/dashboard/rental/RentalContracts";
+import RentalCharges from "@/components/dashboard/rental/RentalCharges";
+import RentalInspections from "@/components/dashboard/rental/RentalInspections";
+import RentalReports from "@/components/dashboard/rental/RentalReports";
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "negociacoes", "contatos", "propostas", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
+  "contratos", "alugueis", "vistorias", "relatorios_locacao",
 ];
 
 const Dashboard = () => {
