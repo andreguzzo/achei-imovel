@@ -135,7 +135,7 @@ const DashboardFinance = ({ userId }: Props) => {
         const date = d.expected_close_date;
         if (!date || date < todayIso) return;
         const s = split(gross, d.property_id);
-        out.push({ kind: "forecast", date, label: d.client_name, gross, ...s });
+        out.push({ kind: "forecast", date, label: d.client_name, clientName: d.client_name, gross, ...s });
       }
     });
 
