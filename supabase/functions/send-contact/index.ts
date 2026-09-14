@@ -103,13 +103,11 @@ Deno.serve(async (req) => {
       const propertyCode = property.reference_code ?? String(property.id).slice(0, 8).toUpperCase();
       const origin = req.headers.get("origin") || "https://abitzo.lovable.app";
       const panelUrl = `${origin}/painel?secao=contatos`;
-      const leadPhone = (phone ?? "").replace(/\D/g, "");
       const waMessage = encodeURIComponent(
         `Olá ${name.trim()}, sou o corretor responsável pelo imóvel "${property.title}" (cód. ${propertyCode}). Recebi seu contato pelo Abitzo e estou à disposição.`
       );
-      const waUrl = leadPhone
-        ? `https://wa.me/${leadPhone.length <= 11 ? "55" + leadPhone : leadPhone}?text=${waMessage}`
-        : null;
+      const leadPhone = normalizeBrPhone(phone);
+      const waUrl = leadPhone ? `https://wa.me/${leadPhone}?text=${waMessage}` : null;
 
       if (!resendApiKey) {
         console.log(`[SEND-CONTACT] Lead for ${brokerEmail} (RESEND_API_KEY not set)`);
