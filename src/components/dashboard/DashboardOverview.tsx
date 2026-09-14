@@ -52,6 +52,8 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<Counts>({
     leads: 0, contacts: 0, proposals: 0, partnerships: 0, activeListings: 0, commission: 0,
+    rentalActive: 0, rentalDueSoon: 0, rentalOverdue: 0, rentalOverdueAmount: 0,
+    rentalRevenue: 0, contractsEnding: 0, adjustmentsDue: 0,
   });
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
