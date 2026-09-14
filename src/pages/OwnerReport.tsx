@@ -7,7 +7,6 @@ import Seo from "@/components/Seo";
 import { brl, reportDate, type OwnerReportMetrics } from "@/lib/ownerReport";
 
 interface ReportRow {
-  id: string;
   period_start: string;
   period_end: string;
   summary: string | null;
@@ -23,23 +22,31 @@ const typeLabels: Record<string, string> = {
 };
 
 const OwnerReport = () => {
-  const { id } = useParams<{ id: string }>();
+  const { token } = useParams<{ token: string }>();
   const [report, setReport] = useState<ReportRow | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      if (!id) return;
-      const { data } = await supabase
-        .from("owner_reports")
-        .select("id, period_start, period_end, summary, created_at, metrics")
-        .eq("id", id)
-        .maybeSingle();
-      setReport(data ? ({ ...data, metrics: data.metrics as unknown as OwnerReportMetrics } as ReportRow) : null);
+      if (!token) {
+        setErrorMsg("Link inválido.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("get-owner-report", {
+        body: { token },
+      });
+      const payload = data as (ReportRow & { error?: string }) | null;
+      if (error || !payload || payload.error || !payload.metrics) {
+        setErrorMsg(payload?.error ?? "Relatório não encontrado.");
+      } else {
+        setReport(payload);
+      }
       setLoading(false);
     };
     void load();
-  }, [id]);
+  }, [token]);
 
   if (loading) {
     return (
