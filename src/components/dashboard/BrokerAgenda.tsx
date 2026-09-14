@@ -172,8 +172,9 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
 
   // Cleanup timers on unmount
   useEffect(() => {
+    const timers = notifTimers.current;
     return () => {
-      notifTimers.current.forEach((timer) => clearTimeout(timer));
+      timers.forEach((timer) => clearTimeout(timer));
     };
   }, []);
 

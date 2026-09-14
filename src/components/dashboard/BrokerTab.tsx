@@ -91,7 +91,7 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
         .order("created_at", { ascending: false }),
     ]);
 
-    setProperties((propsRes.data as any) ?? []);
+    setProperties((propsRes.data as unknown as PropertyWithViews[]) ?? []);
     setPhotos((photosRes.data as BrokerPhoto[]) ?? []);
     const parts = (partnershipsRes.data as Partnership[]) ?? [];
     setPartnerships(parts);
