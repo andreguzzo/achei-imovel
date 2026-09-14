@@ -255,6 +255,7 @@ const Financing = () => {
         </>
       )}
     </div>
+  </>
   );
 };
 
