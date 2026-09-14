@@ -400,6 +400,8 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
         </DialogContent>
       </Dialog>
 
+      <ImportListings open={importOpen} onOpenChange={setImportOpen} onImported={fetchProperties} />
+
       <OwnerReportDialog property={reportTarget} broker={broker} onClose={() => setReportTarget(null)} />
 
       <PropertyMatchingLeads
