@@ -32,6 +32,9 @@ export interface OwnerReportMetrics {
   broker: { name: string; creci: string | null; phone: string | null };
   views: number;
   leads: number;
+  /** subset of leads that came from the WhatsApp button */
+  leads_whatsapp?: number;
+
   visits_scheduled: number;
   visits_done: number;
   channels: string[];
