@@ -555,12 +555,19 @@ const SalesPipeline = ({ userId }: Props) => {
                         <div className="space-y-2">
                           {(byStage[stage.key] ?? []).map((item) => (
                             <div key={item.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
-                              <button
-                                type="button"
+                              <div
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => openDeal(item)}
-                                className="w-full space-y-1 text-left"
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openDeal(item); }}
+                                className="w-full cursor-pointer space-y-1 text-left"
                               >
-                                <p className="text-sm font-medium text-foreground hover:text-primary">{item.client_name}</p>
+                                <ClientLink
+                                  name={item.client_name}
+                                  phone={item.client_phone}
+                                  email={item.client_email}
+                                  className="block text-sm font-medium text-foreground"
+                                />
                                 {item.property && (
                                   <p className="truncate text-xs text-muted-foreground">
                                     {item.property.title} — {item.property.city}
