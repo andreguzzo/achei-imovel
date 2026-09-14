@@ -43,8 +43,14 @@ const SubscriptionCard = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
-  const details = tierDetails[tier];
-  const isPaid = tier !== "free";
+  const planDetails: Record<string, { name: string; priceLabel: string; color: string }> = {
+    ...tierDetails,
+    corretor: { name: "Corretor", priceLabel: "R$ 79,90/mês", color: "bg-blue-100 text-blue-800" },
+    imobiliaria: { name: "Imobiliária", priceLabel: "R$ 159,90/mês", color: "bg-amber-100 text-amber-800" },
+  };
+  const activeSlug = planSlug ?? tier;
+  const details = planDetails[activeSlug] ?? tierDetails.free;
+  const isPaid = subscribed && activeSlug !== "free";
 
   const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
   const dateFmt = (iso: string) =>
