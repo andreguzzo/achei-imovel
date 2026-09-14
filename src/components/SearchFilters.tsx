@@ -47,12 +47,7 @@ export const defaultFilters: SearchFiltersState = {
   sortBy: "newest",
 };
 
-const KEYWORD_SUGGESTIONS = [
-  "elevador", "piscina", "academia", "churrasqueira", "portaria 24h",
-  "playground", "salão de festas", "sauna", "varanda", "suíte",
-  "ar condicionado", "jardim", "quadra", "coworking", "pet friendly",
-  "vista mar", "mobiliado", "lavabo", "closet", "depósito",
-];
+const KEYWORD_SUGGESTIONS = PROPERTY_FEATURES.map((f) => f.slug);
 
 interface SearchFiltersProps {
   filters: SearchFiltersState;
