@@ -184,6 +184,9 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     { label: pt ? "Parcerias pendentes" : "Pending partnerships", value: counts.partnerships, icon: Handshake, section: "parcerias" },
     { label: pt ? "Anúncios ativos" : "Active listings", value: counts.activeListings, icon: Building2, section: "imoveis" },
     { label: pt ? "Comissão realizada" : "Earned commission", value: brl(counts.commission), icon: DollarSign, section: "relatorios" },
+    { label: pt ? "Locações administradas" : "Managed rentals", value: counts.rentalActive, icon: KeyRound, section: "contratos" },
+    { label: pt ? "Aluguéis a vencer (30 dias)" : "Rent due (30 days)", value: counts.rentalDueSoon, icon: Receipt, section: "alugueis" },
+    { label: pt ? "Receita de administração / mês" : "Management revenue / month", value: brl(counts.rentalRevenue), icon: TrendingUp, section: "relatorios_locacao" },
   ];
 
   const visibleKpis = isBroker ? kpis : kpis.filter((k) => k.section === "imoveis");
@@ -206,6 +209,29 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       label: pt ? `${counts.partnerships} solicitações de parceria para aprovar` : `${counts.partnerships} partnership requests to approve`,
       section: "parcerias" as DashboardSection,
       icon: Handshake,
+    },
+    counts.rentalOverdue > 0 && {
+      label: pt
+        ? `${counts.rentalOverdue} aluguéis em atraso`
+        : `${counts.rentalOverdue} rent charges overdue`,
+      hint: pt ? `Total de ${brl(counts.rentalOverdueAmount)}` : `${brl(counts.rentalOverdueAmount)} total`,
+      section: "alugueis" as DashboardSection,
+      icon: Receipt,
+    },
+    counts.contractsEnding > 0 && {
+      label: pt
+        ? `${counts.contractsEnding} contratos vencendo em 90 dias`
+        : `${counts.contractsEnding} contracts ending within 90 days`,
+      hint: pt ? "Fale com inquilino e proprietário sobre a renovação." : "Talk to tenant and owner about renewal.",
+      section: "contratos" as DashboardSection,
+      icon: KeyRound,
+    },
+    counts.adjustmentsDue > 0 && {
+      label: pt
+        ? `${counts.adjustmentsDue} reajustes a aplicar`
+        : `${counts.adjustmentsDue} rent adjustments to apply`,
+      section: "contratos" as DashboardSection,
+      icon: TrendingUp,
     },
   ].filter(Boolean) as { label: string; hint?: string; section: DashboardSection; icon: typeof Mail }[];
 
