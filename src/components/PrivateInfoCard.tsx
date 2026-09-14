@@ -82,6 +82,7 @@ const PrivateInfoCard = ({
 }: PrivateInfoCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   /* ── Owner helpers ── */
   const updateOwner = (idx: number, field: keyof OwnerEntry, value: string | boolean) => {
