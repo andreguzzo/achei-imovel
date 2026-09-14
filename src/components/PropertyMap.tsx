@@ -15,7 +15,10 @@ interface PropertyMapProps {
   onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
   selectedId?: string;
   onSelect?: (id: string) => void;
+  /** When false, the map no longer auto-fits to the results (used while searching by map area) */
+  autoFit?: boolean;
 }
+
 
 const formatPriceFull = (price: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price);
