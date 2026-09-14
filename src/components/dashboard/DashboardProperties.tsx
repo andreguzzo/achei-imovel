@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle } from "lucide-react";
+import { authorizationStatus, authorizationBadgeText } from "@/lib/saleAuthorization";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
 import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
@@ -34,6 +35,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [loading, setLoading] = useState(true);
   const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
   const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
+  const [authEnds, setAuthEnds] = useState<Record<string, string>>({});
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
