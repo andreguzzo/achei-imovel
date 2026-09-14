@@ -480,7 +480,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
                         : "border-input bg-background text-foreground hover:bg-accent"
                     }`}
                   >
-                    {kw}
+                    {featureLabel(kw, pt)}
                   </button>
                 ))}
               </div>
