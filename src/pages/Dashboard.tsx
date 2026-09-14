@@ -279,6 +279,7 @@ const Dashboard = () => {
   );
 
   return (
+    <ClientSheetProvider brokerId={user.id}>
     <div className="container py-6">
       <div className="mb-4 flex items-center gap-3 lg:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
