@@ -1,36 +1,30 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  Loader2, User, Building2, Trash2, Edit, Plus, TrendingUp, Eye, Camera, X, ExternalLink, MessageCircle, Instagram,
-} from "lucide-react";
-import SocialPostExporter from "@/components/social/SocialPostExporter";
-import { toast } from "@/hooks/use-toast";
-import DashboardSalesTab from "@/components/dashboard/DashboardSalesTab";
-import EmailVerification from "@/components/dashboard/EmailVerification";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Loader2, Menu } from "lucide-react";
+import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/components/dashboard/DashboardSidebar";
+import DashboardOverview from "@/components/dashboard/DashboardOverview";
+import DashboardProperties from "@/components/dashboard/DashboardProperties";
+import DashboardProfile from "@/components/dashboard/DashboardProfile";
+import SalesPipeline from "@/components/dashboard/SalesPipeline";
+import SalesContacts from "@/components/dashboard/SalesContacts";
+import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
+import BrokerProposals from "@/components/dashboard/BrokerProposals";
+import BrokerAnalytics from "@/components/dashboard/BrokerAnalytics";
+import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
-type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
-
-interface BrokerPhoto {
-  id: string;
-  url: string;
-  position: number;
-  is_cover: boolean;
-  is_banner: boolean;
-}
+const VALID_SECTIONS: DashboardSection[] = [
+  "inicio", "negociacoes", "contatos", "propostas", "agenda",
+  "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
+];
 
 const Dashboard = () => {
   const { locale } = useLanguage();
@@ -38,634 +32,203 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const pt = locale === "pt-BR";
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
-  const [properties, setProperties] = useState<PropertyWithImages[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [isBroker, setIsBroker] = useState(false);
-  const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Profile form
-  const [fullName, setFullName] = useState("");
-  const [commercialName, setCommercialName] = useState("");
-  const [username, setUsername] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [creci, setCreci] = useState("");
-  const [bio, setBio] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [facebook, setFacebook] = useState("");
-  const [youtube, setYoutube] = useState("");
-  const [tiktok, setTiktok] = useState("");
-  const [linkedin, setLinkedin] = useState("");
-  const [emailVerified, setEmailVerified] = useState(false);
-  // Broker photos
-  const [photos, setPhotos] = useState<BrokerPhoto[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const rawSection = searchParams.get("secao") as DashboardSection | null;
+  const section: DashboardSection =
+    rawSection && VALID_SECTIONS.includes(rawSection) ? rawSection : "inicio";
 
-  // Status dialog for properties
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
-  const [statusAction, setStatusAction] = useState("active");
-  const [soldPrice, setSoldPrice] = useState("");
-  const [soldCommission, setSoldCommission] = useState("");
-  const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+    setProfile(data ?? null);
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/login"); return; }
 
-    const fetchAll = async () => {
+    const load = async () => {
       setLoading(true);
-      const [profileRes, propsRes, brokerRes, photosRes] = await Promise.all([
+      const [profileRes, brokerRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-        supabase.from("properties").select("*, property_images(*)").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.rpc("has_role", { _user_id: user.id, _role: "broker" }),
-        supabase.from("broker_photos").select("*").eq("user_id", user.id).order("position"),
       ]);
-
-      if (profileRes.data) {
-        const p = profileRes.data;
-        setProfile(p);
-        setFullName(p.full_name ?? "");
-        setCommercialName(p.commercial_name ?? "");
-        setUsername(p.username ?? "");
-        setPhone(p.phone ?? "");
-        setEmail(user.email ?? "");
-        setCreci(p.creci ?? "");
-        setBio(p.bio ?? "");
-        setWhatsapp(p.whatsapp ?? "");
-        setInstagram(p.instagram ?? "");
-        setFacebook(p.facebook ?? "");
-        setYoutube(p.youtube ?? "");
-        setTiktok(p.tiktok ?? "");
-        setLinkedin(p.linkedin ?? "");
-        setEmailVerified(p.email_verified ?? false);
-      }
-      setProperties((propsRes.data as PropertyWithImages[]) ?? []);
+      setProfile(profileRes.data ?? null);
       setIsBroker(!!brokerRes.data);
-      setPhotos((photosRes.data as BrokerPhoto[]) ?? []);
       setLoading(false);
     };
-    fetchAll();
+    load();
   }, [user, authLoading, navigate]);
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    if (!creci.trim()) {
-      toast({ title: pt ? "CRECI é obrigatório" : "CRECI is required", variant: "destructive" });
-      return;
-    }
-    if (!phone.trim()) {
-      toast({ title: pt ? "Telefone é obrigatório" : "Phone is required", variant: "destructive" });
-      return;
-    }
-    if (!fullName.trim()) {
-      toast({ title: pt ? "Nome completo é obrigatório" : "Full name is required", variant: "destructive" });
-      return;
-    }
-    if (username.trim() && !/^[a-zA-Z0-9._-]{3,30}$/.test(username.trim())) {
-      toast({ title: pt ? "Username inválido (3-30 caracteres, letras, números, . _ -)" : "Invalid username (3-30 chars, letters, numbers, . _ -)", variant: "destructive" });
-      return;
-    }
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ 
-        full_name: fullName, 
-        commercial_name: commercialName || null,
-        username: username.trim().toLowerCase() || null,
-        phone, 
-        whatsapp: whatsapp || null,
-        instagram: instagram || null,
-        facebook: facebook || null,
-        youtube: youtube || null,
-        tiktok: tiktok || null,
-        linkedin: linkedin || null,
-        creci, 
-        bio 
-      })
-      .eq("user_id", user.id);
+  const goToSection = useCallback((next: DashboardSection) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set("secao", next);
+      return params;
+    });
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [setSearchParams]);
 
-    if (error) {
-      if (error.message?.includes("profiles_username_unique")) {
-        toast({ title: pt ? "Username já em uso" : "Username already taken", variant: "destructive" });
-      } else {
-        toast({ title: pt ? "Erro ao salvar" : "Error saving", description: error.message, variant: "destructive" });
-      }
-    } else {
-      toast({ title: pt ? "Perfil atualizado!" : "Profile updated!" });
+  const groups = useDashboardNav();
+
+  const activeLabel = useMemo(() => {
+    for (const g of groups) {
+      const found = g.items.find((i) => i.key === section);
+      if (found) return found.label;
     }
-    setSaving(false);
-  };
-
-  const handleDeleteProperty = async (propId: string) => {
-    if (!confirm(pt ? "Tem certeza que deseja excluir este imóvel?" : "Are you sure you want to delete this property?")) return;
-    const { error } = await supabase.from("properties").delete().eq("id", propId);
-    if (error) {
-      toast({ title: pt ? "Erro" : "Error", description: error.message, variant: "destructive" });
-    } else {
-      setProperties((prev) => prev.filter((p) => p.id !== propId));
-      toast({ title: pt ? "Imóvel excluído" : "Property deleted" });
-    }
-  };
-
-  const handleOpenStatusDialog = (p: PropertyWithImages) => {
-    setStatusTarget(p);
-    setStatusAction(p.status);
-    setSoldPrice("");
-    setSoldCommission("");
-    setSoldByOtherPrice("");
-    setStatusDialogOpen(true);
-  };
-
-  const handleStatusConfirm = async () => {
-    if (!statusTarget || !user) return;
-    if (statusAction === "sold" && (!soldPrice || !soldCommission)) {
-      toast({ title: pt ? "Informe o valor e a comissão" : "Enter value and commission", variant: "destructive" });
-      return;
-    }
-    const isSoldByOther = statusAction === "sold_by_other";
-    const finalStatus = isSoldByOther ? "sold" : statusAction;
-
-    const updateData: Record<string, unknown> = { status: finalStatus };
-    if (statusAction === "sold") {
-      updateData.sold_price = Number(soldPrice);
-      updateData.sold_commission = Number(soldCommission);
-    }
-    if (isSoldByOther && soldByOtherPrice) {
-      updateData.sold_by_other_price = Number(soldByOtherPrice);
-    }
-
-    const { error } = await supabase.from("properties").update(updateData).eq("id", statusTarget.id);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      // Close matching pipeline entries if sold by broker
-      if (statusAction === "sold") {
-        await supabase
-          .from("sales_pipeline")
-          .update({ stage: "closed_won", actual_close_date: new Date().toISOString().split("T")[0], commission_value: Number(soldCommission) } as any)
-          .eq("broker_id", user.id)
-          .eq("property_id", statusTarget.id);
-      }
-      toast({ title: pt ? "Status atualizado!" : "Status updated!" });
-      // Refresh properties
-      const { data } = await supabase.from("properties").select("*, property_images(*)").eq("user_id", user.id).order("created_at", { ascending: false });
-      setProperties((data as PropertyWithImages[]) ?? []);
-    }
-    setStatusDialogOpen(false);
-  };
-
-  // Photo handlers
-  const fetchPhotos = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("broker_photos").select("*").eq("user_id", user.id).order("position");
-    setPhotos((data as BrokerPhoto[]) ?? []);
-  };
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) return;
-    const files = Array.from(e.target.files ?? []);
-    if (photos.length + files.length > 10) {
-      toast({ title: pt ? "Máximo 10 fotos no álbum" : "Max 10 album photos", variant: "destructive" });
-      return;
-    }
-    setUploading(true);
-    let currentCount = photos.length;
-    for (const file of files) {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("broker-photos").upload(path, file, { upsert: true });
-      if (!uploadErr) {
-        const { data: urlData } = supabase.storage.from("broker-photos").getPublicUrl(path);
-        const isCover = currentCount === 0;
-        await supabase.from("broker_photos").insert({ user_id: user.id, url: urlData.publicUrl, position: currentCount, is_cover: isCover });
-        if (isCover) await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("user_id", user.id);
-        currentCount++;
-      }
-    }
-    await fetchPhotos();
-    setUploading(false);
-  };
-
-  const handleSetCover = async (photo: BrokerPhoto) => {
-    if (!user) return;
-    await supabase.from("broker_photos").update({ is_cover: false }).eq("user_id", user.id);
-    await Promise.all([
-      supabase.from("broker_photos").update({ is_cover: true }).eq("id", photo.id),
-      supabase.from("profiles").update({ avatar_url: photo.url }).eq("user_id", user.id),
-    ]);
-    await fetchPhotos();
-    toast({ title: pt ? "Foto de perfil atualizada!" : "Profile photo updated!" });
-  };
-
-  const handleSetBanner = async (photo: BrokerPhoto) => {
-    if (!user) return;
-    await supabase.from("broker_photos").update({ is_banner: false }).eq("user_id", user.id);
-    await supabase.from("broker_photos").update({ is_banner: true }).eq("id", photo.id);
-    await fetchPhotos();
-    toast({ title: pt ? "Banner atualizado!" : "Banner updated!" });
-  };
-
-  const handleDeletePhoto = async (photo: BrokerPhoto) => {
-    if (!user) return;
-    await supabase.from("broker_photos").delete().eq("id", photo.id);
-    const urlParts = photo.url.split("/broker-photos/");
-    if (urlParts[1]) await supabase.storage.from("broker-photos").remove([decodeURIComponent(urlParts[1])]);
-    if (photo.is_cover) await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", user.id);
-    await fetchPhotos();
-  };
+    return "";
+  }, [groups, section]);
 
   if (authLoading || loading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
+  if (!user) return null;
 
-  const totalViews = properties.reduce((sum, p) => sum + (p.view_count ?? 0), 0);
+  // Non-brokers only get the general sections
+  const effectiveSection: DashboardSection =
+    !isBroker && ["negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios"].includes(section)
+      ? "imoveis"
+      : section;
+
+  const brokerInfo = {
+    name: profile?.commercial_name || profile?.full_name || "",
+    creci: profile?.creci ?? "",
+    phone: profile?.whatsapp || profile?.phone || "",
+  };
+
+  const renderSection = () => {
+    switch (effectiveSection) {
+      case "inicio":
+        return (
+          <DashboardOverview
+            userId={user.id}
+            isBroker={isBroker}
+            firstName={(profile?.full_name ?? "").split(" ")[0] ?? ""}
+            onNavigate={goToSection}
+          />
+        );
+      case "negociacoes":
+        return <SalesPipeline userId={user.id} />;
+      case "contatos":
+        return <SalesContacts userId={user.id} />;
+      case "propostas":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Propostas" : "Proposals"}
+              description={pt ? "Registre e acompanhe propostas enviadas aos clientes." : "Create and track proposals sent to clients."}
+            />
+            <BrokerProposals userId={user.id} />
+          </div>
+        );
+      case "agenda":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Visitas e compromissos" : "Visits & appointments"}
+              description={pt ? "Organize suas visitas, reuniões e lembretes." : "Organize visits, meetings and reminders."}
+            />
+            <BrokerAgenda userId={user.id} />
+          </div>
+        );
+      case "imoveis":
+        return <DashboardProperties userId={user.id} isBroker={isBroker} broker={brokerInfo} />;
+      case "parcerias":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Parcerias" : "Partnerships"}
+              description={pt ? "Solicitações recebidas, enviadas e parcerias ativas por imóvel." : "Requests received, sent and active partnerships per property."}
+            />
+            <PropertyPartnerships userId={user.id} />
+          </div>
+        );
+      case "relatorios":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Relatórios" : "Reports"}
+              description={pt ? "VGV ativo, VGV realizado, comissões e desempenho dos anúncios." : "Active and closed sales volume, commissions and listing performance."}
+            />
+            <BrokerAnalytics userId={user.id} />
+          </div>
+        );
+      case "perfil":
+        return (
+          <DashboardProfile
+            userId={user.id}
+            email={user.email ?? ""}
+            isBroker={isBroker}
+            profile={profile}
+            onProfileSaved={fetchProfile}
+          />
+        );
+      case "assinatura":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Assinatura" : "Subscription"}
+              description={pt ? "Seu plano atual, limites e forma de pagamento." : "Your current plan, limits and billing."}
+            />
+            <SubscriptionCard />
+          </div>
+        );
+      case "suporte":
+        return (
+          <div className="space-y-6">
+            <SectionHeader
+              title={pt ? "Suporte" : "Support"}
+              description={pt ? "Abra um chamado e acompanhe as respostas da equipe." : "Open a ticket and follow up with our team."}
+            />
+            <SupportForm />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const sidebar = (mobile = false) => (
+    <DashboardSidebar
+      groups={groups}
+      active={effectiveSection}
+      onSelect={goToSection}
+      isBroker={isBroker}
+      collapsed={mobile ? false : collapsed}
+      onToggleCollapsed={() => setCollapsed((c) => !c)}
+    />
+  );
 
   return (
-    <div className="container py-8">
-      <h1 className="font-display text-2xl font-bold text-foreground">{pt ? "Meu Painel" : "My Dashboard"}</h1>
+    <div className="container py-6">
+      <div className="mb-4 flex items-center gap-3 lg:hidden">
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Menu className="h-4 w-4" /> {pt ? "Seções" : "Sections"}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 overflow-y-auto">
+            <p className="mb-4 font-display text-lg font-semibold">{pt ? "Meu painel" : "My dashboard"}</p>
+            {sidebar(true)}
+          </SheetContent>
+        </Sheet>
+        <span className="truncate text-sm text-muted-foreground">{activeLabel}</span>
+      </div>
 
-      <Tabs defaultValue={isBroker ? "sales" : "properties"} className="mt-6">
-        <TabsList className="flex-wrap">
-          {isBroker && (
-            <TabsTrigger value="sales" className="gap-1"><TrendingUp className="h-4 w-4" /> {pt ? "Gestão de Vendas" : "Sales Management"}</TabsTrigger>
-          )}
-          <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> {pt ? "Imóveis" : "Properties"}</TabsTrigger>
-          <TabsTrigger value="profile" className="gap-1"><User className="h-4 w-4" /> {pt ? "Perfil" : "Profile"}</TabsTrigger>
-          <TabsTrigger value="support" className="gap-1"><MessageCircle className="h-4 w-4" /> {pt ? "Suporte" : "Support"}</TabsTrigger>
-        </TabsList>
-
-        {/* Sales Management Tab */}
-        {isBroker && user && (
-          <TabsContent value="sales">
-            <DashboardSalesTab userId={user.id} />
-          </TabsContent>
-        )}
-
-        {/* Properties Tab */}
-        <TabsContent value="properties">
-          <div className="space-y-4">
-            {/* Quick stats */}
-            {isBroker && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Card>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <Eye className="h-6 w-6 text-primary" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">{pt ? "Visualizações totais" : "Total views"}</p>
-                      <p className="text-xl font-bold">{totalViews}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <Building2 className="h-6 w-6 text-primary" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">{pt ? "Imóveis cadastrados" : "Listed properties"}</p>
-                      <p className="text-xl font-bold">{properties.length}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{properties.length} {pt ? "imóveis cadastrados" : "listed properties"}</p>
-              <Link to="/anunciar"><Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo imóvel" : "New property"}</Button></Link>
-            </div>
-
-            {properties.length === 0 ? (
-              <Card><CardContent className="py-12 text-center text-muted-foreground">{pt ? "Nenhum imóvel cadastrado" : "No properties listed"}</CardContent></Card>
-            ) : (
-              <div className="space-y-3">
-                {properties.map((p) => {
-                  const statusColors: Record<string, string> = { active: "default", inactive: "secondary", sold: "outline", rented: "outline" };
-                  const statusLabels: Record<string, string> = pt
-                    ? { active: "Ativo", inactive: "Fora de negociação", sold: "Vendido", rented: "Alugado" }
-                    : { active: "Active", inactive: "Withdrawn", sold: "Sold", rented: "Rented" };
-                  return (
-                    <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate(`/imovel/${p.id}`)}>
-                      <CardContent className="flex items-center gap-4 p-4">
-                        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                          {p.property_images?.[0]?.url ? (
-                            <img src={p.property_images[0].url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">—</div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-foreground truncate">{p.title}</p>
-                            <Badge variant={statusColors[p.status] as any ?? "secondary"} className="text-[10px] shrink-0">
-                              {statusLabels[p.status] ?? p.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{p.city} - {p.state}</p>
-                          <p className="text-sm font-bold text-primary">
-                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.price)}
-                          </p>
-                        </div>
-                        {isBroker && (
-                          <div className="flex items-center gap-1.5 shrink-0 mr-2">
-                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm font-semibold">{p.view_count ?? 0}</span>
-                          </div>
-                        )}
-                        <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="outline" onClick={() => handleOpenStatusDialog(p)}>
-                            {pt ? "Status" : "Status"}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            title={pt ? "Exportar post para redes sociais" : "Export social post"}
-                            onClick={() => setSocialTarget(p)}
-                          >
-                            <Instagram className="h-4 w-4" />
-                          </Button>
-                          <Link to={`/editar/${p.id}`}>
-                            <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
-                          </Link>
-                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDeleteProperty(p.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Profile Tab */}
-        <TabsContent value="profile">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle>{pt ? "Dados Pessoais" : "Personal Info"}</CardTitle></CardHeader>
-              <CardContent className="space-y-4 max-w-lg">
-                <div>
-                  <label className="text-sm font-medium">{pt ? "Nome completo *" : "Full name *"}</label>
-                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{pt ? "Nome comercial" : "Commercial name"}</label>
-                  <Input value={commercialName} onChange={(e) => setCommercialName(e.target.value)} placeholder={pt ? "Como deseja ser conhecido" : "How you want to be known"} />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Username</label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">@</span>
-                    <Input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} placeholder="seu.username" />
-                  </div>
-                  {username.trim() && (
-                    <p className="mt-1 text-xs text-muted-foreground flex items-center gap-2">
-                      <span>{pt ? "Seu perfil público: " : "Your public profile: "}</span>
-                      <a href={`/corretor/${username.trim().toLowerCase()}`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
-                        {window.location.origin}/corretor/{username.trim().toLowerCase()}
-                      </a>
-                      <a href={`/corretor/${username.trim().toLowerCase()}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-6 w-6 rounded-md border border-input hover:bg-accent transition-colors" title={pt ? "Visitar perfil" : "Visit profile"}>
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                      </a>
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{pt ? "E-mail *" : "Email *"}</label>
-                  <Input value={email} disabled className="bg-muted" />
-                  <p className="mt-1 text-xs text-muted-foreground">{pt ? "E-mail da conta, não pode ser alterado aqui" : "Account email, cannot be changed here"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{pt ? "Telefone *" : "Phone *"}</label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" required />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">WhatsApp</label>
-                  <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="5511999999999" />
-                  <p className="mt-1 text-xs text-muted-foreground">{pt ? "Número com código do país (ex: 5511999999999)" : "Number with country code (e.g. 5511999999999)"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">CRECI *</label>
-                  <Input value={creci} onChange={(e) => setCreci(e.target.value)} placeholder={pt ? "Obrigatório" : "Required"} required />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Bio</label>
-                  <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder={pt ? "Fale sobre você..." : "Tell us about yourself..."} />
-                </div>
-
-                {/* Social Media */}
-                <div className="pt-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{pt ? "Redes Sociais" : "Social Media"}</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium">Instagram</label>
-                      <Input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@seuusuario" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Facebook</label>
-                      <Input value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="https://facebook.com/seuperfil" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">YouTube</label>
-                      <Input value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="https://youtube.com/@seucanal" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">TikTok</label>
-                      <Input value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@seuusuario" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">LinkedIn</label>
-                      <Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/seuperfil" />
-                    </div>
-                  </div>
-                </div>
-                <Button onClick={handleSaveProfile} disabled={saving}>
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {pt ? "Salvar" : "Save"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Connected social accounts (coming soon) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{pt ? "Publicação em redes sociais" : "Social media publishing"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  {pt
-                    ? "Hoje você já pode exportar cada imóvel como post pronto (imagem + legenda) na aba Imóveis. A publicação automática na sua conta será liberada em breve."
-                    : "You can already export each property as a ready-to-post image and caption in the Properties tab. Automatic publishing to your account is coming soon."}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" disabled className="gap-1.5">
-                    <Instagram className="h-4 w-4" /> {pt ? "Conectar Instagram (em breve)" : "Connect Instagram (soon)"}
-                  </Button>
-                  <Button variant="outline" size="sm" disabled className="gap-1.5">
-                    <ExternalLink className="h-4 w-4" /> {pt ? "Conectar Facebook (em breve)" : "Connect Facebook (soon)"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Email Verification */}
-            <EmailVerification
-              email={email}
-              verified={emailVerified}
-              onVerified={() => setEmailVerified(true)}
-            />
-
-            {/* Subscription / Plan Info */}
-            <SubscriptionCard />
-
-            {/* Photo Album (broker only) */}
-            {isBroker && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Camera className="h-4 w-4" /> {pt ? "Álbum de Fotos" : "Photo Album"}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-3">
-                    {photos.map((photo) => (
-                      <div key={photo.id} className="relative h-24 w-32 overflow-hidden rounded-lg border group">
-                        <img src={photo.url} alt="" className="h-full w-full object-cover" />
-                        {photo.is_cover && (
-                          <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                            {pt ? "Perfil" : "Profile"}
-                          </span>
-                        )}
-                        {photo.is_banner && (
-                          <span className="absolute right-1 top-1 rounded bg-accent-foreground px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                            Banner
-                          </span>
-                        )}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="flex items-center gap-1">
-                            {!photo.is_cover && (
-                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-white px-1.5" onClick={() => handleSetCover(photo)}>
-                                {pt ? "Perfil" : "Profile"}
-                              </Button>
-                            )}
-                            {!photo.is_banner && (
-                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-white px-1.5" onClick={() => handleSetBanner(photo)}>
-                                Banner
-                              </Button>
-                            )}
-                          </div>
-                          <Button size="icon" variant="ghost" className="h-6 w-6 text-white" onClick={() => handleDeletePhoto(photo)}>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    {photos.length < 10 && (
-                      <label className="flex h-24 w-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors">
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
-                        <div className="text-center">
-                          {uploading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : <Plus className="mx-auto h-5 w-5 text-muted-foreground" />}
-                          <span className="text-xs text-muted-foreground">{pt ? "Adicionar" : "Add"}</span>
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {pt ? "Escolha qual foto será o perfil e qual será o banner da sua página pública. Máximo 10 fotos." : "Choose which photo is your profile pic and which is the banner. Max 10 photos."}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Support Tab */}
-        <TabsContent value="support">
-          <SupportForm />
-        </TabsContent>
-      </Tabs>
-
-      {/* Status change dialog for properties */}
-      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{pt ? "Alterar Status do Imóvel" : "Change Property Status"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {statusTarget && <p className="text-sm text-muted-foreground truncate">{statusTarget.title}</p>}
-            <Select value={statusAction} onValueChange={setStatusAction}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">{pt ? "Ativo (disponível)" : "Active"}</SelectItem>
-                <SelectItem value="sold">{pt ? "Vendido (por mim)" : "Sold (by me)"}</SelectItem>
-                <SelectItem value="rented">{pt ? "Alugado" : "Rented"}</SelectItem>
-                <SelectItem value="inactive">{pt ? "Fora de negociação" : "Withdrawn"}</SelectItem>
-                <SelectItem value="sold_by_other">{pt ? "Vendido por outro corretor" : "Sold by other"}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {statusAction === "sold" && (
-              <>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">{pt ? "Valor de venda (R$) *" : "Sale price (R$) *"}</label>
-                  <Input type="number" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} min="0" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">{pt ? "Comissão (R$) *" : "Commission (R$) *"}</label>
-                  <Input type="number" value={soldCommission} onChange={(e) => setSoldCommission(e.target.value)} min="0" />
-                </div>
-              </>
-            )}
-
-            {statusAction === "sold_by_other" && (
-              <div>
-                <label className="mb-1 block text-sm font-medium">{pt ? "Valor de venda informado (R$)" : "Reported sale price (R$)"}</label>
-                <Input type="number" value={soldByOtherPrice} onChange={(e) => setSoldByOtherPrice(e.target.value)} min="0" />
-                <p className="mt-1 text-xs text-muted-foreground">{pt ? "Usado como referência de mercado." : "Used as market reference."}</p>
-              </div>
-            )}
-
-            {statusAction === "inactive" && (
-              <p className="text-sm text-muted-foreground">{pt ? "O imóvel não aparecerá mais nas buscas." : "Property won't appear in searches."}</p>
-            )}
-
-            <Button onClick={handleStatusConfirm} className="w-full">{pt ? "Confirmar" : "Confirm"}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Social post exporter */}
-      <SocialPostExporter
-        open={!!socialTarget}
-        onOpenChange={(o) => !o && setSocialTarget(null)}
-        broker={{ name: commercialName || fullName || "", creci, phone: whatsapp || phone }}
-        property={
-          socialTarget
-            ? {
-                id: socialTarget.id,
-                title: socialTarget.title,
-                price: socialTarget.price,
-                listing_type: socialTarget.listing_type,
-                property_type: socialTarget.property_type,
-                city: socialTarget.city,
-                state: socialTarget.state,
-                neighborhood: socialTarget.neighborhood,
-                bedrooms: socialTarget.bedrooms,
-                bathrooms: socialTarget.bathrooms,
-                parking_spots: socialTarget.parking_spots,
-                area: socialTarget.area,
-                description: socialTarget.description,
-                images: [...(socialTarget.property_images ?? [])]
-                  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-                  .map((i) => i.url),
-              }
-            : null
-        }
-      />
+      <div className="flex gap-8">
+        <aside className="hidden shrink-0 lg:block">
+          <div className="sticky top-24">{sidebar()}</div>
+        </aside>
+        <main className="min-w-0 flex-1">{renderSection()}</main>
+      </div>
     </div>
   );
 };
