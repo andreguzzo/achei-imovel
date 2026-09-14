@@ -170,8 +170,30 @@ const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuit
         <Input type="number" value={iptu} onChange={(e) => setIptu(e.target.value)} min="0" />
       </div>
       <div className="sm:col-span-5">
-        <label className="mb-1 block text-sm font-medium">{pt ? "Características (separadas por vírgula)" : "Features (comma-separated)"}</label>
-        <Input value={features} onChange={(e) => setFeatures(e.target.value)} placeholder={pt ? "Piscina, churrasqueira, academia..." : "Pool, BBQ, gym..."} />
+        <label className="mb-2 block text-sm font-medium">{pt ? "Características" : "Features"}</label>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {PROPERTY_FEATURES.map((f) => {
+            const checked = features.includes(f.slug);
+            return (
+              <label key={f.slug} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) =>
+                    setFeatures(v ? [...features, f.slug] : features.filter((s) => s !== f.slug))
+                  }
+                />
+                <span>{pt ? f.pt : f.en}</span>
+              </label>
+            );
+          })}
+        </div>
+        {legacyFeatures.length > 0 && (
+          <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+            {pt
+              ? `Características antigas que não existem mais na lista: ${legacyFeatures.join(", ")}. Selecione as equivalentes acima; elas não serão salvas novamente.`
+              : `Legacy features no longer in the list: ${legacyFeatures.join(", ")}. Pick the equivalents above; they will not be saved again.`}
+          </p>
+        )}
       </div>
     </CardContent>
   </Card>
