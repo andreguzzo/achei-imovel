@@ -447,6 +447,15 @@ const CreateProperty = () => {
       
       if (privateData) {
         setPrivateNotes(privateData.notes ?? "");
+        setAuthorization({
+          authorization_type: (privateData.authorization_type as AuthorizationType | null) ?? "",
+          authorization_start: privateData.authorization_start ?? "",
+          authorization_end: privateData.authorization_end ?? "",
+          commission_percent: privateData.commission_percent?.toString() ?? "",
+          authorization_file_path: privateData.authorization_file_path ?? "",
+          owner_email: privateData.owner_email ?? "",
+          owner_notes: privateData.owner_notes ?? "",
+        });
         const ownersData = privateData.owners as unknown as OwnerEntry[];
         if (ownersData && ownersData.length > 0) {
           setOwners(ownersData);
