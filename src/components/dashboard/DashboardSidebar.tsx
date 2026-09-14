@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   Home, Inbox, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
-  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2, Users, Wallet,
+  KeyRound, ShieldCheck, Users2, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
