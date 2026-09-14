@@ -169,16 +169,6 @@ const Dashboard = () => {
         );
       case "contatos":
         return <SalesContacts userId={user.id} />;
-      case "propostas":
-        return (
-          <div className="space-y-6">
-            <SectionHeader
-              title={pt ? "Propostas" : "Proposals"}
-              description={pt ? "Registre e acompanhe propostas enviadas aos clientes." : "Create and track proposals sent to clients."}
-            />
-            <BrokerProposals userId={user.id} />
-          </div>
-        );
       case "agenda":
         return (
           <div className="space-y-6">
