@@ -120,14 +120,15 @@ const OwnerReport = () => {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Desempenho no período</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { label: "Visualizações", value: m.views },
+              { label: "Visualizações", value: m.views, hint: null },
               { label: "Contatos recebidos", value: m.leads, hint: m.leads_whatsapp ? `${m.leads_whatsapp} via WhatsApp` : null },
-              { label: "Visitas agendadas", value: m.visits_scheduled },
-              { label: "Visitas realizadas", value: m.visits_done },
+              { label: "Visitas agendadas", value: m.visits_scheduled, hint: null },
+              { label: "Visitas realizadas", value: m.visits_done, hint: null },
             ].map((k) => (
               <div key={k.label} className="rounded-lg border border-border bg-card p-4">
                 <p className="text-xs text-muted-foreground">{k.label}</p>
                 <p className="mt-1 text-2xl font-semibold text-foreground">{k.value}</p>
+                {k.hint && <p className="text-[11px] text-muted-foreground">{k.hint}</p>}
               </div>
             ))}
           </div>
