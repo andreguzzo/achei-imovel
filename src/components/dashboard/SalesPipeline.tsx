@@ -439,6 +439,7 @@ const SalesPipeline = ({ userId }: Props) => {
       )}
 
       {newDealDialog}
+      {dealDialog}
     </div>
   );
 };
