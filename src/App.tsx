@@ -28,6 +28,7 @@ const BrokerProfile = lazy(() => import("./pages/BrokerProfile"));
 const Financing = lazy(() => import("./pages/Financing"));
 const Plans = lazy(() => import("./pages/Plans"));
 const Favorites = lazy(() => import("./pages/Favorites"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
                     <Route path="/cadastro" element={<Signup />} />
                     <Route path="/esqueci-senha" element={<ForgotPassword />} />
                     <Route path="/redefinir-senha" element={<ResetPassword />} />
+                    <Route path="/convite/:token" element={<AcceptInvite />} />
 
                     <Route element={<RequireAuth />}>
                       <Route path="/corretor/vendas" element={<Navigate to="/painel" replace />} />

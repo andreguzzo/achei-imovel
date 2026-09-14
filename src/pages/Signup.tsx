@@ -11,6 +11,24 @@ import { useToast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 
+const ACCOUNT_OPTIONS = [
+  {
+    value: "owner" as const,
+    title: "Vou anunciar meu imóvel",
+    description: "Grátis, 1 anúncio. Só confirmamos e-mail e telefone.",
+  },
+  {
+    value: "broker" as const,
+    title: "Sou corretor",
+    description: "Anúncios ilimitados após validar o CRECI.",
+  },
+  {
+    value: "agency" as const,
+    title: "Sou imobiliária",
+    description: "Equipe com vários usuários e permissões.",
+  },
+];
+
 const Signup = () => {
   const { t } = useLanguage();
   const { signUp } = useAuth();
@@ -19,12 +37,13 @@ const Signup = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accountType, setAccountType] = useState<"owner" | "broker" | "agency">("owner");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName, accountType);
     setLoading(false);
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
@@ -47,6 +66,26 @@ const Signup = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Como você vai usar o Abitzo?</Label>
+              <div className="grid gap-2">
+                {ACCOUNT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAccountType(opt.value)}
+                    className={`rounded-lg border p-3 text-left transition-colors ${
+                      accountType === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{opt.title}</p>
+                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="name">{t.auth.fullName}</Label>
               <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />

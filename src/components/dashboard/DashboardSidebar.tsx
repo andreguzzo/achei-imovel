@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   Home, TrendingUp, Mail, FileText, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
-  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode,
+  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,13 +11,16 @@ import { useLanguage } from "@/i18n/LanguageContext";
 export type DashboardSection =
   | "inicio" | "negociacoes" | "contatos" | "propostas" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
-  | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao";
+  | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
+  | "verificacao" | "equipe";
 
 export interface NavItem {
   key: DashboardSection;
   label: string;
   icon: typeof Home;
   brokerOnly?: boolean;
+  professionalOnly?: boolean;
+  agencyOnly?: boolean;
   badge?: number;
 }
 
@@ -74,6 +77,8 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
       label: pt ? "Conta" : "Account",
       items: [
         { key: "perfil", label: pt ? "Perfil e fotos" : "Profile & photos", icon: User },
+        { key: "verificacao", label: pt ? "Verificação" : "Verification", icon: ShieldCheck, professionalOnly: true },
+        { key: "equipe", label: pt ? "Equipe" : "Team", icon: Users2, agencyOnly: true },
         { key: "assinatura", label: pt ? "Assinatura" : "Subscription", icon: CreditCard },
         { key: "suporte", label: pt ? "Suporte" : "Support", icon: MessageCircle },
       ],
@@ -86,12 +91,14 @@ interface DashboardSidebarProps {
   active: DashboardSection;
   onSelect: (section: DashboardSection) => void;
   isBroker: boolean;
+  isProfessional?: boolean;
+  isAgency?: boolean;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
 
 const DashboardSidebar = ({
-  groups, active, onSelect, isBroker, collapsed, onToggleCollapsed,
+  groups, active, onSelect, isBroker, isProfessional = false, isAgency = false, collapsed, onToggleCollapsed,
 }: DashboardSidebarProps) => {
   const { locale } = useLanguage();
   const pt = locale === "pt-BR";
@@ -117,7 +124,12 @@ const DashboardSidebar = ({
       </div>
 
       {groups.map((group) => {
-        const items = group.items.filter((i) => !i.brokerOnly || isBroker);
+        const items = group.items.filter(
+          (i) =>
+            (!i.brokerOnly || isBroker) &&
+            (!i.professionalOnly || isProfessional) &&
+            (!i.agencyOnly || isAgency),
+        );
         if (items.length === 0) return null;
         return (
           <div key={group.label} className="mb-2">
