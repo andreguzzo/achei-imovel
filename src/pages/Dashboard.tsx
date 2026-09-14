@@ -61,6 +61,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [newLeads, setNewLeads] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | null;
   const section: DashboardSection =
@@ -99,7 +100,23 @@ const Dashboard = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setSearchParams]);
 
-  const groups = useDashboardNav();
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const loadLeads = async () => {
+      const { count } = await supabase
+        .from("contact_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("broker_id", user.id)
+        .eq("status", "new");
+      if (!cancelled) setNewLeads(count ?? 0);
+    };
+    loadLeads();
+    return () => { cancelled = true; };
+  }, [user, section]);
+
+  const badges = useMemo(() => ({ contatos: newLeads }), [newLeads]);
+  const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
     for (const g of groups) {
