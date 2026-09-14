@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  Home, TrendingUp, Mail, FileText, CalendarDays, Building2, Handshake, BarChart3,
+  Home, Inbox, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
   KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2, Users, Wallet,
 } from "lucide-react";
