@@ -212,6 +212,10 @@ const Dashboard = () => {
             <SupportForm />
           </div>
         );
+      case "verificacao":
+        return <IdentityVerification userId={user.id} />;
+      case "equipe":
+        return <AgencyTeam userId={user.id} />;
       default:
         return null;
     }
@@ -223,6 +227,8 @@ const Dashboard = () => {
       active={effectiveSection}
       onSelect={goToSection}
       isBroker={isBroker}
+      isProfessional={accountType !== "owner"}
+      isAgency={accountType === "agency"}
       collapsed={mobile ? false : collapsed}
       onToggleCollapsed={() => setCollapsed((c) => !c)}
     />
