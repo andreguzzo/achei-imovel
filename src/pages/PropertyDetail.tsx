@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Heart, Copy, Home } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Heart, Copy, Home } from "lucide-react";
 import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageWithFallback from "@/components/ImageWithFallback";
@@ -17,7 +17,7 @@ import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
 import Seo from "@/components/Seo";
-import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
+
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -232,35 +232,9 @@ const PropertyDetail = () => {
     fetchData();
   }, [id]);
 
-  // Contact details (phone/WhatsApp) are only available to signed-in visitors
-  const ownerId = ownerProfile?.user_id;
-  const groupBrokerIds = groupBrokers.map((b) => b.broker_id).join(",");
-  useEffect(() => {
-    if (!user || !ownerId) return;
-    let cancelled = false;
-    const ids = [ownerId, ...groupBrokerIds.split(",").filter(Boolean)];
-    const load = async () => {
-      const results = await Promise.all(
-        ids.map((uid) => supabase.rpc("get_broker_contact", { _user_id: uid })),
-      );
-      if (cancelled) return;
-      const contacts = new Map<string, { phone: string | null; whatsapp: string | null }>();
-      results.forEach((res) => {
-        const row = (res.data as { user_id: string; phone: string | null; whatsapp: string | null }[] | null)?.[0];
-        if (row) contacts.set(row.user_id, { phone: row.phone, whatsapp: row.whatsapp });
-      });
-      setOwnerProfile((prev) => (prev && contacts.has(prev.user_id) ? { ...prev, ...contacts.get(prev.user_id)! } : prev));
-      setGroupBrokers((prev) =>
-        prev.map((b) =>
-          b.profile && contacts.has(b.broker_id)
-            ? { ...b, profile: { ...b.profile, ...contacts.get(b.broker_id)! } }
-            : b,
-        ),
-      );
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [user, ownerId, groupBrokerIds]);
+  // Broker phone numbers are never fetched in the browser — the public
+  // whatsapp-redirect function resolves them server-side.
+
 
   // JSON-LD structured data for RealEstateListing
   useEffect(() => {
