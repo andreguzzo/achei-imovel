@@ -162,7 +162,16 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
     if (!reportUrl || !ownerPhone) return;
     const greeting = ownerName ? `Olá, ${ownerName}!` : "Olá!";
     const msg = `${greeting} Preparei o relatório de performance do imóvel "${property?.title}". Você pode acessar aqui: ${reportUrl}`;
-    window.open(whatsappLink(ownerPhone, msg), "_blank", "noopener");
+    const url = buildWhatsAppUrl(ownerPhone, msg);
+    if (!url) {
+      toast({
+        title: "Telefone do proprietário inválido para WhatsApp",
+        description: `O número ${formatBrPhone(ownerPhone)} não permite envio pelo WhatsApp.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    window.open(url, "_blank", "noopener");
   };
 
   return (
