@@ -35,7 +35,7 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
       .from("contact_requests")
       .select("*, properties:property_id(title)")
       .eq("broker_id", userId)
-      .neq("sender_id", userId)
+      .or(`sender_id.is.null,sender_id.neq.${userId}`)
       .in("status", ["new", "contacted"])
       .order("created_at", { ascending: true })
       .limit(200);

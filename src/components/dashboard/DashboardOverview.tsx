@@ -105,7 +105,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
         .from("contact_requests")
         .select("id, name, phone, status, created_at, properties:property_id!inner(user_id)")
         .eq("properties.user_id", userId)
-        .neq("sender_id", userId)
+        .or(`sender_id.is.null,sender_id.neq.${userId}`)
         .order("created_at", { ascending: false })
         .limit(200),
       supabase
