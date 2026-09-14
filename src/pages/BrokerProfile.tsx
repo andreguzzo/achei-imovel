@@ -55,6 +55,7 @@ interface PropertyItem {
   listing_type: string;
   bedrooms: number | null;
   area: number | null;
+  reference_code: string | null;
   property_images: { url: string }[];
 }
 
