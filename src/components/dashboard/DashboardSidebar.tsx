@@ -12,7 +12,7 @@ export type DashboardSection =
   | "inicio" | "clientes" | "atendimentos" | "negociacoes" | "contatos" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
   | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
-  | "verificacao" | "equipe" | "financeiro";
+  | "verificacao" | "equipe" | "financeiro" | "locacao" | "desempenho";
 
 export interface NavItem {
   key: DashboardSection;
