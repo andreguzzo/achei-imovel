@@ -50,7 +50,10 @@ export async function findUserIdByEmail(db: SupabaseClient, email: string | null
   return match?.id ?? null;
 }
 
-/** Applies the plan to the user profile so access is released immediately. */
+/**
+ * Applies the plan to the user profile so access is released immediately,
+ * and reverts to the free owner plan when the paid subscription ends.
+ */
 export async function applyPlanToProfile(
   db: SupabaseClient,
   userId: string | null,
@@ -59,12 +62,28 @@ export async function applyPlanToProfile(
 ) {
   if (!userId) return;
   const accountType = accountTypeForSlug(slug);
-  if (!active || !accountType || accountType === "owner") return;
+  if (!accountType || accountType === "owner") return;
+
   const { data: profile } = await db
     .from("profiles")
     .select("account_type")
     .eq("user_id", userId)
     .maybeSingle();
+
+  if (!active) {
+    // Access ends only if no other paid subscription is still running.
+    const { data: stillActive } = await db
+      .from("billing_subscriptions")
+      .select("plan_slug")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing", "past_due"])
+      .limit(1);
+    if (stillActive && stillActive.length > 0) return;
+    if (profile?.account_type === "owner") return;
+    await db.from("profiles").update({ account_type: "owner" }).eq("user_id", userId);
+    return;
+  }
+
   // Only upgrade: never downgrade an agency to broker because of a webhook race.
   if (profile?.account_type === "agency" && accountType === "broker") return;
   await db.from("profiles").update({ account_type: accountType }).eq("user_id", userId);
