@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.agency-accept-invite]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false
