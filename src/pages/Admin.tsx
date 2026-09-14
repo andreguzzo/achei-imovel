@@ -1,21 +1,31 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, Building2, BarChart3, CreditCard, Shield, MessageCircle, Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Loader2, Menu, Shield } from "lucide-react";
+import AdminSidebar, { ADMIN_SECTIONS, useAdminNav, type AdminSection } from "@/components/admin/AdminSidebar";
+import AdminOverview from "@/components/admin/AdminOverview";
 import AdminPlansTab from "@/components/admin/AdminPlansTab";
 import AdminUsersTab from "@/components/admin/AdminUsersTab";
 import AdminPropertiesTab from "@/components/admin/AdminPropertiesTab";
-import AdminMetricsTab from "@/components/admin/AdminMetricsTab";
 import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openSupport, setOpenSupport] = useState(0);
+
+  const rawSection = searchParams.get("secao") as AdminSection | null;
+  const section: AdminSection =
+    rawSection && ADMIN_SECTIONS.includes(rawSection) ? rawSection : "resumo";
 
   useEffect(() => {
     if (authLoading) return;
@@ -26,38 +36,89 @@ const Admin = () => {
       if (!data) { navigate("/"); return; }
       setIsAdmin(true);
       setChecking(false);
+      const { count } = await supabase
+        .from("support_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open");
+      setOpenSupport(count ?? 0);
     };
     checkAdmin();
   }, [user, authLoading, navigate]);
+
+  const goToSection = useCallback((next: AdminSection) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set("secao", next);
+      return params;
+    });
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [setSearchParams]);
+
+  const groups = useAdminNav({ suporte: openSupport });
+
+  const activeLabel = useMemo(() => {
+    for (const g of groups) {
+      const found = g.items.find((i) => i.key === section);
+      if (found) return found.label;
+    }
+    return "";
+  }, [groups, section]);
 
   if (authLoading || checking || !isAdmin) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
+  const renderSection = () => {
+    switch (section) {
+      case "resumo": return <AdminOverview onNavigate={goToSection} />;
+      case "usuarios": return <AdminUsersTab />;
+      case "imoveis": return <AdminPropertiesTab />;
+      case "planos": return <AdminPlansTab />;
+      case "assinaturas": return <AdminSubscriptionsTab />;
+      case "suporte": return <AdminSupportTab />;
+      default: return null;
+    }
+  };
+
+  const sidebar = (mobile = false) => (
+    <AdminSidebar
+      groups={groups}
+      active={section}
+      onSelect={goToSection}
+      collapsed={mobile ? false : collapsed}
+      onToggleCollapsed={() => setCollapsed((c) => !c)}
+    />
+  );
+
   return (
-    <div className="container py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Shield className="h-7 w-7 text-primary" />
+    <div className="container py-6">
+      <div className="mb-5 flex items-center gap-3">
+        <Shield className="h-6 w-6 text-primary" />
         <h1 className="font-display text-2xl font-bold text-foreground">Painel Administrativo</h1>
       </div>
 
-      <Tabs defaultValue="metrics" className="space-y-4">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="metrics" className="gap-1"><BarChart3 className="h-4 w-4" /> Métricas</TabsTrigger>
-          <TabsTrigger value="users" className="gap-1"><Users className="h-4 w-4" /> Usuários</TabsTrigger>
-          <TabsTrigger value="properties" className="gap-1"><Building2 className="h-4 w-4" /> Imóveis</TabsTrigger>
-          <TabsTrigger value="plans" className="gap-1"><Layers className="h-4 w-4" /> Planos</TabsTrigger>
-          <TabsTrigger value="subscriptions" className="gap-1"><CreditCard className="h-4 w-4" /> Assinaturas</TabsTrigger>
-          <TabsTrigger value="support" className="gap-1"><MessageCircle className="h-4 w-4" /> Suporte</TabsTrigger>
-        </TabsList>
+      <div className="mb-4 flex items-center gap-3 lg:hidden">
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Menu className="h-4 w-4" /> Seções
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 overflow-y-auto">
+            <p className="mb-4 font-display text-lg font-semibold">Administração</p>
+            {sidebar(true)}
+          </SheetContent>
+        </Sheet>
+        <span className="truncate text-sm text-muted-foreground">{activeLabel}</span>
+      </div>
 
-        <TabsContent value="metrics"><AdminMetricsTab /></TabsContent>
-        <TabsContent value="users"><AdminUsersTab /></TabsContent>
-        <TabsContent value="properties"><AdminPropertiesTab /></TabsContent>
-        <TabsContent value="plans"><AdminPlansTab /></TabsContent>
-        <TabsContent value="subscriptions"><AdminSubscriptionsTab /></TabsContent>
-        <TabsContent value="support"><AdminSupportTab /></TabsContent>
-      </Tabs>
+      <div className="flex gap-8">
+        <aside className="hidden shrink-0 lg:block">
+          <div className="sticky top-24">{sidebar()}</div>
+        </aside>
+        <main className="min-w-0 flex-1">{renderSection()}</main>
+      </div>
     </div>
   );
 };
