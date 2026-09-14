@@ -280,12 +280,6 @@ const Dashboard = () => {
             <SupportForm />
           </div>
         );
-      case "financeiro":
-        return (
-          <Suspense fallback={<ChartSkeleton />}>
-            <DashboardFinance userId={user.id} />
-          </Suspense>
-        );
       case "verificacao":
         return <IdentityVerification userId={user.id} />;
       case "equipe":
