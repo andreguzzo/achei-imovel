@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.admin-manage-subscription]
 verify_jwt = false
+
+[functions.rental-billing]
+verify_jwt = false
+
+[functions.rental-webhook]
+verify_jwt = false
