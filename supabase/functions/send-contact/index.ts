@@ -8,6 +8,31 @@ const corsHeaders = {
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+/**
+ * Mirrors src/lib/phone.ts: the country code is decided by digit count only,
+ * never by startsWith("55") — 55 is also the DDD of Rio Grande do Sul.
+ */
+const normalizeBrPhone = (input: string | null | undefined): string | null => {
+  const digits = (input ?? "").replace(/\D/g, "").replace(/^0+/, "");
+
+  const national = (value: string): string | null => {
+    if (value.length !== 10 && value.length !== 11) return null;
+    const ddd = Number(value.slice(0, 2));
+    if (ddd < 11 || ddd > 99) return null;
+    const subscriber = value.slice(2);
+    if (value.length === 11 && !/^9/.test(subscriber)) return null;
+    if (value.length === 10 && /^[6-9]/.test(subscriber)) return `55${value.slice(0, 2)}9${subscriber}`;
+    return `55${value}`;
+  };
+
+  if (digits.length === 12 || digits.length === 13) {
+    if (digits.slice(0, 2) !== "55") return null;
+    return national(digits.slice(2));
+  }
+  if (digits.length === 10 || digits.length === 11) return national(digits);
+  return null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
