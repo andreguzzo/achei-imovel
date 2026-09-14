@@ -113,22 +113,43 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
 
   return (
     <div className="space-y-3">
-      {contacts.map((c) => (
+      {contacts.map((c) => {
+        // WhatsApp leads are just a record of a click: the conversation already
+        // started on the broker's phone, so there is nothing to answer here.
+        const isWhatsAppLead = c.request_type === "whatsapp";
+        const stale = !isWhatsAppLead && isStale(c);
+        return (
         <div
           key={c.id}
           className={cn(
-            "rounded-xl border bg-card p-4",
-            isStale(c) ? "border-destructive/60 bg-destructive/5" : "border-border",
+            "rounded-xl border p-4",
+            isWhatsAppLead
+              ? "border-l-4 border-l-[#25D366] border-border bg-muted/30"
+              : stale
+                ? "border-destructive/60 bg-destructive/5"
+                : "border-border bg-card",
           )}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <ClientLink name={c.name} phone={c.phone} email={c.email} className="font-medium text-foreground" />
-                <Badge variant={c.status === "new" ? "default" : "secondary"}>
-                  {c.status === "new" ? (pt ? "Novo" : "New") : (pt ? "Contatado" : "Contacted")}
-                </Badge>
-                {isStale(c) && (
+                {isWhatsAppLead ? (
+                  <span className="font-medium text-foreground">
+                    {pt ? "Contato via WhatsApp" : "WhatsApp contact"}
+                  </span>
+                ) : (
+                  <ClientLink name={c.name} phone={c.phone} email={c.email} className="font-medium text-foreground" />
+                )}
+                {isWhatsAppLead ? (
+                  <Badge className="gap-1 bg-[#25D366] text-white hover:bg-[#25D366]">
+                    <MessageCircle className="h-3 w-3" /> WhatsApp
+                  </Badge>
+                ) : (
+                  <Badge variant={c.status === "new" ? "default" : "secondary"}>
+                    {c.status === "new" ? (pt ? "Novo" : "New") : (pt ? "Contatado" : "Contacted")}
+                  </Badge>
+                )}
+                {stale && (
                   <span className="flex items-center gap-1 text-xs font-medium text-destructive">
                     <AlarmClock className="h-3.5 w-3.5" />
                     {pt ? "Aguardando há mais de 2h" : "Waiting over 2h"}
@@ -138,20 +159,28 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
                   {new Date(c.created_at).toLocaleString(locale)}
                 </span>
               </div>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {c.email}{c.phone && ` • ${c.phone}`}
-              </p>
+              {isWhatsAppLead ? (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {pt
+                    ? "A mensagem chegou direto no seu celular. Este registro serve para contabilizar e acompanhar o interesse — não é para responder pelo painel."
+                    : "The message went straight to your phone. This record is for tracking interest only — not to reply from the panel."}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {c.email}{c.phone && ` • ${c.phone}`}
+                </p>
+              )}
               {c.properties?.title && (
                 <p className="mt-1 text-xs text-primary">
                   {pt ? "Imóvel:" : "Property:"} {c.properties.title}
                 </p>
               )}
-              {c.message && (
+              {!isWhatsAppLead && c.message && (
                 <p className="mt-2 border-l-2 border-muted pl-3 text-sm text-muted-foreground">{c.message}</p>
               )}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {c.phone && (buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt)) ? (
+              {!isWhatsAppLead && c.phone && (buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt)) ? (
                 <Button asChild size="sm" variant="secondary" className="gap-1">
                   <a href={buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt))!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-3.5 w-3.5" /> WhatsApp
@@ -162,6 +191,7 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
                   {formatBrPhone(c.phone)} — {pt ? "sem WhatsApp válido" : "no valid WhatsApp"}
                 </span>
               ))}
+
               <Button
                 size="sm"
                 variant="outline"
