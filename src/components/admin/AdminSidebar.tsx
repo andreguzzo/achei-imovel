@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 import {
-  Home, Users, Building2, Layers, CreditCard, MessageCircle,
+  Home, Users, Building2, Layers, CreditCard, MessageCircle, ShieldCheck,
   ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type AdminSection =
-  | "resumo" | "usuarios" | "imoveis" | "planos" | "assinaturas" | "suporte";
+  | "resumo" | "usuarios" | "verificacoes" | "imoveis" | "planos" | "assinaturas" | "suporte";
 
 export const ADMIN_SECTIONS: AdminSection[] = [
-  "resumo", "usuarios", "imoveis", "planos", "assinaturas", "suporte",
+  "resumo", "usuarios", "verificacoes", "imoveis", "planos", "assinaturas", "suporte",
 ];
 
 export interface AdminNavItem {
@@ -28,7 +28,13 @@ export interface AdminNavGroup {
 export const useAdminNav = (badges?: Partial<Record<AdminSection, number>>) =>
   useMemo<AdminNavGroup[]>(() => [
     { label: "Visão geral", items: [{ key: "resumo", label: "Resumo", icon: Home }] },
-    { label: "Pessoas", items: [{ key: "usuarios", label: "Usuários", icon: Users }] },
+    {
+      label: "Pessoas",
+      items: [
+        { key: "usuarios", label: "Usuários", icon: Users },
+        { key: "verificacoes", label: "Verificações", icon: ShieldCheck, badge: badges?.verificacoes },
+      ],
+    },
     { label: "Catálogo", items: [{ key: "imoveis", label: "Imóveis", icon: Building2 }] },
     {
       label: "Financeiro",
@@ -42,6 +48,7 @@ export const useAdminNav = (badges?: Partial<Record<AdminSection, number>>) =>
       items: [{ key: "suporte", label: "Suporte", icon: MessageCircle, badge: badges?.suporte }],
     },
   ], [badges]);
+
 
 interface AdminSidebarProps {
   groups: AdminNavGroup[];
