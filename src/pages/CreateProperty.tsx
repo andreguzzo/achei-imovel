@@ -356,7 +356,7 @@ const CreateProperty = () => {
       const { data, error } = await supabase.functions.invoke("generate-property-description", {
         body: {
           propertyType, listingType, price, area, bedrooms, suites, bathrooms,
-          parkingSpots, neighborhood, city, state, features, condoFee, iptu, address,
+          parkingSpots, neighborhood, city, state, features: features.join(", "), condoFee, iptu, address,
         },
       });
       if (error) throw error;
