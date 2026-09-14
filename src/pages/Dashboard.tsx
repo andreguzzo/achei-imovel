@@ -61,6 +61,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [newLeads, setNewLeads] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | null;
   const section: DashboardSection =
