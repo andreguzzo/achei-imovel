@@ -13,6 +13,7 @@ import ContactForm from "@/components/ContactForm";
 import PropertyMap from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
+import Seo from "@/components/Seo";
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -288,66 +289,32 @@ const PropertyDetail = () => {
     return () => { cancelled = true; };
   }, [user, ownerId, groupBrokerIds]);
 
-  // SEO: title, description, canonical and structured data
+  // JSON-LD structured data for RealEstateListing
   useEffect(() => {
     if (!property) return;
     const url = window.location.href.split("?")[0];
-    const prevTitle = document.title;
-    document.title = `${property.title} — ${property.city}/${property.state} | Abitzo`;
-
-    const desc = document.querySelector('meta[name="description"]');
-    const prevDesc = desc?.getAttribute("content") ?? "";
-    desc?.setAttribute(
-      "content",
-      `${property.title} em ${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}/${property.state}. ${formatPrice(Number(property.price), property.listing_type)}.`,
-    );
-
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    const createdCanonical = !canonical;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.appendChild(canonical);
-    }
-    const prevCanonical = canonical.href;
-    canonical.href = url;
-
     const ld = document.createElement("script");
     ld.type = "application/ld+json";
     ld.text = JSON.stringify({
       "@context": "https://schema.org",
-      "@type": property.listing_type === "rent" ? "Apartment" : "SingleFamilyResidence",
+      "@type": "RealEstateListing",
       name: property.title,
-      description: property.description ?? undefined,
+      description: property.description ?? `${property.title} em ${property.city}/${property.state}`,
       url,
       image: property.property_images?.map((i) => i.url).slice(0, 5),
-      numberOfBedrooms: property.bedrooms ?? undefined,
-      numberOfBathroomsTotal: property.bathrooms ?? undefined,
+      price: Number(property.price),
+      priceCurrency: "BRL",
+      numberOfRooms: property.bedrooms ?? undefined,
       floorSize: property.area ? { "@type": "QuantitativeValue", value: property.area, unitCode: "MTK" } : undefined,
       address: {
         "@type": "PostalAddress",
-        streetAddress: property.address ?? undefined,
         addressLocality: property.city,
         addressRegion: property.state,
-        postalCode: property.zip_code ?? undefined,
         addressCountry: "BR",
-      },
-      offers: {
-        "@type": "Offer",
-        price: Number(property.price),
-        priceCurrency: "BRL",
-        availability: property.status === "active" ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
       },
     });
     document.head.appendChild(ld);
-
-    return () => {
-      document.title = prevTitle;
-      desc?.setAttribute("content", prevDesc);
-      if (createdCanonical) canonical?.remove();
-      else if (canonical) canonical.href = prevCanonical;
-      ld.remove();
-    };
+    return () => { ld.remove(); };
   }, [property]);
 
 
