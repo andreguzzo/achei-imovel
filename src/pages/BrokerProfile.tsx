@@ -157,6 +157,23 @@ const BrokerProfile = () => {
     return <BrokerProfileSkeleton />;
   }
 
+  if (error) {
+    return (
+      <div className="container py-20 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h1 className="mt-4 text-2xl font-bold text-foreground">
+          {pt ? "Não foi possível carregar o perfil" : "Could not load the profile"}
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {pt ? "Verifique sua conexão e tente novamente." : "Check your connection and try again."}
+        </p>
+        <Button className="mt-6" onClick={() => window.location.reload()}>
+          {pt ? "Tentar novamente" : "Try again"}
+        </Button>
+      </div>
+    );
+  }
+
   if (notFound || !broker) {
     return (
       <div className="container py-20 text-center">
