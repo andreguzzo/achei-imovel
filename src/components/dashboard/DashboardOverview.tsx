@@ -263,7 +263,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   const kpis: { label: string; value: string | number; icon: typeof Users; section: DashboardSection }[] = [
     { label: pt ? "Leads novos" : "New leads", value: counts.leads, icon: Users, section: "negociacoes" },
     { label: pt ? "Visitas hoje" : "Visits today", value: todayAppointments.length, icon: CalendarDays, section: "agenda" },
-    { label: pt ? "Propostas em aberto" : "Open proposals", value: counts.proposals, icon: FileText, section: "propostas" },
+    { label: pt ? "Propostas em aberto" : "Open proposals", value: counts.proposals, icon: FileText, section: "negociacoes" },
     { label: pt ? "Parcerias pendentes" : "Pending partnerships", value: counts.partnerships, icon: Handshake, section: "parcerias" },
     { label: pt ? "Anúncios ativos" : "Active listings", value: counts.activeListings, icon: Building2, section: "imoveis" },
     { label: pt ? "Comissão realizada" : "Earned commission", value: brl(counts.commission), icon: DollarSign, section: "relatorios" },
@@ -285,7 +285,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     },
     counts.proposals > 0 && {
       label: pt ? `${counts.proposals} propostas aguardando resposta` : `${counts.proposals} proposals awaiting reply`,
-      section: "propostas" as DashboardSection,
+      section: "negociacoes" as DashboardSection,
       icon: FileText,
     },
     counts.partnerships > 0 && {

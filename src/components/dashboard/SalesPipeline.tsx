@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign, History, AlertTriangle, Clock } from "lucide-react";
+import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign, History, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
@@ -28,6 +28,12 @@ type PipelineItem = Tables<"sales_pipeline"> & {
 
 type Activity = Tables<"pipeline_activities">;
 
+interface PropertyOption {
+  id: string;
+  title: string;
+  price: number;
+}
+
 interface Props {
   userId: string;
 }
@@ -43,10 +49,19 @@ export const STAGES = [
   { key: "closed_lost", label: "Perdido", labelEn: "Lost" },
 ] as const;
 
+type StageKey = typeof STAGES[number]["key"];
+
+// Proposal and negotiation are the money stages — highlight them in the board.
+const HIGHLIGHT_STAGES = ["proposal", "negotiation"];
+
+const formatBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+
 const SalesPipeline = ({ userId }: Props) => {
   const { locale } = useLanguage();
   const pt = locale === "pt-BR";
   const [items, setItems] = useState<PipelineItem[]>([]);
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showNewDeal, setShowNewDeal] = useState(false);
@@ -67,14 +82,30 @@ const SalesPipeline = ({ userId }: Props) => {
   const [nextAction, setNextAction] = useState("");
   const [nextActionDate, setNextActionDate] = useState("");
 
+  // Deal edit fields (migrated from the old Proposals screen)
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editPropertyId, setEditPropertyId] = useState("none");
+  const [editStage, setEditStage] = useState<StageKey>("lead");
+  const [editCommission, setEditCommission] = useState("");
+  const [editExpectedClose, setEditExpectedClose] = useState("");
+  const [editActualClose, setEditActualClose] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingDeal, setSavingDeal] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("sales_pipeline")
-      .select("*, property:properties(title, city)")
-      .eq("broker_id", userId)
-      .order("created_at", { ascending: false });
-    setItems((data as PipelineItem[]) ?? []);
+    const [pipeRes, propsRes] = await Promise.all([
+      supabase
+        .from("sales_pipeline")
+        .select("*, property:properties(title, city)")
+        .eq("broker_id", userId)
+        .order("created_at", { ascending: false }),
+      supabase.from("properties").select("id, title, price").eq("user_id", userId),
+    ]);
+    setItems((pipeRes.data as PipelineItem[]) ?? []);
+    setProperties((propsRes.data as PropertyOption[]) ?? []);
     setLoading(false);
   }, [userId]);
 
@@ -125,6 +156,15 @@ const SalesPipeline = ({ userId }: Props) => {
     setActivityDate(todayIso());
     setNextAction(item.next_action ?? "");
     setNextActionDate(item.next_action_date ?? "");
+    setEditName(item.client_name ?? "");
+    setEditEmail(item.client_email ?? "");
+    setEditPhone(item.client_phone ?? "");
+    setEditPropertyId(item.property_id ?? "none");
+    setEditStage(item.stage as StageKey);
+    setEditCommission(item.commission_value?.toString() ?? "");
+    setEditExpectedClose(item.expected_close_date ?? "");
+    setEditActualClose(item.actual_close_date ?? "");
+    setEditNotes(item.notes ?? "");
     setLoadingActivities(true);
     const { data } = await supabase
       .from("pipeline_activities")
@@ -133,6 +173,51 @@ const SalesPipeline = ({ userId }: Props) => {
       .order("occurred_at", { ascending: false });
     setActivities(data ?? []);
     setLoadingActivities(false);
+  };
+
+  const handleSaveDeal = async () => {
+    if (!selected || !editName.trim()) return;
+    setSavingDeal(true);
+    const { error } = await supabase
+      .from("sales_pipeline")
+      .update({
+        client_name: editName,
+        client_email: editEmail || null,
+        client_phone: editPhone || null,
+        property_id: editPropertyId !== "none" ? editPropertyId : null,
+        stage: editStage,
+        commission_value: editCommission ? Number(editCommission) : null,
+        expected_close_date: editExpectedClose || null,
+        actual_close_date:
+          editActualClose ||
+          (editStage === "closed_won" || editStage === "closed_lost"
+            ? new Date().toISOString().split("T")[0]
+            : null),
+        notes: editNotes || null,
+      })
+      .eq("id", selected.id);
+
+    if (error) {
+      toast({ title: pt ? "Erro ao salvar" : "Error saving", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: pt ? "Negociação atualizada" : "Deal updated" });
+      setSelected(null);
+      fetchData();
+    }
+    setSavingDeal(false);
+  };
+
+  const handleDeleteDeal = async () => {
+    if (!selected) return;
+    if (!confirm(pt ? "Excluir esta negociação?" : "Delete this deal?")) return;
+    const { error } = await supabase.from("sales_pipeline").delete().eq("id", selected.id);
+    if (error) {
+      toast({ title: pt ? "Erro ao excluir" : "Error deleting", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: pt ? "Excluído" : "Deleted" });
+    setSelected(null);
+    fetchData();
   };
 
   const handleAddActivity = async () => {
@@ -198,6 +283,13 @@ const SalesPipeline = ({ userId }: Props) => {
     return acc;
   }, {});
 
+  // Total amount in play per stage: linked property price, falling back to commission.
+  const stageValue = (stageKey: string) =>
+    (byStage[stageKey] ?? []).reduce((sum, item) => {
+      const prop = properties.find((p) => p.id === item.property_id);
+      return sum + (prop?.price ?? item.commission_value ?? 0);
+    }, 0);
+
   const newDealDialog = (
     <Dialog open={showNewDeal} onOpenChange={setShowNewDeal}>
       <DialogContent>
@@ -230,17 +322,84 @@ const SalesPipeline = ({ userId }: Props) => {
 
         {selected && (
           <div className="space-y-6">
-            <div className="space-y-1 text-xs text-muted-foreground">
-              {selected.property && <p>{selected.property.title} — {selected.property.city}</p>}
-              {selected.client_phone && <p>{selected.client_phone}</p>}
-              {selected.client_email && <p>{selected.client_email}</p>}
-              {selected.next_action && (
-                <p className="text-foreground">
-                  {pt ? "Próxima ação" : "Next action"}: {selected.next_action}
-                  {selected.next_action_date ? ` — ${formatDay(selected.next_action_date, pt)}` : ""}
-                </p>
-              )}
+            {/* Deal data */}
+            <div className="space-y-3 rounded-xl border border-border p-4">
+              <p className="text-sm font-medium text-foreground">
+                {pt ? "Dados da negociação" : "Deal details"}
+              </p>
+              <Input
+                placeholder={pt ? "Nome do cliente *" : "Client name *"}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input placeholder="Email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                <Input placeholder={pt ? "Telefone" : "Phone"} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">{pt ? "Imóvel vinculado" : "Linked property"}</label>
+                  <Select value={editPropertyId} onValueChange={setEditPropertyId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{pt ? "Nenhum" : "None"}</SelectItem>
+                      {properties.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.title} — {formatBRL(p.price)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{pt ? "Estágio" : "Stage"}</label>
+                  <Select value={editStage} onValueChange={(v) => setEditStage(v as StageKey)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAGES.map((s) => (
+                        <SelectItem key={s.key} value={s.key}>{stageLabel(s)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">{pt ? "Comissão (R$)" : "Commission (R$)"}</label>
+                  <Input type="number" value={editCommission} onChange={(e) => setEditCommission(e.target.value)} placeholder="0" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{pt ? "Previsão fechamento" : "Expected close"}</label>
+                  <Input type="date" value={editExpectedClose} onChange={(e) => setEditExpectedClose(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">{pt ? "Fechamento efetivo" : "Actual close"}</label>
+                  <Input type="date" value={editActualClose} onChange={(e) => setEditActualClose(e.target.value)} />
+                </div>
+              </div>
+              <Textarea
+                placeholder={pt ? "Observações" : "Notes"}
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={2}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleSaveDeal} disabled={savingDeal || !editName.trim()} className="flex-1">
+                  {savingDeal && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {pt ? "Salvar negociação" : "Save deal"}
+                </Button>
+                <Button variant="outline" className="gap-1 text-destructive" onClick={handleDeleteDeal}>
+                  <Trash2 className="h-4 w-4" /> {pt ? "Excluir" : "Delete"}
+                </Button>
+              </div>
             </div>
+
+            {selected.next_action && (
+              <p className="text-xs text-muted-foreground">
+                {pt ? "Próxima ação" : "Next action"}: {selected.next_action}
+                {selected.next_action_date ? ` — ${formatDay(selected.next_action_date, pt)}` : ""}
+              </p>
+            )}
 
             <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
               <p className="text-sm font-medium text-foreground">
@@ -375,62 +534,79 @@ const SalesPipeline = ({ userId }: Props) => {
 
               <div className="overflow-x-auto pb-4">
                 <div className="flex gap-4" style={{ minWidth: STAGES.length * 240 }}>
-                  {STAGES.map((stage) => (
-                    <div key={stage.key} className="w-60 shrink-0">
-                      <div className="mb-2 flex items-center justify-between">
-                        <Badge variant="secondary">{stageLabel(stage)}</Badge>
-                        <span className="text-xs text-muted-foreground">{byStage[stage.key]?.length ?? 0}</span>
+                  {STAGES.map((stage) => {
+                    const highlighted = HIGHLIGHT_STAGES.includes(stage.key);
+                    const total = stageValue(stage.key);
+                    return (
+                      <div
+                        key={stage.key}
+                        className={`w-60 shrink-0 rounded-xl p-2 ${
+                          highlighted ? "border-2 border-primary/60 bg-primary/5" : "border border-transparent"
+                        }`}
+                      >
+                        <div className="mb-1 flex items-center justify-between">
+                          <Badge variant={highlighted ? "default" : "secondary"}>{stageLabel(stage)}</Badge>
+                          <span className="text-xs text-muted-foreground">{byStage[stage.key]?.length ?? 0}</span>
+                        </div>
+                        <p className={`mb-2 text-xs ${highlighted ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                          {pt ? "Em negociação" : "In play"}: {formatBRL(total)}
+                        </p>
+                        <div className="space-y-2">
+                          {(byStage[stage.key] ?? []).map((item) => (
+                            <div key={item.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
+                              <button
+                                type="button"
+                                onClick={() => openDeal(item)}
+                                className="w-full space-y-1 text-left"
+                              >
+                                <p className="text-sm font-medium text-foreground hover:text-primary">{item.client_name}</p>
+                                {item.property && (
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {item.property.title} — {item.property.city}
+                                  </p>
+                                )}
+                                {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
+                                {item.commission_value != null && item.commission_value > 0 && (
+                                  <p className="text-xs font-medium text-primary">
+                                    R$ {item.commission_value.toLocaleString("pt-BR")}
+                                  </p>
+                                )}
+                                {item.expected_close_date && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {pt ? "Prev." : "Exp."} {formatDay(item.expected_close_date, pt)}
+                                  </p>
+                                )}
+                                {item.next_action_date && (
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                      item.next_action_date < todayIso()
+                                        ? "bg-destructive/10 text-destructive"
+                                        : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                                    }`}
+                                  >
+                                    {item.next_action_date < todayIso() ? (
+                                      <AlertTriangle className="h-3 w-3" />
+                                    ) : (
+                                      <Clock className="h-3 w-3" />
+                                    )}
+                                    {item.next_action ?? (pt ? "Follow-up" : "Follow-up")} • {formatDay(item.next_action_date, pt)}
+                                  </span>
+                                )}
+                              </button>
+                              <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
+                                <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {STAGES.map((s) => (
+                                    <SelectItem key={s.key} value={s.key}>{stageLabel(s)}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {(byStage[stage.key] ?? []).map((item) => (
-                          <div key={item.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
-                            <button
-                              type="button"
-                              onClick={() => openDeal(item)}
-                              className="w-full space-y-1 text-left"
-                            >
-                              <p className="text-sm font-medium text-foreground hover:text-primary">{item.client_name}</p>
-                              {item.property && (
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {item.property.title} — {item.property.city}
-                                </p>
-                              )}
-                              {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
-                              {item.commission_value != null && item.commission_value > 0 && (
-                                <p className="text-xs font-medium text-primary">
-                                  R$ {item.commission_value.toLocaleString("pt-BR")}
-                                </p>
-                              )}
-                              {item.next_action_date && (
-                                <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                    item.next_action_date < todayIso()
-                                      ? "bg-destructive/10 text-destructive"
-                                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                                  }`}
-                                >
-                                  {item.next_action_date < todayIso() ? (
-                                    <AlertTriangle className="h-3 w-3" />
-                                  ) : (
-                                    <Clock className="h-3 w-3" />
-                                  )}
-                                  {item.next_action ?? (pt ? "Follow-up" : "Follow-up")} • {formatDay(item.next_action_date, pt)}
-                                </span>
-                              )}
-                            </button>
-                            <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {STAGES.map((s) => (
-                                  <SelectItem key={s.key} value={s.key}>{stageLabel(s)}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </>

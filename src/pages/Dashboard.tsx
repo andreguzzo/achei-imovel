@@ -15,7 +15,7 @@ const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"))
 import SalesContacts from "@/components/dashboard/SalesContacts";
 import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
-import BrokerProposals from "@/components/dashboard/BrokerProposals";
+
 const BrokerAnalytics = lazy(() => import("@/components/dashboard/BrokerAnalytics"));
 import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
@@ -32,7 +32,7 @@ const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFina
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
-  "inicio", "clientes", "negociacoes", "contatos", "propostas", "agenda",
+  "inicio", "clientes", "negociacoes", "contatos", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
   "verificacao", "equipe", "financeiro",
@@ -65,9 +65,11 @@ const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newLeads, setNewLeads] = useState(0);
 
-  const rawSection = searchParams.get("secao") as DashboardSection | null;
+  const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
+  // The old "propostas" screen was merged into "negociacoes"; keep old links working.
+  const normalizedSection = rawSection === "propostas" ? "negociacoes" : rawSection;
   const section: DashboardSection =
-    rawSection && VALID_SECTIONS.includes(rawSection) ? rawSection : "inicio";
+    normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -136,7 +138,7 @@ const Dashboard = () => {
   // Non-brokers only get the general sections
   const effectiveSection: DashboardSection =
     !isBroker && [
-      "clientes", "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
+      "clientes", "negociacoes", "contatos", "agenda", "parcerias", "relatorios",
       "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao", "financeiro",
     ].includes(section)
       ? "imoveis"
@@ -169,16 +171,6 @@ const Dashboard = () => {
         );
       case "contatos":
         return <SalesContacts userId={user.id} />;
-      case "propostas":
-        return (
-          <div className="space-y-6">
-            <SectionHeader
-              title={pt ? "Propostas" : "Proposals"}
-              description={pt ? "Registre e acompanhe propostas enviadas aos clientes." : "Create and track proposals sent to clients."}
-            />
-            <BrokerProposals userId={user.id} />
-          </div>
-        );
       case "agenda":
         return (
           <div className="space-y-6">
