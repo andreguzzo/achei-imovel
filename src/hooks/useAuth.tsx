@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-// Stripe tier mapping
+// Legacy Stripe tier mapping (old plans, kept for existing subscribers)
 export const TIERS = {
   basic: {
     price_id: "price_1T6wzyRZflpUnPI8eHlq6pUi",
@@ -28,6 +28,8 @@ export const TIERS = {
 } as const;
 
 export type TierKey = keyof typeof TIERS | "free";
+export type AccountType = "owner" | "broker" | "agency";
+export type VerificationStatus = "unverified" | "pending" | "manual_review" | "approved" | "rejected";
 
 export function getTierByProductId(productId: string | null): TierKey {
   if (!productId) return "free";
@@ -42,6 +44,12 @@ export function getMaxProperties(tier: TierKey): number {
   return TIERS[tier].maxProperties;
 }
 
+/** Listing limit by account type: owners publish a single property, professionals are unlimited. */
+export function getAccountMaxProperties(accountType: AccountType, tier: TierKey): number {
+  if (accountType === "owner") return tier === "free" ? 1 : getMaxProperties(tier);
+  return Infinity;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -49,8 +57,13 @@ interface AuthContextType {
   tier: TierKey;
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
+  accountType: AccountType;
+  verificationStatus: VerificationStatus;
+  verified: boolean;
+  maxProperties: number;
   refreshSubscription: () => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  refreshProfile: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, accountType?: AccountType) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -64,6 +77,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [tier, setTier] = useState<TierKey>("free");
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [accountType, setAccountType] = useState<AccountType>("owner");
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("unverified");
+  const [verified, setVerified] = useState(false);
 
   const refreshSubscription = useCallback(async () => {
     try {
@@ -87,38 +103,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const loadProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("account_type, verification_status, verified_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data) return;
+    setAccountType((data.account_type as AccountType) ?? "owner");
+    setVerificationStatus((data.verification_status as VerificationStatus) ?? "unverified");
+    setVerified(!!data.verified_at);
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) await loadProfile(data.session.user.id);
+  }, [loadProfile]);
+
   useEffect(() => {
     let initialSessionHandled = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      initialSessionHandled = true;
-      setSession(session);
-      setUser(session?.user ?? null);
+    const handleSession = (nextSession: Session | null) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
-      if (session?.user) {
-        setTimeout(() => refreshSubscription(), 0);
+      if (nextSession?.user) {
+        const userId = nextSession.user.id;
+        setTimeout(() => {
+          refreshSubscription();
+          loadProfile(userId);
+        }, 0);
       } else {
         setTier("free");
         setSubscriptionEnd(null);
+        setAccountType("owner");
+        setVerificationStatus("unverified");
+        setVerified(false);
       }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      initialSessionHandled = true;
+      handleSession(nextSession);
     });
 
-    // Fallback: only set state if onAuthStateChange hasn't fired yet
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!initialSessionHandled) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        if (session?.user) {
-          refreshSubscription();
-        }
-      }
+    supabase.auth.getSession().then(({ data: { session: current } }) => {
+      if (!initialSessionHandled) handleSession(current);
     });
 
-    // Periodic subscription refresh every 60s
     const interval = setInterval(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) refreshSubscription();
+      supabase.auth.getSession().then(({ data: { session: current } }) => {
+        if (current?.user) refreshSubscription();
       });
     }, 60_000);
 
@@ -126,14 +161,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
       clearInterval(interval);
     };
-  }, [refreshSubscription]);
+  }, [refreshSubscription, loadProfile]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, type: AccountType = "owner") => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, account_type: type },
         emailRedirectTo: window.location.origin,
       },
     });
@@ -150,7 +185,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, tier, subscriptionEnd, checkingSubscription, refreshSubscription, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        tier,
+        subscriptionEnd,
+        checkingSubscription,
+        accountType,
+        verificationStatus,
+        verified,
+        maxProperties: getAccountMaxProperties(accountType, tier),
+        refreshSubscription,
+        refreshProfile,
+        signUp,
+        signIn,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
