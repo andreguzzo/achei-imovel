@@ -40,6 +40,7 @@ const RentalDocumentsVault = ({ userId, contractId, pending, onPendingChange }: 
   const [type, setType] = useState("");
   const [uploading, setUploading] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const fetchDocs = useCallback(async () => {
     if (!contractId) { setDocs([]); return; }
