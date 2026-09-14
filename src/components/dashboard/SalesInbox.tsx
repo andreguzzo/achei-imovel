@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/dashboard/SectionHeader";
 import { ClientLink } from "@/components/dashboard/ClientSheet";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 type ContactRequest = Tables<"contact_requests"> & {
   properties?: { title: string } | null;

@@ -17,6 +17,7 @@ import {
 } from "@/lib/rentals";
 import { buildPixPayload } from "@/lib/pix";
 import { canGeneratePix, canIssueCharges, fetchBillingSettings, type RentalBillingSettings } from "./RentalBilling";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 interface ChargeRow extends RentalCharge {
   rental_contracts: {

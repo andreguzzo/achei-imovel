@@ -21,6 +21,7 @@ import {
   type MatchableProperty,
 } from "@/lib/buyerLeads";
 import { featureLabel } from "@/lib/propertyFeatures";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 const ACTIVITY_TYPES = ["ligacao", "whatsapp", "email", "visita", "proposta", "observacao"];
 

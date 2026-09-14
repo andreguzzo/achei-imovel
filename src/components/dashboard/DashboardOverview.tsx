@@ -16,6 +16,7 @@ import {
   formatDateBr,
 } from "@/lib/saleAuthorization";
 import type { DashboardSection } from "@/components/dashboard/DashboardSidebar";
+import { buildWhatsAppUrl } from "@/lib/phone";
 
 interface Props {
   userId: string;

@@ -16,6 +16,7 @@ import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
 import Seo from "@/components/Seo";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";

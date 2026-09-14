@@ -11,6 +11,7 @@ import { Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, Chevr
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { motion, AnimatePresence } from "framer-motion";
 import Seo from "@/components/Seo";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 
 interface BrokerData {
   user_id: string;
