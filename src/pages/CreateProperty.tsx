@@ -315,7 +315,8 @@ const CreateProperty = () => {
   const [zipCode, setZipCode] = useState("");
   const [condoFee, setCondoFee] = useState("");
   const [iptu, setIptu] = useState("");
-  const [features, setFeatures] = useState("");
+  const [features, setFeatures] = useState<string[]>([]);
+  const [legacyFeatures, setLegacyFeatures] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
