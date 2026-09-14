@@ -266,9 +266,20 @@ const BuyerLeads = ({ userId }: Props) => {
             const count = matchCount(lead);
             return (
               <div key={lead.id} className="flex flex-wrap items-center gap-4 p-4">
-                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setDetail(lead)}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="min-w-0 flex-1 cursor-pointer text-left"
+                  onClick={() => setDetail(lead)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDetail(lead); }}
+                >
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate font-medium text-foreground">{lead.name}</p>
+                    <ClientLink
+                      name={lead.name}
+                      phone={lead.phone}
+                      email={lead.email}
+                      className="truncate font-medium text-foreground"
+                    />
                     <Badge variant={lead.status === "ativo" ? "default" : "secondary"} className="text-[10px]">
                       {statusLabel(lead.status, pt)}
                     </Badge>
