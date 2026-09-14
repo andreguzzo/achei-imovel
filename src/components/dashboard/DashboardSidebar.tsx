@@ -91,12 +91,14 @@ interface DashboardSidebarProps {
   active: DashboardSection;
   onSelect: (section: DashboardSection) => void;
   isBroker: boolean;
+  isProfessional?: boolean;
+  isAgency?: boolean;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
 
 const DashboardSidebar = ({
-  groups, active, onSelect, isBroker, collapsed, onToggleCollapsed,
+  groups, active, onSelect, isBroker, isProfessional = false, isAgency = false, collapsed, onToggleCollapsed,
 }: DashboardSidebarProps) => {
   const { locale } = useLanguage();
   const pt = locale === "pt-BR";
