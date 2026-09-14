@@ -227,9 +227,16 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     // Follow-ups: open deals grouped by next action date, plus stalled ones
     const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     const stalledLimit = new Date(Date.now() - 15 * 86400000).toISOString();
-    const openDeals = (pipeline as unknown as FollowUpDeal[] & { stage: string }[])
-      .filter((d) => !["closed_won", "closed_lost"].includes((d as unknown as { stage: string }).stage))
-      .map((d) => d as unknown as FollowUpDeal);
+    const openDeals: FollowUpDeal[] = pipeline
+      .filter((d) => !["closed_won", "closed_lost"].includes(d.stage))
+      .map((d) => ({
+        id: d.id,
+        client_name: d.client_name,
+        next_action: d.next_action,
+        next_action_date: d.next_action_date,
+        last_activity_at: d.last_activity_at,
+        created_at: d.created_at,
+      }));
     const byDate = (a: FollowUpDeal, b: FollowUpDeal) =>
       (a.next_action_date ?? "").localeCompare(b.next_action_date ?? "");
 
