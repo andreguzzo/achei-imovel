@@ -130,7 +130,7 @@ const DashboardFinance = ({ userId }: Props) => {
         const date = d.actual_close_date ?? d.updated_at.slice(0, 10);
         if (date < startIso) return;
         const s = split(gross, d.property_id);
-        out.push({ kind: "closed", date, label: d.client_name, gross, ...s });
+        out.push({ kind: "closed", date, label: d.client_name, clientName: d.client_name, gross, ...s });
       } else {
         const date = d.expected_close_date;
         if (!date || date < todayIso) return;
