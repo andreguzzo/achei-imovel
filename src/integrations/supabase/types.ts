@@ -425,6 +425,71 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_leads: {
+        Row: {
+          agency_id: string | null
+          broker_id: string
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string
+          criteria: Json
+          email: string | null
+          financing_type: string | null
+          id: string
+          last_contact_at: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          agency_id?: string | null
+          broker_id: string
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          criteria?: Json
+          email?: string | null
+          financing_type?: string | null
+          id?: string
+          last_contact_at?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          agency_id?: string | null
+          broker_id?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          criteria?: Json
+          email?: string | null
+          financing_type?: string | null
+          id?: string
+          last_contact_at?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_leads_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_requests: {
         Row: {
           broker_id: string | null
