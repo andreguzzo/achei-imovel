@@ -121,6 +121,28 @@ const RentalBilling = ({ userId }: Props) => {
     load();
   };
 
+  const testConnection = async () => {
+    setTesting(true);
+    const { data, error } = await supabase.functions.invoke("rental-billing", { body: { action: "test" } });
+    setTesting(false);
+    if (error || data?.error) {
+      toast.error(
+        pt
+          ? "Não foi possível conectar. Confira a chave e o ambiente escolhido."
+          : "Could not connect. Check the key and the selected environment.",
+      );
+      return;
+    }
+    toast.success(
+      pt ? `Conta conectada: ${data.account}` : `Account connected: ${data.account}`,
+    );
+    load();
+  };
+
+  const webhookUrl = form.webhook_token
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rental-webhook?token=${form.webhook_token}`
+    : null;
+
   const preview = canGeneratePix(form)
     ? buildPixPayload({
         key: form.pix_key!,
