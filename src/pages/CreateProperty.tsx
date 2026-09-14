@@ -927,6 +927,10 @@ const CreateProperty = () => {
           setPrivateNotes={setPrivateNotes}
           pendingFiles={pendingDocs}
           setPendingFiles={setPendingDocs}
+          authorization={authorization}
+          setAuthorization={setAuthorization}
+          authFile={authFile}
+          setAuthFile={setAuthFile}
         />
 
         {/* Title & Description with AI - placed last so all info is filled */}
