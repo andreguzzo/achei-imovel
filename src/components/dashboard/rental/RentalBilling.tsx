@@ -174,7 +174,7 @@ const RentalBilling = ({ userId }: Props) => {
               <Select value={form.provider} onValueChange={(v) => set("provider", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["manual", "mercadopago", "asaas", "pagarme"].map((p) => (
+                  {["manual", "asaas", "mercadopago"].map((p) => (
                     <SelectItem key={p} value={p}>{providerLabel(p, pt)}</SelectItem>
                   ))}
                 </SelectContent>
@@ -185,10 +185,72 @@ const RentalBilling = ({ userId }: Props) => {
                     ? "A plataforma gera o Pix copia e cola com sua chave e você registra o pagamento quando o dinheiro cair."
                     : "The platform generates the Pix code from your key and you record the payment when the money arrives."
                   : pt
-                    ? "Cobrança automática com Pix e boleto. Falta conectar a conta — deixe os dados abaixo salvos e ativamos a conexão quando você tiver a conta."
-                    : "Automatic Pix and bank slip billing. The account still needs to be connected — save the details below and we enable it once you have the account."}
+                    ? "Cobrança automática com Pix e boleto. Cole a chave da sua conta abaixo e clique em Conectar."
+                    : "Automatic Pix and bank slip billing. Paste your account key below and click Connect."}
               </p>
             </div>
+
+            {form.provider !== "manual" && (
+              <div className="space-y-3 rounded-lg border border-border p-3 sm:col-span-2">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="sm:col-span-2">
+                    <Label>{pt ? "Chave de acesso da sua conta" : "Your account access key"}</Label>
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      value={form.api_key ?? ""}
+                      onChange={(e) => set("api_key", e.target.value)}
+                      placeholder={form.provider === "asaas" ? "$aact_..." : "APP_USR-..."}
+                    />
+                  </div>
+                  <div>
+                    <Label>{pt ? "Ambiente" : "Environment"}</Label>
+                    <Select value={form.environment || "sandbox"} onValueChange={(v) => set("environment", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sandbox">{pt ? "Teste" : "Test"}</SelectItem>
+                        <SelectItem value="production">{pt ? "Produção" : "Live"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={testConnection} disabled={testing || !form.api_key}>
+                    {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlugZap className="mr-2 h-4 w-4" />}
+                    {pt ? "Conectar e testar" : "Connect and test"}
+                  </Button>
+                  {form.provider_connected_at && (
+                    <span className="text-xs text-muted-foreground">
+                      {pt ? "Conectada: " : "Connected: "}{form.provider_account_id}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {pt
+                    ? "Salve a chave antes de testar. Depois de conectar, cadastre o endereço abaixo como notificação (webhook) na sua conta para que os pagamentos entrem sozinhos."
+                    : "Save the key before testing. After connecting, register the address below as a webhook in your account so payments are recorded automatically."}
+                </p>
+
+                {webhookUrl && (
+                  <div className="flex items-center gap-2">
+                    <Input readOnly value={webhookUrl} className="font-mono text-[11px]" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(webhookUrl);
+                        toast.success(pt ? "Endereço copiado." : "Address copied.");
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
 
             <div>
               <Label>{pt ? "Chave Pix" : "Pix key"}</Label>
