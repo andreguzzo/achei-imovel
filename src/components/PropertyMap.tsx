@@ -109,6 +109,8 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       fullscreenControl: false,
       streetViewControl: false,
       clickableIcons: false,
+      scrollwheel: true,
+      gestureHandling: "greedy",
     });
 
     mapInstanceRef.current = map;

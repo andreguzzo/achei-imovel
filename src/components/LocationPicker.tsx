@@ -37,6 +37,8 @@ const LocationPicker = ({ latitude, longitude, onLatChange, onLngChange, pt = tr
       fullscreenControl: false,
       streetViewControl: false,
       clickableIcons: false,
+      scrollwheel: true,
+      gestureHandling: "greedy",
     });
 
     // Place marker if coords exist

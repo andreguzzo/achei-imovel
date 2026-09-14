@@ -47,6 +47,8 @@ const BoundaryEditor = ({ boundary, onChange, center, pt = true }: BoundaryEdito
       fullscreenControl: true,
       streetViewControl: false,
       clickableIcons: false,
+      scrollwheel: true,
+      gestureHandling: "greedy",
     });
 
     mapInstanceRef.current = map;
