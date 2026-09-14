@@ -109,7 +109,9 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
 
     const map = new google.maps.Map(mapRef.current, {
       center: { lat: center[0], lng: center[1] },
-      zoom,
+      zoom: Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM),
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       mapTypeControl: false,
       fullscreenControl: false,
       streetViewControl: false,
