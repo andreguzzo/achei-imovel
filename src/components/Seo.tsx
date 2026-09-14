@@ -100,7 +100,7 @@ export function Seo({ title, description, canonical, image, type = "website" }: 
         if (content === null) {
           el.remove();
         } else {
-          el.setAttribute(el.hasAttribute("property") ? "property" : "name", content);
+          el.setAttribute("content", content);
         }
       });
 
