@@ -72,6 +72,7 @@ const Search = () => {
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [groupInfo, setGroupInfo] = useState<Map<string, GroupInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -89,6 +90,7 @@ const Search = () => {
     async (f: SearchFiltersState, pageLimit: number, bounds: MapBounds | null) => {
       if (pageLimit > PAGE_SIZE) setLoadingMore(true);
       else setLoading(true);
+      setError(false);
 
       // Build sorting
       let orderCol = "created_at";
