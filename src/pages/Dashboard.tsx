@@ -36,6 +36,19 @@ const VALID_SECTIONS: DashboardSection[] = [
   "verificacao", "equipe",
 ];
 
+const ChartSkeleton = () => (
+  <div className="space-y-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full rounded-lg" />
+      ))}
+    </div>
+    <Skeleton className="h-72 w-full rounded-lg" />
+  </div>
+);
+
+
+
 const Dashboard = () => {
   const { locale } = useLanguage();
   const { user, loading: authLoading, accountType } = useAuth();
