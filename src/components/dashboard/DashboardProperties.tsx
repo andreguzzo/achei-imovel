@@ -210,11 +210,18 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
         description={pt ? "Gerencie status, fotos e informações de cada imóvel." : "Manage status, photos and details of each property."}
         count={properties.length}
         action={
-          <Link to="/anunciar">
-            <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo imóvel" : "New property"}</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-1" onClick={() => setImportOpen(true)}>
+              <Download className="h-4 w-4" /> {pt ? "Importar anúncios" : "Import listings"}
+            </Button>
+            <Link to="/anunciar">
+              <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo imóvel" : "New property"}</Button>
+            </Link>
+          </div>
         }
       />
+
+      <FeedExportCard />
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
