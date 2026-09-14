@@ -756,7 +756,7 @@ const CreateProperty = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <BasicInfoCard pt={pt} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} />
 
-        <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} />
+        <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} legacyFeatures={legacyFeatures} />
 
         {/* Address */}
         <Card>
