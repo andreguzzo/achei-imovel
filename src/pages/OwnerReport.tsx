@@ -60,7 +60,9 @@ const OwnerReport = () => {
     return (
       <div className="mx-auto max-w-lg px-4 py-24 text-center">
         <h1 className="text-xl font-semibold text-foreground">Relatório não encontrado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">O link pode ter expirado ou o relatório foi removido.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {errorMsg ?? "O link pode ter expirado ou o relatório foi removido."}
+        </p>
       </div>
     );
   }
