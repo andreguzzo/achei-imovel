@@ -348,6 +348,27 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
               </div>
             )}
 
+            {(statusAction === "sold" || statusAction === "rented" || statusAction === "sold_by_other") && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  {pt ? "Valor final de fechamento (R$) *" : "Final closing value (R$) *"}
+                </label>
+                <Input
+                  type="number"
+                  value={closingPrice}
+                  onChange={(e) => setClosingPrice(e.target.value)}
+                  min="0"
+                  placeholder={String(statusTarget?.price ?? "")}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {pt
+                    ? "Usado nos indicadores de fechamento. Se vazio, usamos o valor anunciado."
+                    : "Used in the closing indicators. If empty, the listed price is used."}
+                </p>
+              </div>
+            )}
+
+
             {statusAction === "inactive" && (
               <p className="text-sm text-muted-foreground">{pt ? "O imóvel não aparecerá mais nas buscas." : "Property won't appear in searches."}</p>
             )}
