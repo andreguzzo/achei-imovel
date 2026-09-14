@@ -53,3 +53,18 @@ verify_jwt = false
 
 [functions.rental-webhook]
 verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.admin-financial]
+verify_jwt = false
+
+[functions.verify-identity]
+verify_jwt = false
+
+[functions.admin-review-verification]
+verify_jwt = false
+
+[functions.agency-accept-invite]
+verify_jwt = false
