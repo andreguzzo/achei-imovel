@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       const { data: property } = await supabase
         .from("properties")
-        .select("id, title, city, state, user_id")
+        .select("id, title, city, state, user_id, reference_code")
         .eq("id", property_id)
         .maybeSingle();
 
