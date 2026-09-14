@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, CalendarDays, Plus, ArrowRight, Clock, Mail,
-  Receipt, ShieldAlert, CheckCircle2, MessageCircle, KeyRound,
+  Receipt, ShieldAlert, CheckCircle2, MessageCircle,
 } from "lucide-react";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import {
