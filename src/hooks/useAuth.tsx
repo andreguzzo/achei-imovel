@@ -206,6 +206,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         tier,
         subscriptionEnd,
         checkingSubscription,
+        planSlug,
+        subscribed,
         accountType,
         verificationStatus,
         verified,
