@@ -1,55 +1,55 @@
 project_id = "mgutcwomukqnzaxxjqay"
 
 [functions.check-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.customer-portal]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-verification-code]
-verify_jwt = false
+verify_jwt = true
 
 [functions.verify-code]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-check-user-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-grant-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-list-subscribers]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-reset-password]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-contact]
 verify_jwt = false
 
 [functions.generate-property-description]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-social-caption]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-list-users]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-create-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-set-user-status]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-manage-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.rental-billing]
-verify_jwt = false
+verify_jwt = true
 
 [functions.rental-webhook]
 verify_jwt = false
@@ -58,13 +58,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-financial]
-verify_jwt = false
+verify_jwt = true
 
 [functions.verify-identity]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-review-verification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.agency-accept-invite]
 verify_jwt = false
