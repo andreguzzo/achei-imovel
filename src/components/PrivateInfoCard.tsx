@@ -14,8 +14,9 @@ import {
   type AuthorizationData,
   type AuthorizationType,
 } from "@/lib/saleAuthorization";
-import {
 import { MaskedCpfInput } from "@/components/MaskedCpf";
+import {
+
   Lock,
   Upload,
   X,
