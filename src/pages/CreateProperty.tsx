@@ -14,7 +14,8 @@ import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react"
 import LocationPicker from "@/components/LocationPicker";
 import BoundaryEditor from "@/components/BoundaryEditor";
 import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
-import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
+import PrivateInfoCard, { uploadPrivateDocuments, uploadAuthorizationFile, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
+import { emptyAuthorization, type AuthorizationData, type AuthorizationType } from "@/lib/saleAuthorization";
 import { compressImage } from "@/lib/imageCompression";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PROPERTY_FEATURES, matchFeature } from "@/lib/propertyFeatures";
@@ -330,6 +331,8 @@ const CreateProperty = () => {
   const [owners, setOwners] = useState<OwnerEntry[]>([emptyOwner()]);
   const [privateNotes, setPrivateNotes] = useState("");
   const [pendingDocs, setPendingDocs] = useState<File[]>([]);
+  const [authorization, setAuthorization] = useState<AuthorizationData>(emptyAuthorization());
+  const [authFile, setAuthFile] = useState<File | null>(null);
 
   // Status dialog
   const [showStatusDialog, setShowStatusDialog] = useState(false);
