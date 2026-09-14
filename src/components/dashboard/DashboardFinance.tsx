@@ -330,7 +330,9 @@ const DashboardFinance = ({ userId }: Props) => {
                 <tr key={`${r.kind}-${i}`} className="border-t border-border">
                   <td className="px-3 py-2">{kindLabel(r.kind)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{r.date.slice(0, 10).split("-").reverse().join("/")}</td>
-                  <td className="px-3 py-2">{r.label}</td>
+                  <td className="px-3 py-2">
+                    {r.clientName ? <ClientLink name={r.clientName} /> : r.label}
+                  </td>
                   <td className="px-3 py-2 text-right">{brl(r.gross)}</td>
                   <td className="px-3 py-2 text-right text-muted-foreground">{r.partnerCut ? `- ${brl(r.partnerCut)}` : "—"}</td>
                   <td className="px-3 py-2 text-right text-muted-foreground">{r.agencyCut ? `- ${brl(r.agencyCut)}` : "—"}</td>
