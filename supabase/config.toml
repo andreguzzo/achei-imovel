@@ -86,3 +86,6 @@ verify_jwt = true
 
 [functions.get-owner-report]
 verify_jwt = false
+
+[functions.whatsapp-redirect]
+verify_jwt = false
