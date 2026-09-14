@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         },
         views: m.views ?? 0,
         leads: m.leads ?? 0,
+        leads_whatsapp: m.leads_whatsapp ?? 0,
         visits_scheduled: m.visits_scheduled ?? 0,
         visits_done: m.visits_done ?? 0,
         channels: Array.isArray(m.channels) ? m.channels : [],

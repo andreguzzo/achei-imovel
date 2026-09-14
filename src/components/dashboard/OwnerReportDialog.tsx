@@ -202,7 +202,7 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
                   { label: "Visualizações", value: metrics.views },
-                  { label: "Contatos recebidos", value: metrics.leads },
+                  { label: "Contatos recebidos", value: metrics.leads, hint: metrics.leads_whatsapp ? `${metrics.leads_whatsapp} via WhatsApp` : null },
                   { label: "Visitas agendadas", value: metrics.visits_scheduled },
                   { label: "Visitas realizadas", value: metrics.visits_done },
                 ].map((m) => (

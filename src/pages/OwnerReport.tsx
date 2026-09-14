@@ -121,7 +121,7 @@ const OwnerReport = () => {
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { label: "Visualizações", value: m.views },
-              { label: "Contatos recebidos", value: m.leads },
+              { label: "Contatos recebidos", value: m.leads, hint: m.leads_whatsapp ? `${m.leads_whatsapp} via WhatsApp` : null },
               { label: "Visitas agendadas", value: m.visits_scheduled },
               { label: "Visitas realizadas", value: m.visits_done },
             ].map((k) => (
