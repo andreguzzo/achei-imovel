@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       product_id: productId,
+      plan_slug: planSlug,
       subscription_end: subscriptionEnd,
       payment_history: paymentHistory,
       upcoming_invoice: upcomingInvoice,
