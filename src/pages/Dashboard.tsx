@@ -174,14 +174,8 @@ const Dashboard = () => {
         );
       case "clientes":
         return <BuyerLeads userId={user.id} />;
-      case "negociacoes":
-        return (
-          <Suspense fallback={<ChartSkeleton />}>
-            <SalesPipeline userId={user.id} />
-          </Suspense>
-        );
-      case "contatos":
-        return <SalesContacts userId={user.id} />;
+      case "atendimentos":
+        return <SalesDesk userId={user.id} defaultTab={legacyFunnel ? "funnel" : "inbox"} />;
       case "agenda":
         return (
           <div className="space-y-6">
