@@ -11,8 +11,7 @@ import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/comp
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
-const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"));
-import SalesContacts from "@/components/dashboard/SalesContacts";
+import SalesDesk from "@/components/dashboard/SalesDesk";
 import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 
