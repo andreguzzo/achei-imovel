@@ -150,6 +150,11 @@ Gere um título atraente (máximo 100 caracteres) e uma descrição profissional
 
     const result = JSON.parse(toolCall.function.arguments);
 
+    const { error: logError } = await serviceClient
+      .from("ai_usage_log")
+      .insert({ user_id: userId, function_name: FUNCTION_NAME });
+    if (logError) console.error("ai_usage_log insert error:", logError);
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
