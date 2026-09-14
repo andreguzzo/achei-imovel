@@ -128,9 +128,12 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       });
     };
     // Only offer "search this area" after the visitor actually moves the map
-    map.addListener("dragend", () => { userMoved = true; });
-    map.addListener("zoom_changed", () => { userMoved = true; });
+    const markMoved = () => { userMoved = true; };
+    map.addListener("dragend", markMoved);
+    mapRef.current.addEventListener("wheel", markMoved, { passive: true });
+    mapRef.current.addEventListener("dblclick", markMoved);
     map.addListener("idle", reportBounds);
+
 
 
     return () => {
