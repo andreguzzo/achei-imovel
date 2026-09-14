@@ -78,6 +78,7 @@ const RentalBilling = ({ userId }: Props) => {
   const [form, setForm] = useState<RentalBillingSettings>(emptyBillingSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +98,8 @@ const RentalBilling = ({ userId }: Props) => {
       {
         broker_id: userId,
         provider: form.provider,
+        environment: form.environment || "sandbox",
+        api_key: form.provider === "manual" ? null : form.api_key?.trim() || null,
         auto_charge_enabled: form.provider === "manual" ? false : form.auto_charge_enabled,
         pix_key: form.pix_key?.trim() || null,
         pix_key_type: form.pix_key_type || null,
