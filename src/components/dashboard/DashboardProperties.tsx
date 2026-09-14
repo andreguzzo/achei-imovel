@@ -49,9 +49,46 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
       .select("*, property_images(*)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-    setProperties((data as PropertyWithImages[]) ?? []);
+    const list = (data as PropertyWithImages[]) ?? [];
+    setProperties(list);
+
+    // Private authorization terms — broker only, never rendered publicly
+    if (list.length > 0) {
+      const { data: privateRows } = await supabase
+        .from("property_private_data")
+        .select("property_id, authorization_end")
+        .in("property_id", list.map((p) => p.id));
+      const map: Record<string, string> = {};
+      for (const row of privateRows ?? []) {
+        if (row.authorization_end) map[row.property_id] = row.authorization_end;
+      }
+      setAuthEnds(map);
+    } else {
+      setAuthEnds({});
+    }
     setLoading(false);
   }, [userId]);
+
+  const renderAuthBadge = (propId: string) => {
+    const end = authEnds[propId];
+    if (!end) return null;
+    const { status, days } = authorizationStatus(end);
+    const text = authorizationBadgeText(status, days, pt);
+    if (!text) return null;
+    return (
+      <Badge
+        variant={status === "expired" ? "destructive" : "outline"}
+        className={`shrink-0 gap-1 text-[10px] ${
+          status === "expiring"
+            ? "border-amber-400 text-amber-700 dark:border-amber-700 dark:text-amber-300"
+            : ""
+        }`}
+      >
+        <AlertTriangle className="h-3 w-3" />
+        {text}
+      </Badge>
+    );
+  };
 
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
 
