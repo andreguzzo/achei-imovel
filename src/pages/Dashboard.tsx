@@ -28,13 +28,14 @@ import RentalReports from "@/components/dashboard/rental/RentalReports";
 import RentalBilling from "@/components/dashboard/rental/RentalBilling";
 import IdentityVerification from "@/components/dashboard/IdentityVerification";
 import AgencyTeam from "@/components/dashboard/AgencyTeam";
+const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFinance"));
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "clientes", "negociacoes", "contatos", "propostas", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
-  "verificacao", "equipe",
+  "verificacao", "equipe", "financeiro",
 ];
 
 const ChartSkeleton = () => (
@@ -136,7 +137,7 @@ const Dashboard = () => {
   const effectiveSection: DashboardSection =
     !isBroker && [
       "clientes", "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
-      "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
+      "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao", "financeiro",
     ].includes(section)
       ? "imoveis"
       : section;
@@ -251,6 +252,12 @@ const Dashboard = () => {
             />
             <SupportForm />
           </div>
+        );
+      case "financeiro":
+        return (
+          <Suspense fallback={<ChartSkeleton />}>
+            <DashboardFinance userId={user.id} />
+          </Suspense>
         );
       case "verificacao":
         return <IdentityVerification userId={user.id} />;

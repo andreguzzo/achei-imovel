@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   Home, TrendingUp, Mail, FileText, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
-  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2, Users,
+  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2, Users, Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ export type DashboardSection =
   | "inicio" | "clientes" | "negociacoes" | "contatos" | "propostas" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
   | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
-  | "verificacao" | "equipe";
+  | "verificacao" | "equipe" | "financeiro";
 
 export interface NavItem {
   key: DashboardSection;
@@ -72,7 +72,10 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
     },
     {
       label: pt ? "Desempenho" : "Performance",
-      items: [{ key: "relatorios", label: pt ? "Relatórios de venda" : "Sales reports", icon: BarChart3, brokerOnly: true }],
+      items: [
+        { key: "relatorios", label: pt ? "Relatórios de venda" : "Sales reports", icon: BarChart3, brokerOnly: true },
+        { key: "financeiro", label: pt ? "Financeiro" : "Finance", icon: Wallet, brokerOnly: true },
+      ],
     },
     {
       label: pt ? "Conta" : "Account",
