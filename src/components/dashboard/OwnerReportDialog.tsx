@@ -145,15 +145,15 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
         summary: summary.trim() || null,
         metrics: JSON.parse(JSON.stringify(metrics)),
       })
-      .select("id")
+      .select("share_token")
       .single();
     setSaving(false);
 
-    if (error || !data) {
+    if (error || !data?.share_token) {
       toast({ title: "Não foi possível gerar o relatório", description: error?.message, variant: "destructive" });
       return;
     }
-    const url = buildReportUrl(data.id);
+    const url = buildReportUrl(data.share_token);
     setReportUrl(url);
     window.open(url, "_blank", "noopener");
   };
