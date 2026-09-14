@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  Home, Users, Building2, Layers, CreditCard, MessageCircle, ShieldCheck,
+  Home, Users, Building2, Layers, CreditCard, Receipt, MessageCircle, ShieldCheck,
   ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
