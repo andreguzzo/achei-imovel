@@ -174,7 +174,7 @@ const Search = () => {
       setLoading(false);
       setLoadingMore(false);
     },
-    []
+    [navigate]
   );
 
   const retrySearch = useCallback(() => {
