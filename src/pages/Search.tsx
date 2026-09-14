@@ -340,14 +340,11 @@ const Search = () => {
             <div className="p-4">
               {resultsHeader}
               {loading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <PropertyCardSkeletonGrid count={4} className="space-y-4" />
+              ) : error ? (
+                errorState
               ) : properties.length === 0 ? (
-                <div className="py-20 text-center">
-                  <p className="text-lg font-medium text-foreground">{t.filters.noResults}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
-                </div>
+                emptyState
               ) : (
                 <>
                   <div className="space-y-4">
@@ -401,14 +398,11 @@ const Search = () => {
         <div className="mt-6">
           {resultsHeader}
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <PropertyCardSkeletonGrid count={6} />
+          ) : error ? (
+            errorState
           ) : properties.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-lg font-medium text-foreground">{t.filters.noResults}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
-            </div>
+            emptyState
           ) : (
             <>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
