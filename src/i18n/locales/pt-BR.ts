@@ -81,7 +81,7 @@ export const ptBR = {
     propertyValue: "Valor do imóvel",
     downPayment: "Entrada",
     term: "Prazo (anos)",
-    interestRate: "Taxa de juros (% ao ano)",
+    interestRate: "Taxa de juros (C.E.T. % ao ano)",
     calculate: "Calcular",
     monthlyPayment: "Parcela mensal",
     sacSystem: "Tabela SAC",
