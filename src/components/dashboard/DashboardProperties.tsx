@@ -216,11 +216,12 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-medium text-foreground">{p.title}</p>
                         <Badge variant={p.status === "active" ? "default" : "secondary"} className="shrink-0 text-[10px]">
                           {statusLabels[p.status] ?? p.status}
                         </Badge>
+                        {renderAuthBadge(p.id)}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {p.reference_code ? `${pt ? "Cód." : "Ref."} ${p.reference_code} • ` : ""}{p.city} - {p.state}
