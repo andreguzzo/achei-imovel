@@ -438,6 +438,7 @@ const BrokerProfile = () => {
         </motion.div>
       </div>
     </div>
+  </>
   );
 };
 
