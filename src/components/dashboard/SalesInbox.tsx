@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Mail, UserPlus, Phone, AlarmClock, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/dashboard/SectionHeader";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
