@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -13,6 +13,7 @@ import SearchFilters, {
   defaultFilters,
 } from "@/components/SearchFilters";
 import { dedupeByGroup, type GroupInfo } from "@/lib/partnerships";
+import Seo from "@/components/Seo";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
