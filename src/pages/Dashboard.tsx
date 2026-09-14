@@ -65,8 +65,10 @@ const Dashboard = () => {
   const [newLeads, setNewLeads] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
-  // The old "propostas" screen was merged into "negociacoes"; keep old links working.
-  const normalizedSection = rawSection === "propostas" ? "negociacoes" : rawSection;
+  // "propostas", "negociacoes" and "contatos" were merged into "atendimentos"; keep old links working.
+  const legacyFunnel = rawSection === "propostas" || rawSection === "negociacoes";
+  const normalizedSection: DashboardSection | null =
+    legacyFunnel || rawSection === "contatos" ? "atendimentos" : (rawSection as DashboardSection | null);
   const section: DashboardSection =
     normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
