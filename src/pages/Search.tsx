@@ -281,7 +281,13 @@ const Search = () => {
   );
 
   return (
-    <div className={showMap ? "flex h-[calc(100vh-64px)] flex-col" : "container py-8"}>
+    <>
+      <Seo
+        title={searchTitle}
+        description={searchDescription}
+        canonical={`/busca?${searchParams.toString()}`}
+      />
+      <div className={showMap ? "flex h-[calc(100vh-64px)] flex-col" : "container py-8"}>
       {/* Filter bar */}
       <div className={showMap ? "border-b bg-card px-4 py-3" : ""}>
         <SearchFilters filters={filters} onChange={setFilters} />
