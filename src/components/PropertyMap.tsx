@@ -15,7 +15,10 @@ interface PropertyMapProps {
   onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
   selectedId?: string;
   onSelect?: (id: string) => void;
+  /** When false, the map no longer auto-fits to the results (used while searching by map area) */
+  autoFit?: boolean;
 }
+
 
 const formatPriceFull = (price: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price);
@@ -83,7 +86,7 @@ const clusterRenderer = {
   },
 };
 
-const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect }: PropertyMapProps) => {
+const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
   const ready = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -92,6 +95,8 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const polygonsRef = useRef<google.maps.Polygon[]>([]);
   const prevPropertyIdsRef = useRef<string>("");
+  const boundsCbRef = useRef(onBoundsChange);
+  boundsCbRef.current = onBoundsChange;
 
   // Initialize / destroy map
   useEffect(() => {
@@ -109,22 +114,27 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
     mapInstanceRef.current = map;
     infoWindowRef.current = new google.maps.InfoWindow();
 
-    if (onBoundsChange) {
-      const reportBounds = () => {
-        const b = map.getBounds();
-        if (!b) return;
-        const ne = b.getNorthEast();
-        const sw = b.getSouthWest();
-        onBoundsChange({
-          north: ne.lat(),
-          south: sw.lat(),
-          east: ne.lng(),
-          west: sw.lng(),
-        });
-      };
-      map.addListener("idle", reportBounds);
-      setTimeout(reportBounds, 500);
-    }
+    let userMoved = false;
+    const reportBounds = () => {
+      const b = map.getBounds();
+      if (!b || !boundsCbRef.current || !userMoved) return;
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      boundsCbRef.current({
+        north: ne.lat(),
+        south: sw.lat(),
+        east: ne.lng(),
+        west: sw.lng(),
+      });
+    };
+    // Only offer "search this area" after the visitor actually moves the map
+    const markMoved = () => { userMoved = true; };
+    map.addListener("dragend", markMoved);
+    mapRef.current.addEventListener("wheel", markMoved, { passive: true });
+    mapRef.current.addEventListener("dblclick", markMoved);
+    map.addListener("idle", reportBounds);
+
+
 
     return () => {
       clustererRef.current?.clearMarkers();
@@ -137,7 +147,9 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       infoWindowRef.current = null;
       mapInstanceRef.current = null;
     };
-  }, [ready, center, zoom, onBoundsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
 
   // Update markers when properties change
   useEffect(() => {
@@ -253,7 +265,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
 
     // Only fit bounds when the set of properties actually changes
     const currentIds = propsWithCoords.map((p) => p.id).sort().join(",");
-    if (currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
+    if (autoFit && currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
       prevPropertyIdsRef.current = currentIds;
       const bounds = new google.maps.LatLngBounds();
       propsWithCoords.forEach((p) => bounds.extend({ lat: p.latitude!, lng: p.longitude! }));
@@ -261,8 +273,11 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         poly.getPaths().forEach((ring) => ring.forEach((pt) => bounds.extend(pt)))
       );
       map.fitBounds(bounds, 40);
+    } else {
+      prevPropertyIdsRef.current = currentIds;
     }
-  }, [properties, selectedId, onSelect, ready]);
+  }, [properties, selectedId, onSelect, ready, autoFit]);
+
 
   return <div ref={mapRef} className="h-full w-full" />;
 };

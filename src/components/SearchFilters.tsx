@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Slider } from "@/components/ui/slider";
 import {
   Search as SearchIcon,
   ChevronDown,
   X,
-  Map,
-  List,
-  SlidersHorizontal,
+  MapPin,
 } from "lucide-react";
 
 export interface SearchFiltersState {
@@ -59,8 +57,6 @@ const KEYWORD_SUGGESTIONS = [
 interface SearchFiltersProps {
   filters: SearchFiltersState;
   onChange: (filters: SearchFiltersState) => void;
-  showMap: boolean;
-  onToggleMap: () => void;
 }
 
 const formatPrice = (value: string) => {
@@ -139,9 +135,12 @@ const FilterButton = ({
   </Popover>
 );
 
-export default function SearchFilters({ filters, onChange, showMap, onToggleMap }: SearchFiltersProps) {
-  const { t } = useLanguage();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+export default function SearchFilters({ filters, onChange }: SearchFiltersProps) {
+  const { t, locale } = useLanguage();
+  const pt = locale === "pt-BR";
+  const [locations, setLocations] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionBoxRef = useRef<HTMLDivElement>(null);
 
   const update = useCallback(
     (patch: Partial<SearchFiltersState>) => {
@@ -149,6 +148,35 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
     },
     [filters, onChange]
   );
+
+  // Load available cities / neighborhoods for autocomplete
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("properties")
+        .select("city, state, neighborhood")
+        .eq("status", "active")
+        .limit(1000);
+      if (!active || !data) return;
+      const set = new Set<string>();
+      data.forEach((row) => {
+        if (row.city) set.add(`${row.city} - ${row.state}`);
+        if (row.neighborhood) set.add(`${row.neighborhood}, ${row.city} - ${row.state}`);
+      });
+      setLocations([...set].sort((a, b) => a.localeCompare(b, "pt-BR")));
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return locations.filter((l) => l.toLowerCase().includes(q)).slice(0, 8);
+  }, [filters.query, locations]);
 
   // Active filter chips
   const chips: { label: string; clear: () => void }[] = [];
@@ -187,7 +215,7 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
   }
   if (filters.suites) {
     chips.push({
-      label: `${filters.suites}+ Suítes`,
+      label: `${filters.suites}+ ${pt ? "Suítes" : "Suites"}`,
       clear: () => update({ suites: "" }),
     });
   }
@@ -232,11 +260,10 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
   ];
 
   const priceCount = (filters.minPrice || filters.maxPrice) ? 1 : 0;
-  const bedsCount = (filters.bedrooms ? 1 : 0) + (filters.suites ? 1 : 0) + (filters.bathrooms ? 1 : 0);
   const typeCount = filters.propertyTypes.length;
   const moreCount =
     (filters.minArea || filters.maxArea ? 1 : 0) +
-    (filters.parkingSpots ? 1 : 0) +
+    (filters.suites ? 1 : 0) +
     (filters.maxCondo ? 1 : 0) +
     filters.keywords.length;
 
@@ -244,15 +271,51 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
     <div className="space-y-2">
       {/* Main filter bar */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Search input */}
-        <div className="flex flex-1 min-w-[200px] items-center gap-2 rounded-lg border bg-card px-3 shadow-sm">
-          <SearchIcon className="h-4 w-4 text-muted-foreground" />
-          <Input
-            value={filters.query}
-            onChange={(e) => update({ query: e.target.value })}
-            placeholder={t.hero.searchPlaceholder}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-          />
+        {/* Search input with location autocomplete */}
+        <div className="relative flex-1 min-w-[220px]" ref={suggestionBoxRef}>
+          <div className="flex items-center gap-2 rounded-lg border bg-card px-3 shadow-sm">
+            <SearchIcon className="h-4 w-4 text-muted-foreground" />
+            <Input
+              value={filters.query}
+              onChange={(e) => {
+                update({ query: e.target.value });
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+              placeholder={pt ? "Bairro, cidade ou nome do imóvel" : "Neighborhood, city or listing name"}
+              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+            />
+            {filters.query && (
+              <button
+                type="button"
+                onClick={() => update({ query: "" })}
+                aria-label={pt ? "Limpar busca" : "Clear search"}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-[1100] mt-1 overflow-hidden rounded-lg border bg-popover shadow-lg">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    update({ query: s.split(" - ")[0] });
+                    setShowSuggestions(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                >
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{s}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Listing type (Buy/Rent) */}
@@ -283,56 +346,6 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
           </div>
         </FilterButton>
 
-        {/* Price */}
-        <FilterButton label={t.filters.price} active={!!priceCount} count={priceCount}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">{t.filters.minPrice}</label>
-                <Input
-                  type="number"
-                  value={filters.minPrice}
-                  onChange={(e) => update({ minPrice: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">{t.filters.maxPrice}</label>
-                <Input
-                  type="number"
-                  value={filters.maxPrice}
-                  onChange={(e) => update({ maxPrice: e.target.value })}
-                  placeholder="∞"
-                />
-              </div>
-            </div>
-          </div>
-        </FilterButton>
-
-        {/* Beds & Baths */}
-        <FilterButton label={t.filters.bedsAndBaths} active={!!bedsCount} count={bedsCount}>
-          <div className="space-y-4">
-            <StepSelector
-              label={t.filters.bedrooms}
-              value={filters.bedrooms}
-              onChange={(v) => update({ bedrooms: v })}
-              anyLabel={t.filters.any}
-            />
-            <StepSelector
-              label="Suítes"
-              value={filters.suites}
-              onChange={(v) => update({ suites: v })}
-              anyLabel={t.filters.any}
-            />
-            <StepSelector
-              label={t.filters.bathrooms}
-              value={filters.bathrooms}
-              onChange={(v) => update({ bathrooms: v })}
-              anyLabel={t.filters.any}
-            />
-          </div>
-        </FilterButton>
-
         {/* Property Type */}
         <FilterButton label={t.filters.type} active={!!typeCount} count={typeCount}>
           <div className="space-y-2">
@@ -353,12 +366,71 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
           </div>
         </FilterButton>
 
-        {/* More filters */}
+        {/* Price */}
+        <FilterButton label={t.filters.price} active={!!priceCount} count={priceCount}>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">{t.filters.minPrice}</label>
+              <Input
+                type="number"
+                value={filters.minPrice}
+                onChange={(e) => update({ minPrice: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">{t.filters.maxPrice}</label>
+              <Input
+                type="number"
+                value={filters.maxPrice}
+                onChange={(e) => update({ maxPrice: e.target.value })}
+                placeholder="∞"
+              />
+            </div>
+          </div>
+        </FilterButton>
+
+        {/* Quick: bedrooms */}
         <FilterButton
-          label={t.filters.moreFilters}
-          active={!!moreCount}
-          count={moreCount}
+          label={filters.bedrooms ? `${filters.bedrooms}+ ${t.filters.bedrooms}` : t.filters.bedrooms}
+          active={!!filters.bedrooms}
         >
+          <StepSelector
+            label={t.filters.bedrooms}
+            value={filters.bedrooms}
+            onChange={(v) => update({ bedrooms: v })}
+            anyLabel={t.filters.any}
+          />
+        </FilterButton>
+
+        {/* Quick: bathrooms */}
+        <FilterButton
+          label={filters.bathrooms ? `${filters.bathrooms}+ ${t.filters.bathrooms}` : t.filters.bathrooms}
+          active={!!filters.bathrooms}
+        >
+          <StepSelector
+            label={t.filters.bathrooms}
+            value={filters.bathrooms}
+            onChange={(v) => update({ bathrooms: v })}
+            anyLabel={t.filters.any}
+          />
+        </FilterButton>
+
+        {/* Quick: parking */}
+        <FilterButton
+          label={filters.parkingSpots ? `${filters.parkingSpots}+ ${t.filters.parking}` : t.filters.parking}
+          active={!!filters.parkingSpots}
+        >
+          <StepSelector
+            label={t.filters.parkingSpots}
+            value={filters.parkingSpots}
+            onChange={(v) => update({ parkingSpots: v })}
+            anyLabel={t.filters.any}
+          />
+        </FilterButton>
+
+        {/* More filters */}
+        <FilterButton label={t.filters.moreFilters} active={!!moreCount} count={moreCount}>
           <div className="space-y-4 max-h-[400px] overflow-y-auto">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -381,9 +453,9 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
               </div>
             </div>
             <StepSelector
-              label={t.filters.parkingSpots}
-              value={filters.parkingSpots}
-              onChange={(v) => update({ parkingSpots: v })}
+              label={pt ? "Suítes" : "Suites"}
+              value={filters.suites}
+              onChange={(v) => update({ suites: v })}
               anyLabel={t.filters.any}
             />
             <div>
@@ -420,46 +492,6 @@ export default function SearchFilters({ filters, onChange, showMap, onToggleMap 
             </div>
           </div>
         </FilterButton>
-
-        {/* Sort */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1">
-              {t.filters.sortBy}
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-48 z-[1000]">
-            <div className="space-y-1">
-              {(
-                [
-                  { value: "newest", label: t.filters.sortNewest },
-                  { value: "price_asc", label: t.filters.sortPriceAsc },
-                  { value: "price_desc", label: t.filters.sortPriceDesc },
-                  { value: "area_desc", label: t.filters.sortArea },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => update({ sortBy: opt.value })}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                    filters.sortBy === opt.value
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-accent"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Map toggle */}
-        <Button variant={showMap ? "default" : "outline"} size="sm" onClick={onToggleMap} className="gap-1">
-          {showMap ? <List className="h-4 w-4" /> : <Map className="h-4 w-4" />}
-          {showMap ? t.filters.list : t.filters.map}
-        </Button>
       </div>
 
       {/* Active filter chips */}
