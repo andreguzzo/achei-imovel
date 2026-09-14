@@ -44,6 +44,9 @@ export function getMaxProperties(tier: TierKey): number {
   return TIERS[tier].maxProperties;
 }
 
+/** Paid professional plans sold today. */
+export const PRO_PLAN_SLUGS = ["corretor", "imobiliaria"] as const;
+
 /** Listing limit by account type: owners publish a single property, professionals are unlimited. */
 export function getAccountMaxProperties(accountType: AccountType, tier: TierKey): number {
   if (accountType === "owner") return tier === "free" ? 1 : getMaxProperties(tier);
@@ -57,6 +60,8 @@ interface AuthContextType {
   tier: TierKey;
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
+  planSlug: string | null;
+  subscribed: boolean;
   accountType: AccountType;
   verificationStatus: VerificationStatus;
   verified: boolean;
@@ -80,6 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accountType, setAccountType] = useState<AccountType>("owner");
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("unverified");
   const [verified, setVerified] = useState(false);
+  const [planSlug, setPlanSlug] = useState<string | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
 
   const refreshSubscription = useCallback(async () => {
     try {
@@ -90,9 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       if (data?.subscribed) {
+        setSubscribed(true);
+        setPlanSlug((data.plan_slug as string) ?? null);
         setTier(getTierByProductId(data.product_id));
         setSubscriptionEnd(data.subscription_end);
       } else {
+        setSubscribed(false);
+        setPlanSlug(null);
         setTier("free");
         setSubscriptionEnd(null);
       }
@@ -136,6 +147,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setTier("free");
         setSubscriptionEnd(null);
+        setPlanSlug(null);
+        setSubscribed(false);
         setAccountType("owner");
         setVerificationStatus("unverified");
         setVerified(false);
@@ -193,6 +206,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         tier,
         subscriptionEnd,
         checkingSubscription,
+        planSlug,
+        subscribed,
         accountType,
         verificationStatus,
         verified,

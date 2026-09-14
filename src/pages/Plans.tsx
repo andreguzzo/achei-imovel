@@ -11,13 +11,15 @@ import { Check, Crown, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Plans = () => {
-  const { user, tier: currentTier, refreshSubscription } = useAuth();
+  const { user, tier, planSlug, refreshSubscription } = useAuth();
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const pt = locale === "pt-BR";
   const { plans, loading } = usePlans();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
+  // The webhook-backed plan slug wins; the legacy tier stays as fallback for old subscribers.
+  const currentTier = planSlug ?? tier;
   const currentPlan = plans.find((p) => p.slug === currentTier);
   const currentIndex = plans.findIndex((p) => p.slug === currentTier);
 

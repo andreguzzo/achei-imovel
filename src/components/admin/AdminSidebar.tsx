@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 import {
-  Home, Users, Building2, Layers, CreditCard, MessageCircle, ShieldCheck,
+  Home, Users, Building2, Layers, CreditCard, Receipt, MessageCircle, ShieldCheck,
   ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type AdminSection =
-  | "resumo" | "usuarios" | "verificacoes" | "imoveis" | "planos" | "assinaturas" | "suporte";
+  | "resumo" | "usuarios" | "verificacoes" | "imoveis" | "planos" | "assinaturas" | "financeiro" | "suporte";
 
 export const ADMIN_SECTIONS: AdminSection[] = [
-  "resumo", "usuarios", "verificacoes", "imoveis", "planos", "assinaturas", "suporte",
+  "resumo", "usuarios", "verificacoes", "imoveis", "planos", "assinaturas", "financeiro", "suporte",
 ];
 
 export interface AdminNavItem {
@@ -41,6 +41,7 @@ export const useAdminNav = (badges?: Partial<Record<AdminSection, number>>) =>
       items: [
         { key: "planos", label: "Planos", icon: Layers },
         { key: "assinaturas", label: "Assinaturas", icon: CreditCard },
+        { key: "financeiro", label: "Financeiro", icon: Receipt },
       ],
     },
     {
