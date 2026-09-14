@@ -1,7 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const ANONYMOUS_SENDER_ID = "00000000-0000-0000-0000-000000000000";
 const MAX_CLICKS_PER_HOUR = 5;
 
 /**
@@ -132,7 +131,7 @@ Deno.serve(async (req) => {
       await supabase.from("whatsapp_click_log").insert({ property_id: propertyId, ip });
       await supabase.from("contact_requests").insert({
         property_id: propertyId,
-        sender_id: ANONYMOUS_SENDER_ID,
+        sender_id: null,
         broker_id: brokerId,
         name: "Contato via WhatsApp",
         email: "whatsapp@abitzo.lead",
