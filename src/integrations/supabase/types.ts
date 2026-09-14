@@ -560,7 +560,7 @@ export type Database = {
           property_id: string
           request_type: string | null
           responded_at: string | null
-          sender_id: string
+          sender_id: string | null
           status: string
         }
         Insert: {
@@ -575,7 +575,7 @@ export type Database = {
           property_id: string
           request_type?: string | null
           responded_at?: string | null
-          sender_id: string
+          sender_id?: string | null
           status?: string
         }
         Update: {
@@ -590,7 +590,7 @@ export type Database = {
           property_id?: string
           request_type?: string | null
           responded_at?: string | null
-          sender_id?: string
+          sender_id?: string | null
           status?: string
         }
         Relationships: [

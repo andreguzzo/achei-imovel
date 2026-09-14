@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     const { error } = await supabase.from("contact_requests").insert({
       property_id,
-      sender_id: senderId || ANONYMOUS_SENDER_ID,
+      sender_id: senderId || null,
       name: name.trim(),
       email: email.trim(),
       phone: phone?.trim() || null,
