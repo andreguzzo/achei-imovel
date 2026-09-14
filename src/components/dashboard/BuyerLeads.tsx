@@ -145,6 +145,14 @@ const BuyerLeads = ({ userId }: Props) => {
       toast({ title: pt ? "Informe o nome do cliente" : "Enter the client name", variant: "destructive" });
       return;
     }
+    if (form.phone.trim() && !normalizeBrPhone(form.phone)) {
+      toast({
+        title: pt ? "Telefone inválido" : "Invalid phone",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     const criteria: BuyerCriteria = {
       city: form.city.trim() || null,
@@ -378,7 +386,7 @@ const BuyerLeads = ({ userId }: Props) => {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">{pt ? "Telefone / WhatsApp" : "Phone / WhatsApp"}</label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: maskBrPhone(e.target.value) })} placeholder="(27) 99999-8888" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">E-mail</label>

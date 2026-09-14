@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { maskBrPhone, normalizeBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
