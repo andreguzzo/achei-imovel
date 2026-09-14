@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Heart, Copy, Check, Home } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Heart, Copy, Home } from "lucide-react";
 import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageWithFallback from "@/components/ImageWithFallback";

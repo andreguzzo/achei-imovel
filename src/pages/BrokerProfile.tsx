@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
+import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,7 +123,7 @@ const BrokerProfile = () => {
 
       const [photosRes, propsRes, partnershipsRes] = await Promise.all([
         supabase.from("broker_photos").select("id, url, is_cover, is_banner").eq("user_id", profile.user_id).order("position"),
-        supabase.from("properties").select("id, title, city, state, price, property_type, listing_type, bedrooms, area, property_images(url)").eq("user_id", profile.user_id).eq("status", "active").order("created_at", { ascending: false }).limit(50),
+        supabase.from("properties").select("id, title, city, state, price, property_type, listing_type, bedrooms, area, reference_code, property_images(url)").eq("user_id", profile.user_id).eq("status", "active").order("created_at", { ascending: false }).limit(50),
         supabase.from("broker_partnerships").select("broker_a_id, broker_b_id").or(`broker_a_id.eq.${profile.user_id},broker_b_id.eq.${profile.user_id}`).eq("status", "active"),
       ]);
 

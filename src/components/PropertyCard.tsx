@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ImageWithFallback from "@/components/ImageWithFallback";
+import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
