@@ -224,6 +224,24 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       }),
     );
 
+    // Follow-ups: open deals grouped by next action date, plus stalled ones
+    const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const stalledLimit = new Date(Date.now() - 15 * 86400000).toISOString();
+    const openDeals = (pipeline as unknown as FollowUpDeal[] & { stage: string }[])
+      .filter((d) => !["closed_won", "closed_lost"].includes((d as unknown as { stage: string }).stage))
+      .map((d) => d as unknown as FollowUpDeal);
+    const byDate = (a: FollowUpDeal, b: FollowUpDeal) =>
+      (a.next_action_date ?? "").localeCompare(b.next_action_date ?? "");
+
+    setFollowUps({
+      overdue: openDeals.filter((d) => d.next_action_date && d.next_action_date < today).sort(byDate),
+      today: openDeals.filter((d) => d.next_action_date === today),
+      week: openDeals
+        .filter((d) => d.next_action_date && d.next_action_date > today && d.next_action_date <= in7)
+        .sort(byDate),
+      stalled: openDeals.filter((d) => (d.last_activity_at ?? d.created_at) < stalledLimit).slice(0, 10),
+    });
+
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
     setLoading(false);
