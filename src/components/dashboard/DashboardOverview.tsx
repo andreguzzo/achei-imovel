@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, Users, CalendarDays, FileText, Handshake, Building2, DollarSign, Plus, ArrowRight, Clock, Mail,
+  KeyRound, Receipt, TrendingUp,
 } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { DashboardSection } from "@/components/dashboard/DashboardSidebar";
@@ -33,6 +34,13 @@ interface Counts {
   partnerships: number;
   activeListings: number;
   commission: number;
+  rentalActive: number;
+  rentalDueSoon: number;
+  rentalOverdue: number;
+  rentalOverdueAmount: number;
+  rentalRevenue: number;
+  contractsEnding: number;
+  adjustmentsDue: number;
 }
 
 const brl = (v: number) =>
