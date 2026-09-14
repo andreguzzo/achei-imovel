@@ -100,7 +100,23 @@ const Dashboard = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setSearchParams]);
 
-  const groups = useDashboardNav();
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const loadLeads = async () => {
+      const { count } = await supabase
+        .from("contact_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("broker_id", user.id)
+        .eq("status", "new");
+      if (!cancelled) setNewLeads(count ?? 0);
+    };
+    loadLeads();
+    return () => { cancelled = true; };
+  }, [user, section]);
+
+  const badges = useMemo(() => ({ contatos: newLeads }), [newLeads]);
+  const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
     for (const g of groups) {
