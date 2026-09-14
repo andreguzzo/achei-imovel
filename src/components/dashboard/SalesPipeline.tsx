@@ -49,6 +49,8 @@ export const STAGES = [
   { key: "closed_lost", label: "Perdido", labelEn: "Lost" },
 ] as const;
 
+type StageKey = typeof STAGES[number]["key"];
+
 // Proposal and negotiation are the money stages — highlight them in the board.
 const HIGHLIGHT_STAGES = ["proposal", "negotiation"];
 
@@ -85,7 +87,7 @@ const SalesPipeline = ({ userId }: Props) => {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editPropertyId, setEditPropertyId] = useState("none");
-  const [editStage, setEditStage] = useState("lead");
+  const [editStage, setEditStage] = useState<StageKey>("lead");
   const [editCommission, setEditCommission] = useState("");
   const [editExpectedClose, setEditExpectedClose] = useState("");
   const [editActualClose, setEditActualClose] = useState("");
@@ -158,7 +160,7 @@ const SalesPipeline = ({ userId }: Props) => {
     setEditEmail(item.client_email ?? "");
     setEditPhone(item.client_phone ?? "");
     setEditPropertyId(item.property_id ?? "none");
-    setEditStage(item.stage);
+    setEditStage(item.stage as StageKey);
     setEditCommission(item.commission_value?.toString() ?? "");
     setEditExpectedClose(item.expected_close_date ?? "");
     setEditActualClose(item.actual_close_date ?? "");
@@ -351,7 +353,7 @@ const SalesPipeline = ({ userId }: Props) => {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">{pt ? "Estágio" : "Stage"}</label>
-                  <Select value={editStage} onValueChange={setEditStage}>
+                  <Select value={editStage} onValueChange={(v) => setEditStage(v as StageKey)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STAGES.map((s) => (
