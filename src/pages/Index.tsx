@@ -9,6 +9,7 @@ import PropertyCard from "@/components/PropertyCard";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import Seo from "@/components/Seo";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
@@ -67,6 +68,7 @@ const fadeUp = {
 
 const Index = () => {
   const { t, locale } = useLanguage();
+  const pt = locale === "pt-BR";
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [featured, setFeatured] = useState<PropertyWithImages[]>([]);
@@ -107,6 +109,13 @@ const Index = () => {
 
   return (
     <>
+      <Seo
+        title={pt ? "Abitzo — Imóveis à venda e para alugar no Brasil" : "Abitzo — Properties for sale and rent in Brazil"}
+        description={pt
+          ? "Encontre imóveis à venda e para alugar em todo o Brasil. Apartamentos, casas, terrenos e comerciais com corretores verificados."
+          : "Find properties for sale and rent across Brazil. Apartments, houses, land and commercial properties with verified brokers."}
+        canonical="/"
+      />
       {/* Hero */}
       <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
         <div className="absolute inset-0">

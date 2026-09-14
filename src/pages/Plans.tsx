@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import Seo from "@/components/Seo";
 
 const Plans = () => {
   const { user, tier, planSlug, refreshSubscription } = useAuth();
@@ -65,7 +66,15 @@ const Plans = () => {
   };
 
   return (
-    <div className="container max-w-5xl py-12">
+    <>
+      <Seo
+        title={pt ? "Planos para Corretores e Imobiliárias | Abitzo" : "Plans for Brokers and Agencies | Abitzo"}
+        description={pt
+          ? "Escolha o plano ideal para corretores e imobiliárias. Anúncios ilimitados, gestão de vendas, locação e muito mais."
+          : "Choose the right plan for brokers and agencies. Unlimited listings, sales management, rentals and more."}
+        canonical="/planos"
+      />
+      <div className="container max-w-5xl py-12">
       <div className="mb-10 text-center">
         <h1 className="font-display text-3xl font-bold text-foreground">
           {pt ? "Planos para Corretores" : "Broker Plans"}
@@ -153,6 +162,7 @@ const Plans = () => {
         </div>
       )}
     </div>
+  </>
   );
 };
 
