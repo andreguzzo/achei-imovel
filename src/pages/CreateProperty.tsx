@@ -408,7 +408,15 @@ const CreateProperty = () => {
       setZipCode(prop.zip_code ?? "");
       setCondoFee(prop.condo_fee?.toString() ?? "");
       setIptu(prop.iptu?.toString() ?? "");
-      setFeatures(prop.features?.join(", ") ?? "");
+      const matched: string[] = [];
+      const unmatched: string[] = [];
+      (prop.features ?? []).forEach((raw) => {
+        const slug = matchFeature(raw);
+        if (slug) { if (!matched.includes(slug)) matched.push(slug); }
+        else if (raw.trim()) unmatched.push(raw.trim());
+      });
+      setFeatures(matched);
+      setLegacyFeatures(unmatched);
       setVideoUrl(prop.video_url ?? "");
       setLatitude(prop.latitude?.toString() ?? "");
       setLongitude(prop.longitude?.toString() ?? "");
