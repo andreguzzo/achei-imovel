@@ -714,9 +714,22 @@ const CreateProperty = () => {
     }
 
     // Save private data (upsert)
+    const hasAuthData = Boolean(
+      authorization.authorization_type ||
+        authorization.authorization_start ||
+        authorization.authorization_end ||
+        authorization.commission_percent ||
+        authorization.owner_email ||
+        authorization.owner_notes ||
+        authFile,
+    );
     const hasOwnerData = owners.some(o => o.name || o.cpf);
-    const hasPrivateData = hasOwnerData || privateNotes;
+    const hasPrivateData = hasOwnerData || privateNotes || hasAuthData;
     if (hasPrivateData) {
+      let authPath = authorization.authorization_file_path || null;
+      if (authFile) {
+        authPath = (await uploadAuthorizationFile(user.id, propId, authFile)) ?? authPath;
+      }
       const firstOwner = owners[0] || emptyOwner();
       const privatePayload = {
         property_id: propId,
@@ -726,6 +739,15 @@ const CreateProperty = () => {
         owner_address: firstOwner.address || null,
         notes: privateNotes || null,
         owners: JSON.parse(JSON.stringify(owners)),
+        authorization_type: authorization.authorization_type || null,
+        authorization_start: authorization.authorization_start || null,
+        authorization_end: authorization.authorization_end || null,
+        commission_percent: authorization.commission_percent
+          ? Number(authorization.commission_percent)
+          : null,
+        authorization_file_path: authPath,
+        owner_email: authorization.owner_email || null,
+        owner_notes: authorization.owner_notes || null,
       };
       
       if (isEditMode) {
