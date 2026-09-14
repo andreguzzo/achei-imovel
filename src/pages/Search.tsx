@@ -192,6 +192,37 @@ const Search = () => {
     ? `${properties.length} ${pt ? "imóveis nesta área do mapa" : "properties in this map area"}`
     : `${properties.length} ${t.filters.results}`;
 
+  const listingLabel = useMemo(() => {
+    if (filters.listingType === "sale") return pt ? "Imóveis à venda" : "Properties for sale";
+    if (filters.listingType === "rent") return pt ? "Imóveis para alugar" : "Properties for rent";
+    return pt ? "Imóveis" : "Properties";
+  }, [filters.listingType, pt]);
+
+  const typeLabel = useMemo(() => {
+    if (filters.propertyTypes.length === 0) return "";
+    const labels: Record<string, string> = {
+      apartment: pt ? "Apartamentos" : "Apartments",
+      house: pt ? "Casas" : "Houses",
+      land: pt ? "Terrenos" : "Land",
+      commercial: pt ? "Comerciais" : "Commercial",
+    };
+    return filters.propertyTypes.map((t) => labels[t] || t).join(", ");
+  }, [filters.propertyTypes, pt]);
+
+  const searchTitle = filters.query.trim()
+    ? `${listingLabel} em ${filters.query.trim()}${typeLabel ? ` - ${typeLabel}` : ""} | Abitzo`
+    : typeLabel
+      ? `${typeLabel} ${pt ? "no Brasil" : "in Brazil"} | Abitzo`
+      : `${listingLabel} ${pt ? "no Brasil" : "in Brazil"} | Abitzo`;
+
+  const searchDescription = filters.query.trim()
+    ? pt
+      ? `Encontre ${typeLabel || listingLabel.toLowerCase()} em ${filters.query.trim()} no Abitzo. Filtre por preço, quartos, área e mais.`
+      : `Find ${typeLabel || listingLabel.toLowerCase()} in ${filters.query.trim()} on Abitzo. Filter by price, bedrooms, area and more.`
+    : pt
+      ? `Busque ${typeLabel || listingLabel.toLowerCase()} em todo o Brasil no Abitzo. Mapa, filtros e corretores verificados.`
+      : `Search ${typeLabel || listingLabel.toLowerCase()} across Brazil on Abitzo. Map, filters and verified brokers.`;
+
   const sortOptions = [
     { value: "newest", label: t.filters.sortNewest },
     { value: "price_asc", label: t.filters.sortPriceAsc },
