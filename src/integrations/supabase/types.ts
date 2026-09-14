@@ -14,6 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      agencies: {
+        Row: {
+          city: string | null
+          cnpj: string | null
+          created_at: string
+          creci: string | null
+          id: string
+          name: string
+          owner_user_id: string
+          phone: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          creci?: string | null
+          id?: string
+          name: string
+          owner_user_id: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          creci?: string | null
+          id?: string
+          name?: string
+          owner_user_id?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agency_invites: {
+        Row: {
+          accepted_at: string | null
+          agency_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          full_name: string | null
+          id: string
+          invited_by: string | null
+          permissions: Json
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          agency_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          agency_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_invites_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_members: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          permissions: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          permissions?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          permissions?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broker_appointments: {
         Row: {
           appointment_date: string
@@ -236,8 +363,66 @@ export type Database = {
           },
         ]
       }
+      identity_verifications: {
+        Row: {
+          claimed_creci: string | null
+          claimed_document: string | null
+          claimed_name: string | null
+          confidence: number | null
+          created_at: string
+          extracted: Json
+          id: string
+          kind: string
+          personal_doc_path: string | null
+          professional_doc_path: string | null
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["verification_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claimed_creci?: string | null
+          claimed_document?: string | null
+          claimed_name?: string | null
+          confidence?: number | null
+          created_at?: string
+          extracted?: Json
+          id?: string
+          kind?: string
+          personal_doc_path?: string | null
+          professional_doc_path?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claimed_creci?: string | null
+          claimed_document?: string | null
+          claimed_name?: string | null
+          confidence?: number | null
+          created_at?: string
+          extracted?: Json
+          id?: string
+          kind?: string
+          personal_doc_path?: string | null
+          professional_doc_path?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
           avatar_url: string | null
           bio: string | null
           commercial_name: string | null
@@ -255,10 +440,13 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string | null
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verified_at: string | null
           whatsapp: string | null
           youtube: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           avatar_url?: string | null
           bio?: string | null
           commercial_name?: string | null
@@ -276,10 +464,13 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
           whatsapp?: string | null
           youtube?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           avatar_url?: string | null
           bio?: string | null
           commercial_name?: string | null
@@ -297,6 +488,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
           whatsapp?: string | null
           youtube?: string | null
         }
@@ -305,6 +498,7 @@ export type Database = {
       properties: {
         Row: {
           address: string | null
+          agency_id: string | null
           area: number | null
           bathrooms: number | null
           bedrooms: number | null
@@ -338,6 +532,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          agency_id?: string | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
@@ -371,6 +566,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          agency_id?: string | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
@@ -402,7 +598,15 @@ export type Database = {
           view_count?: number | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_documents: {
         Row: {
@@ -1401,6 +1605,7 @@ export type Database = {
         Args: { _broker_a: string; _broker_b: string }
         Returns: string
       }
+      current_agency_id: { Args: never; Returns: string }
       detach_property_group: { Args: { _property_id: string }; Returns: string }
       find_property_group: {
         Args: {
@@ -1432,6 +1637,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      has_agency_permission: { Args: { _perm: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1443,6 +1649,7 @@ export type Database = {
         Args: { _property_id: string }
         Returns: undefined
       }
+      is_agency_owner: { Args: { _agency_id: string }; Returns: boolean }
       rental_daily_maintenance: { Args: never; Returns: number }
       request_group_membership: {
         Args: {
@@ -1466,6 +1673,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_type: "owner" | "broker" | "agency"
       app_role: "admin" | "moderator" | "broker" | "user"
       appointment_type:
         | "visit"
@@ -1500,6 +1708,12 @@ export type Database = {
         | "titulo_capitalizacao"
       rental_index: "none" | "igpm" | "ipca" | "inpc"
       rental_inspection_type: "entrada" | "saida"
+      verification_status:
+        | "unverified"
+        | "pending"
+        | "manual_review"
+        | "approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1627,6 +1841,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["owner", "broker", "agency"],
       app_role: ["admin", "moderator", "broker", "user"],
       appointment_type: [
         "visit",
@@ -1664,6 +1879,13 @@ export const Constants = {
       ],
       rental_index: ["none", "igpm", "ipca", "inpc"],
       rental_inspection_type: ["entrada", "saida"],
+      verification_status: [
+        "unverified",
+        "pending",
+        "manual_review",
+        "approved",
+        "rejected",
+      ],
     },
   },
 } as const
