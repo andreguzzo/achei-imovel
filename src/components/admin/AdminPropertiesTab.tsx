@@ -118,8 +118,8 @@ const AdminPropertiesTab = () => {
         toast({ title: "Imóvel excluído com sucesso" });
         await fetchProperties();
       }
-    } catch (err: any) {
-      toast({ title: "Erro inesperado", description: err?.message || "Falha ao excluir", variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Erro inesperado", description: err instanceof Error ? err.message : "Falha ao excluir", variant: "destructive" });
     }
     setDeleteTarget(null);
   };

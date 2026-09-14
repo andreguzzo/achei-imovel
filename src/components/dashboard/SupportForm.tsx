@@ -82,7 +82,7 @@ const SupportForm = () => {
         <Card>
           <CardHeader><CardTitle className="text-base">{pt ? "Minhas mensagens" : "My messages"}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {messages.map((m: any) => (
+            {messages.map((m) => (
               <div key={m.id} className="border rounded-lg p-3 space-y-1">
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-sm">{m.subject}</p>

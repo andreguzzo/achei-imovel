@@ -1,4 +1,5 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   serviceClient,
   resolvePlanSlug,
@@ -102,8 +103,7 @@ async function customerEmail(stripe: Stripe, customerId: string | null): Promise
 
 async function syncSubscription(
   stripe: Stripe,
-  // deno-lint-ignore no-explicit-any
-  db: any,
+  db: SupabaseClient,
   sub: Stripe.Subscription,
   hint: { email?: string | null; userId?: string | null },
 ) {
@@ -136,8 +136,7 @@ async function syncSubscription(
 
 async function recordInvoice(
   stripe: Stripe,
-  // deno-lint-ignore no-explicit-any
-  db: any,
+  db: SupabaseClient,
   invoice: Stripe.Invoice,
   status: "paid" | "failed",
 ) {

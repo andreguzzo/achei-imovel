@@ -150,9 +150,9 @@ const BrokerProposals = ({ userId }: BrokerProposalsProps) => {
 
     let error;
     if (editId) {
-      ({ error } = await supabase.from("sales_pipeline").update(data as any).eq("id", editId));
+      ({ error } = await supabase.from("sales_pipeline").update(data as TablesUpdate<"sales_pipeline">).eq("id", editId));
     } else {
-      ({ error } = await supabase.from("sales_pipeline").insert({ ...data, broker_id: userId } as any));
+      ({ error } = await supabase.from("sales_pipeline").insert({ ...data, broker_id: userId } as TablesInsert<"sales_pipeline">));
     }
 
     if (error) {

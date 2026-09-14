@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check } from "lucide-react";
 import ContactForm from "@/components/ContactForm";
-import PropertyMap from "@/components/PropertyMap";
+import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
 import Seo from "@/components/Seo";
@@ -508,7 +508,7 @@ const PropertyDetail = () => {
               </h2>
               <div className="mt-2 h-64 rounded-lg overflow-hidden border">
                 <PropertyMap
-                  properties={[property as any]}
+                  properties={[property as unknown as MapProperty]}
                   center={[mapCenter.lat, mapCenter.lng]}
                   zoom={15}
                 />

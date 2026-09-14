@@ -39,14 +39,14 @@ const AdminSupportTab = () => {
 
     if (msgs && msgs.length > 0) {
       // Fetch profiles for user names
-      const userIds = [...new Set(msgs.map((m: any) => m.user_id))];
+      const userIds = [...new Set(msgs.map((m) => m.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name, creci")
         .in("user_id", userIds);
 
       const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
-      setMessages(msgs.map((m: any) => ({ ...m, profile: profileMap.get(m.user_id) })));
+      setMessages(msgs.map((m) => ({ ...m, profile: profileMap.get(m.user_id) })));
     } else {
       setMessages([]);
     }
@@ -62,7 +62,7 @@ const AdminSupportTab = () => {
     setReplying(true);
     const { error } = await supabase
       .from("support_messages")
-      .update({ admin_reply: reply.trim(), status: "replied", replied_at: new Date().toISOString() } as any)
+      .update({ admin_reply: reply.trim(), status: "replied", replied_at: new Date().toISOString() })
       .eq("id", selected.id);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -76,7 +76,7 @@ const AdminSupportTab = () => {
   };
 
   const handleClose = async (id: string) => {
-    await supabase.from("support_messages").update({ status: "closed" } as any).eq("id", id);
+    await supabase.from("support_messages").update({ status: "closed" }).eq("id", id);
     fetchMessages();
     toast({ title: "Chamado fechado" });
   };

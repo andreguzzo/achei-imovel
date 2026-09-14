@@ -455,7 +455,7 @@ export async function uploadPrivateDocuments(
       name: file.name,
       document_type: docType,
       file_url: path,
-    } as any);
+    } satisfies TablesInsert<"property_documents">);
   }
 }
 
