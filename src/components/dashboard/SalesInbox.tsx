@@ -95,6 +95,12 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  // Saudação curta com o primeiro nome — o corretor escreve o resto da mensagem.
+  const inboxGreeting = (name: string, isPt: boolean) => {
+    const firstName = name.trim().split(/\s+/)[0] || "";
+    return firstName ? (isPt ? `Olá ${firstName}! ` : `Hi ${firstName}! `) : "";
+  };
+
   if (contacts.length === 0) {
     return (
       <EmptyState

@@ -172,6 +172,10 @@ const ClientSheetDialog = ({
     load();
   };
 
+  // Saudação curta com o primeiro nome — o corretor escreve o resto da mensagem.
+  const firstName = identity.name.trim().split(/\s+/)[0];
+  const greeting = pt ? `Olá ${firstName}! ` : `Hi ${firstName}! `;
+
   const kindStyle: Record<string, string> = {
     lead: "bg-primary/10 text-primary",
     deal: "bg-emerald-500/10 text-emerald-600",
