@@ -86,7 +86,7 @@ const clusterRenderer = {
   },
 };
 
-const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect }: PropertyMapProps) => {
+const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
   const ready = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -95,6 +95,8 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const polygonsRef = useRef<google.maps.Polygon[]>([]);
   const prevPropertyIdsRef = useRef<string>("");
+  const boundsCbRef = useRef(onBoundsChange);
+  boundsCbRef.current = onBoundsChange;
 
   // Initialize / destroy map
   useEffect(() => {
@@ -112,22 +114,19 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
     mapInstanceRef.current = map;
     infoWindowRef.current = new google.maps.InfoWindow();
 
-    if (onBoundsChange) {
-      const reportBounds = () => {
-        const b = map.getBounds();
-        if (!b) return;
-        const ne = b.getNorthEast();
-        const sw = b.getSouthWest();
-        onBoundsChange({
-          north: ne.lat(),
-          south: sw.lat(),
-          east: ne.lng(),
-          west: sw.lng(),
-        });
-      };
-      map.addListener("idle", reportBounds);
-      setTimeout(reportBounds, 500);
-    }
+    const reportBounds = () => {
+      const b = map.getBounds();
+      if (!b || !boundsCbRef.current) return;
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      boundsCbRef.current({
+        north: ne.lat(),
+        south: sw.lat(),
+        east: ne.lng(),
+        west: sw.lng(),
+      });
+    };
+    map.addListener("idle", reportBounds);
 
     return () => {
       clustererRef.current?.clearMarkers();
@@ -140,7 +139,9 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
       infoWindowRef.current = null;
       mapInstanceRef.current = null;
     };
-  }, [ready, center, zoom, onBoundsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
 
   // Update markers when properties change
   useEffect(() => {
