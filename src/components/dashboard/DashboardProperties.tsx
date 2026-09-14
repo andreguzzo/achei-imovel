@@ -290,6 +290,16 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                       <Users className="h-4 w-4" />
                     </Button>
                     <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      title={pt ? "Relatório ao proprietário" : "Owner report"}
+                      onClick={() => setReportTarget(p)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden sm:inline">{pt ? "Relatório ao proprietário" : "Owner report"}</span>
+                    </Button>
+                    <Button
                       size="icon"
                       variant="ghost"
                       title={pt ? "Exportar post para redes sociais" : "Export social post"}
@@ -379,6 +389,8 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <OwnerReportDialog property={reportTarget} broker={broker} onClose={() => setReportTarget(null)} />
 
       <PropertyMatchingLeads
         open={!!leadsTarget}
