@@ -600,7 +600,7 @@ const SalesPipeline = ({ userId }: Props) => {
                                     {item.next_action ?? (pt ? "Follow-up" : "Follow-up")} • {formatDay(item.next_action_date, pt)}
                                   </span>
                                 )}
-                              </button>
+                              </div>
                               <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
                                 <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
