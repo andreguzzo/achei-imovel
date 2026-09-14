@@ -6,4 +6,4 @@ Disallow: /anunciar
 Disallow: /editar
 Disallow: /corretor/vendas
 
-Sitemap: https://abitzo.lovable.app/sitemap.xml
+Sitemap: https://mgutcwomukqnzaxxjqay.supabase.co/functions/v1/sitemap
