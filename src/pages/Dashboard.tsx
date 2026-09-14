@@ -21,22 +21,32 @@ import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
-import RentalContracts from "@/components/dashboard/rental/RentalContracts";
-import RentalCharges from "@/components/dashboard/rental/RentalCharges";
-import RentalInspections from "@/components/dashboard/rental/RentalInspections";
-import RentalReports from "@/components/dashboard/rental/RentalReports";
-import RentalBilling from "@/components/dashboard/rental/RentalBilling";
 import IdentityVerification from "@/components/dashboard/IdentityVerification";
 import AgencyTeam from "@/components/dashboard/AgencyTeam";
-const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFinance"));
+import type { RentalTab } from "@/components/dashboard/rental/RentalHub";
+import type { PerformanceTab } from "@/components/dashboard/PerformanceHub";
+const RentalHub = lazy(() => import("@/components/dashboard/rental/RentalHub"));
+const PerformanceHub = lazy(() => import("@/components/dashboard/PerformanceHub"));
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "clientes", "atendimentos", "agenda",
-  "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
-  "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
-  "verificacao", "equipe", "financeiro",
+  "imoveis", "parcerias", "perfil", "assinatura", "suporte",
+  "locacao", "desempenho", "verificacao", "equipe",
 ];
+
+/** Old deep-linked sections now live as tabs inside the grouped screens. */
+const RENTAL_TABS: Record<string, RentalTab> = {
+  contratos: "contratos",
+  alugueis: "alugueis",
+  vistorias: "vistorias",
+  cobranca_locacao: "cobranca",
+  relatorios_locacao: "relatorios",
+};
+const PERFORMANCE_TABS: Record<string, PerformanceTab> = {
+  relatorios: "vendas",
+  financeiro: "financeiro",
+};
 
 const ChartSkeleton = () => (
   <div className="space-y-4">
@@ -64,12 +74,21 @@ const Dashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newLeads, setNewLeads] = useState(0);
+  const [rentalAlerts, setRentalAlerts] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
   // "propostas", "negociacoes" and "contatos" were merged into "atendimentos"; keep old links working.
   const legacyFunnel = rawSection === "propostas" || rawSection === "negociacoes";
+  const rentalTab = rawSection ? RENTAL_TABS[rawSection] : undefined;
+  const performanceTab = rawSection ? PERFORMANCE_TABS[rawSection] : undefined;
   const normalizedSection: DashboardSection | null =
-    legacyFunnel || rawSection === "contatos" ? "atendimentos" : (rawSection as DashboardSection | null);
+    legacyFunnel || rawSection === "contatos"
+      ? "atendimentos"
+      : rentalTab
+        ? "locacao"
+        : performanceTab
+          ? "desempenho"
+          : (rawSection as DashboardSection | null);
   const section: DashboardSection =
     normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
@@ -127,11 +146,32 @@ const Dashboard = () => {
       ]);
       if (!cancelled) setNewLeads((inbox.count ?? 0) + (followups.count ?? 0));
     };
+    const loadRentals = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [openCharges, overdue] = await Promise.all([
+        supabase
+          .from("rental_charges")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .eq("status", "pending")
+          .lte("due_date", today),
+        supabase
+          .from("rental_charges")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .eq("status", "overdue"),
+      ]);
+      if (!cancelled) setRentalAlerts((openCharges.count ?? 0) + (overdue.count ?? 0));
+    };
     loadLeads();
+    loadRentals();
     return () => { cancelled = true; };
   }, [user, section]);
 
-  const badges = useMemo(() => ({ atendimentos: newLeads }), [newLeads]);
+  const badges = useMemo(
+    () => ({ atendimentos: newLeads, locacao: rentalAlerts }),
+    [newLeads, rentalAlerts],
+  );
   const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
@@ -150,8 +190,7 @@ const Dashboard = () => {
   // Non-brokers only get the general sections
   const effectiveSection: DashboardSection =
     !isBroker && [
-      "clientes", "atendimentos", "agenda", "parcerias", "relatorios",
-      "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao", "financeiro",
+      "clientes", "atendimentos", "agenda", "parcerias", "locacao", "desempenho",
     ].includes(section)
       ? "imoveis"
       : section;
@@ -199,27 +238,17 @@ const Dashboard = () => {
             <PropertyPartnerships userId={user.id} />
           </div>
         );
-      case "contratos":
-        return <RentalContracts userId={user.id} />;
-      case "alugueis":
-        return <RentalCharges userId={user.id} />;
-      case "vistorias":
-        return <RentalInspections userId={user.id} />;
-      case "relatorios_locacao":
-        return <RentalReports userId={user.id} />;
-      case "cobranca_locacao":
-        return <RentalBilling userId={user.id} />;
-      case "relatorios":
+      case "locacao":
         return (
-          <div className="space-y-6">
-            <SectionHeader
-              title={pt ? "Relatórios" : "Reports"}
-              description={pt ? "VGV ativo, VGV realizado, comissões e desempenho dos anúncios." : "Active and closed sales volume, commissions and listing performance."}
-            />
-            <Suspense fallback={<ChartSkeleton />}>
-              <BrokerAnalytics userId={user.id} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<ChartSkeleton />}>
+            <RentalHub userId={user.id} initialTab={rentalTab} />
+          </Suspense>
+        );
+      case "desempenho":
+        return (
+          <Suspense fallback={<ChartSkeleton />}>
+            <PerformanceHub userId={user.id} initialTab={performanceTab} />
+          </Suspense>
         );
       case "perfil":
         return (
@@ -250,12 +279,6 @@ const Dashboard = () => {
             />
             <SupportForm />
           </div>
-        );
-      case "financeiro":
-        return (
-          <Suspense fallback={<ChartSkeleton />}>
-            <DashboardFinance userId={user.id} />
-          </Suspense>
         );
       case "verificacao":
         return <IdentityVerification userId={user.id} />;

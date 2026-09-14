@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   Home, Inbox, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
-  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2, Users, Wallet,
+  KeyRound, ShieldCheck, Users2, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ export type DashboardSection =
   | "inicio" | "clientes" | "atendimentos" | "negociacoes" | "contatos" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
   | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
-  | "verificacao" | "equipe" | "financeiro";
+  | "verificacao" | "equipe" | "financeiro" | "locacao" | "desempenho";
 
 export interface NavItem {
   key: DashboardSection;
@@ -62,18 +62,13 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
     {
       label: pt ? "Locação" : "Rentals",
       items: [
-        { key: "contratos", label: pt ? "Contratos" : "Contracts", icon: KeyRound, brokerOnly: true, badge: badges?.contratos },
-        { key: "alugueis", label: pt ? "Aluguéis do mês" : "Monthly charges", icon: Receipt, brokerOnly: true, badge: badges?.alugueis },
-        { key: "vistorias", label: pt ? "Vistorias" : "Inspections", icon: ClipboardCheck, brokerOnly: true },
-        { key: "cobranca_locacao", label: pt ? "Cobrança e recebimento" : "Billing setup", icon: QrCode, brokerOnly: true },
-        { key: "relatorios_locacao", label: pt ? "Relatórios de locação" : "Rental reports", icon: PieChart, brokerOnly: true },
+        { key: "locacao", label: pt ? "Locação" : "Rentals", icon: KeyRound, brokerOnly: true, badge: badges?.locacao },
       ],
     },
     {
       label: pt ? "Desempenho" : "Performance",
       items: [
-        { key: "relatorios", label: pt ? "Relatórios de venda" : "Sales reports", icon: BarChart3, brokerOnly: true },
-        { key: "financeiro", label: pt ? "Financeiro" : "Finance", icon: Wallet, brokerOnly: true },
+        { key: "desempenho", label: pt ? "Desempenho" : "Performance", icon: BarChart3, brokerOnly: true, badge: badges?.desempenho },
       ],
     },
     {
