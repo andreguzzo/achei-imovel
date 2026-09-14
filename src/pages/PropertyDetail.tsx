@@ -59,22 +59,22 @@ const formatPrice = (price: number, listingType: string) => {
 
 const BrokerCard = ({
   profile,
-  waMessage,
+  propertyId,
   pt,
   tagline,
   price,
   highlight = false,
 }: {
   profile: BrokerProfile;
-  waMessage: string;
+  propertyId: string;
   pt: boolean;
   tagline?: string;
   price?: number;
   highlight?: boolean;
 }) => {
-  const whatsappNumber = profile.whatsapp || profile.phone;
-  const waUrl = whatsappNumber ? buildWhatsAppUrl(whatsappNumber, waMessage) : null;
-
+  // The broker's number never reaches the browser: the public edge function
+  // resolves it server-side, records the lead and redirects to wa.me.
+  const whatsappHref = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-redirect?property_id=${encodeURIComponent(propertyId)}&broker_id=${encodeURIComponent(profile.user_id)}`;
 
   return (
     <div className={`flex items-start gap-3 rounded-xl border bg-card p-4 ${highlight ? "border-primary/40 bg-primary/5" : ""}`}>
@@ -105,41 +105,17 @@ const BrokerCard = ({
           <p className="text-xs text-muted-foreground">CRECI: {profile.creci}</p>
         )}
 
-        {profile.phone && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <PhoneIcon className="h-3 w-3" /> {formatBrPhone(profile.phone)}
-          </p>
-        )}
-        {waUrl ? (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex"
-          >
-            <Button size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white">
-              <MessageCircle className="h-4 w-4" />
-              {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
-            </Button>
-          </a>
-        ) : whatsappNumber ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {formatBrPhone(whatsappNumber)} —{" "}
-            {pt ? "número não válido para WhatsApp" : "number not valid for WhatsApp"}
-          </p>
-        ) : (
-          <Link to="/login" className="mt-2 inline-flex">
-            <Button size="sm" variant="outline" className="gap-1.5">
-              <PhoneIcon className="h-4 w-4" />
-              {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
-            </Button>
-          </Link>
-        )}
-
+        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex">
+          <Button size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white">
+            <MessageCircle className="h-4 w-4" />
+            {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
+          </Button>
+        </a>
       </div>
     </div>
   );
 };
+
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
