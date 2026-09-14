@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
-import { Loader2, Heart } from "lucide-react";
+import { Heart, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PropertyCard from "@/components/PropertyCard";
+import { PropertyCardSkeletonGrid } from "@/components/PropertyCardSkeleton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
@@ -19,6 +20,7 @@ const Favorites = () => {
   const { favoriteIds, isFavorited, toggle, loading: favLoading } = useFavorites();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const pt = locale === "pt-BR";
 
   useEffect(() => {
