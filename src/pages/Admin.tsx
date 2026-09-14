@@ -61,7 +61,7 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setSearchParams]);
 
-  const groups = useAdminNav({ suporte: openSupport });
+  const groups = useAdminNav({ suporte: openSupport, verificacoes: pendingVerifications });
 
   const activeLabel = useMemo(() => {
     for (const g of groups) {
@@ -82,6 +82,7 @@ const Admin = () => {
       case "imoveis": return <AdminPropertiesTab />;
       case "planos": return <AdminPlansTab />;
       case "assinaturas": return <AdminSubscriptionsTab />;
+      case "verificacoes": return <AdminVerificationsTab />;
       case "suporte": return <AdminSupportTab />;
       default: return null;
     }

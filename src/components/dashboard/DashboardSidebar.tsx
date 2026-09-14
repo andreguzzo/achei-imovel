@@ -11,7 +11,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 export type DashboardSection =
   | "inicio" | "negociacoes" | "contatos" | "propostas" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
-  | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao";
+  | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
+  | "verificacao" | "equipe";
 
 export interface NavItem {
   key: DashboardSection;
@@ -74,6 +75,8 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
       label: pt ? "Conta" : "Account",
       items: [
         { key: "perfil", label: pt ? "Perfil e fotos" : "Profile & photos", icon: User },
+        { key: "verificacao", label: pt ? "Verificação" : "Verification", icon: ShieldCheck, professionalOnly: true },
+        { key: "equipe", label: pt ? "Equipe" : "Team", icon: Users2, agencyOnly: true },
         { key: "assinatura", label: pt ? "Assinatura" : "Subscription", icon: CreditCard },
         { key: "suporte", label: pt ? "Suporte" : "Support", icon: MessageCircle },
       ],
