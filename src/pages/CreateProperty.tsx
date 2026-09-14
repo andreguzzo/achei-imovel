@@ -284,6 +284,8 @@ const CreateProperty = () => {
   const adminMode = pathname.startsWith("/admin/imovel");
   const pt = locale === "pt-BR";
   const [submitting, setSubmitting] = useState(false);
+  const [matchProperty, setMatchProperty] = useState<MatchableProperty | null>(null);
+  const [afterMatchRoute, setAfterMatchRoute] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<{ id: string; url: string; position: number }[]>([]);
