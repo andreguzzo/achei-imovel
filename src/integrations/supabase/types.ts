@@ -632,6 +632,7 @@ export type Database = {
       rental_charges: {
         Row: {
           admin_fee_amount: number
+          boleto_url: string | null
           broker_id: string
           charges_amount: number
           competence: string
@@ -644,6 +645,8 @@ export type Database = {
           paid_at: string | null
           payment_link: string | null
           payout_amount: number
+          pix_payload: string | null
+          provider_charge_id: string | null
           rent_amount: number
           status: Database["public"]["Enums"]["rental_charge_status"]
           total_amount: number
@@ -651,6 +654,7 @@ export type Database = {
         }
         Insert: {
           admin_fee_amount?: number
+          boleto_url?: string | null
           broker_id: string
           charges_amount?: number
           competence: string
@@ -663,6 +667,8 @@ export type Database = {
           paid_at?: string | null
           payment_link?: string | null
           payout_amount?: number
+          pix_payload?: string | null
+          provider_charge_id?: string | null
           rent_amount?: number
           status?: Database["public"]["Enums"]["rental_charge_status"]
           total_amount?: number
@@ -670,6 +676,7 @@ export type Database = {
         }
         Update: {
           admin_fee_amount?: number
+          boleto_url?: string | null
           broker_id?: string
           charges_amount?: number
           competence?: string
@@ -682,6 +689,8 @@ export type Database = {
           paid_at?: string | null
           payment_link?: string | null
           payout_amount?: number
+          pix_payload?: string | null
+          provider_charge_id?: string | null
           rent_amount?: number
           status?: Database["public"]["Enums"]["rental_charge_status"]
           total_amount?: number
@@ -876,6 +885,7 @@ export type Database = {
       }
       rental_payment_settings: {
         Row: {
+          api_key: string | null
           auto_charge_enabled: boolean
           bank_account: string | null
           bank_agency: string | null
@@ -884,6 +894,7 @@ export type Database = {
           beneficiary_name: string | null
           broker_id: string
           created_at: string
+          environment: string
           id: string
           instructions: string | null
           pix_key: string | null
@@ -892,8 +903,10 @@ export type Database = {
           provider_account_id: string | null
           provider_connected_at: string | null
           updated_at: string
+          webhook_token: string
         }
         Insert: {
+          api_key?: string | null
           auto_charge_enabled?: boolean
           bank_account?: string | null
           bank_agency?: string | null
@@ -902,6 +915,7 @@ export type Database = {
           beneficiary_name?: string | null
           broker_id: string
           created_at?: string
+          environment?: string
           id?: string
           instructions?: string | null
           pix_key?: string | null
@@ -910,8 +924,10 @@ export type Database = {
           provider_account_id?: string | null
           provider_connected_at?: string | null
           updated_at?: string
+          webhook_token?: string
         }
         Update: {
+          api_key?: string | null
           auto_charge_enabled?: boolean
           bank_account?: string | null
           bank_agency?: string | null
@@ -920,6 +936,7 @@ export type Database = {
           beneficiary_name?: string | null
           broker_id?: string
           created_at?: string
+          environment?: string
           id?: string
           instructions?: string | null
           pix_key?: string | null
@@ -928,6 +945,7 @@ export type Database = {
           provider_account_id?: string | null
           provider_connected_at?: string | null
           updated_at?: string
+          webhook_token?: string
         }
         Relationships: []
       }
@@ -1425,6 +1443,7 @@ export type Database = {
         Args: { _property_id: string }
         Returns: undefined
       }
+      rental_daily_maintenance: { Args: never; Returns: number }
       request_group_membership: {
         Args: {
           _commission_split?: number

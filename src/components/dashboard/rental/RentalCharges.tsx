@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Copy, Link2, Loader2, QrCode, Receipt, Undo2, MessageCircle } from "lucide-react";
+import { CheckCircle2, Copy, Link2, Loader2, QrCode, Receipt, Undo2, MessageCircle, Zap } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import {
   brl, chargeMessage, chargeStatusClass, chargeStatusLabel, effectiveChargeStatus,
@@ -16,7 +16,7 @@ import {
   type ChargeStatus, type RentalCharge,
 } from "@/lib/rentals";
 import { buildPixPayload } from "@/lib/pix";
-import { canGeneratePix, fetchBillingSettings, type RentalBillingSettings } from "./RentalBilling";
+import { canGeneratePix, canIssueCharges, fetchBillingSettings, type RentalBillingSettings } from "./RentalBilling";
 
 interface ChargeRow extends RentalCharge {
   rental_contracts: {
@@ -48,9 +48,27 @@ const RentalCharges = ({ userId }: Props) => {
 
   useEffect(() => { fetchBillingSettings(userId).then(setBilling); }, [userId]);
 
+  const [issuing, setIssuing] = useState<string | null>(null);
+
+  const issueCharge = async (charge: ChargeRow) => {
+    setIssuing(charge.id);
+    const { data, error } = await supabase.functions.invoke("rental-billing", {
+      body: { action: "charge", chargeId: charge.id },
+    });
+    setIssuing(null);
+    if (error || data?.error) {
+      toast.error(pt ? "Não foi possível emitir a cobrança." : "Could not issue the charge.");
+      return;
+    }
+    toast.success(pt ? "Cobrança emitida e enviada ao provedor." : "Charge issued with your provider.");
+    fetchCharges();
+  };
+
   const pixFor = useCallback(
     (charge: ChargeRow) =>
-      canGeneratePix(billing)
+      charge.pix_payload
+        ? charge.pix_payload
+        : canGeneratePix(billing)
         ? buildPixPayload({
             key: billing!.pix_key!,
             beneficiaryName: billing!.beneficiary_name!,
@@ -298,6 +316,15 @@ const RentalCharges = ({ userId }: Props) => {
                         title={pt ? "Copiar Pix copia e cola" : "Copy Pix code"}>
                         <QrCode className={`h-3.5 w-3.5 ${canGeneratePix(billing) ? "text-primary" : ""}`} />
                       </Button>
+                      {canIssueCharges(billing) && !c.provider_charge_id && s !== "paid" && (
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => issueCharge(c)}
+                          disabled={issuing === c.id}>
+                          {issuing === c.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Zap className="h-3.5 w-3.5" />}
+                          {pt ? "Emitir" : "Issue"}
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" onClick={() => { setLinkTarget(c); setLinkValue(c.payment_link ?? ""); }}
                         title={pt ? "Link de pagamento" : "Payment link"}>
                         <Link2 className={`h-3.5 w-3.5 ${c.payment_link ? "text-primary" : ""}`} />

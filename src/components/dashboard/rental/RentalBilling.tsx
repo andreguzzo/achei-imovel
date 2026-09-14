@@ -9,13 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, QrCode, ShieldCheck } from "lucide-react";
+import { Copy, Loader2, PlugZap, QrCode, ShieldCheck } from "lucide-react";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { buildPixPayload, providerLabel } from "@/lib/pix";
 
 export interface RentalBillingSettings {
   provider: string;
   provider_account_id: string | null;
+  provider_connected_at: string | null;
+  environment: string;
+  api_key: string | null;
+  webhook_token: string | null;
   auto_charge_enabled: boolean;
   pix_key: string | null;
   pix_key_type: string | null;
@@ -30,6 +34,10 @@ export interface RentalBillingSettings {
 export const emptyBillingSettings: RentalBillingSettings = {
   provider: "manual",
   provider_account_id: null,
+  provider_connected_at: null,
+  environment: "sandbox",
+  api_key: null,
+  webhook_token: null,
   auto_charge_enabled: false,
   pix_key: null,
   pix_key_type: null,
@@ -41,10 +49,13 @@ export const emptyBillingSettings: RentalBillingSettings = {
   instructions: null,
 };
 
+const SELECT_COLUMNS =
+  "provider, provider_account_id, provider_connected_at, environment, api_key, webhook_token, auto_charge_enabled, pix_key, pix_key_type, beneficiary_name, beneficiary_city, bank_name, bank_agency, bank_account, instructions";
+
 export const fetchBillingSettings = async (userId: string): Promise<RentalBillingSettings | null> => {
   const { data } = await supabase
     .from("rental_payment_settings")
-    .select("provider, provider_account_id, auto_charge_enabled, pix_key, pix_key_type, beneficiary_name, beneficiary_city, bank_name, bank_agency, bank_account, instructions")
+    .select(SELECT_COLUMNS)
     .eq("broker_id", userId)
     .maybeSingle();
   return data ?? null;
@@ -52,6 +63,10 @@ export const fetchBillingSettings = async (userId: string): Promise<RentalBillin
 
 export const canGeneratePix = (s: RentalBillingSettings | null) =>
   !!s?.pix_key && !!s.beneficiary_name;
+
+/** The broker connected a real billing account, so charges can be issued automatically. */
+export const canIssueCharges = (s: RentalBillingSettings | null) =>
+  !!s && s.provider !== "manual" && !!s.api_key && s.auto_charge_enabled;
 
 interface Props {
   userId: string;
@@ -63,6 +78,7 @@ const RentalBilling = ({ userId }: Props) => {
   const [form, setForm] = useState<RentalBillingSettings>(emptyBillingSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +98,8 @@ const RentalBilling = ({ userId }: Props) => {
       {
         broker_id: userId,
         provider: form.provider,
+        environment: form.environment || "sandbox",
+        api_key: form.provider === "manual" ? null : form.api_key?.trim() || null,
         auto_charge_enabled: form.provider === "manual" ? false : form.auto_charge_enabled,
         pix_key: form.pix_key?.trim() || null,
         pix_key_type: form.pix_key_type || null,
@@ -102,6 +120,28 @@ const RentalBilling = ({ userId }: Props) => {
     toast.success(pt ? "Configuração de cobrança salva." : "Billing settings saved.");
     load();
   };
+
+  const testConnection = async () => {
+    setTesting(true);
+    const { data, error } = await supabase.functions.invoke("rental-billing", { body: { action: "test" } });
+    setTesting(false);
+    if (error || data?.error) {
+      toast.error(
+        pt
+          ? "Não foi possível conectar. Confira a chave e o ambiente escolhido."
+          : "Could not connect. Check the key and the selected environment.",
+      );
+      return;
+    }
+    toast.success(
+      pt ? `Conta conectada: ${data.account}` : `Account connected: ${data.account}`,
+    );
+    load();
+  };
+
+  const webhookUrl = form.webhook_token
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rental-webhook?token=${form.webhook_token}`
+    : null;
 
   const preview = canGeneratePix(form)
     ? buildPixPayload({
@@ -134,7 +174,7 @@ const RentalBilling = ({ userId }: Props) => {
               <Select value={form.provider} onValueChange={(v) => set("provider", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["manual", "mercadopago", "asaas", "pagarme"].map((p) => (
+                  {["manual", "asaas", "mercadopago"].map((p) => (
                     <SelectItem key={p} value={p}>{providerLabel(p, pt)}</SelectItem>
                   ))}
                 </SelectContent>
@@ -145,10 +185,72 @@ const RentalBilling = ({ userId }: Props) => {
                     ? "A plataforma gera o Pix copia e cola com sua chave e você registra o pagamento quando o dinheiro cair."
                     : "The platform generates the Pix code from your key and you record the payment when the money arrives."
                   : pt
-                    ? "Cobrança automática com Pix e boleto. Falta conectar a conta — deixe os dados abaixo salvos e ativamos a conexão quando você tiver a conta."
-                    : "Automatic Pix and bank slip billing. The account still needs to be connected — save the details below and we enable it once you have the account."}
+                    ? "Cobrança automática com Pix e boleto. Cole a chave da sua conta abaixo e clique em Conectar."
+                    : "Automatic Pix and bank slip billing. Paste your account key below and click Connect."}
               </p>
             </div>
+
+            {form.provider !== "manual" && (
+              <div className="space-y-3 rounded-lg border border-border p-3 sm:col-span-2">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="sm:col-span-2">
+                    <Label>{pt ? "Chave de acesso da sua conta" : "Your account access key"}</Label>
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      value={form.api_key ?? ""}
+                      onChange={(e) => set("api_key", e.target.value)}
+                      placeholder={form.provider === "asaas" ? "$aact_..." : "APP_USR-..."}
+                    />
+                  </div>
+                  <div>
+                    <Label>{pt ? "Ambiente" : "Environment"}</Label>
+                    <Select value={form.environment || "sandbox"} onValueChange={(v) => set("environment", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sandbox">{pt ? "Teste" : "Test"}</SelectItem>
+                        <SelectItem value="production">{pt ? "Produção" : "Live"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={testConnection} disabled={testing || !form.api_key}>
+                    {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlugZap className="mr-2 h-4 w-4" />}
+                    {pt ? "Conectar e testar" : "Connect and test"}
+                  </Button>
+                  {form.provider_connected_at && (
+                    <span className="text-xs text-muted-foreground">
+                      {pt ? "Conectada: " : "Connected: "}{form.provider_account_id}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {pt
+                    ? "Salve a chave antes de testar. Depois de conectar, cadastre o endereço abaixo como notificação (webhook) na sua conta para que os pagamentos entrem sozinhos."
+                    : "Save the key before testing. After connecting, register the address below as a webhook in your account so payments are recorded automatically."}
+                </p>
+
+                {webhookUrl && (
+                  <div className="flex items-center gap-2">
+                    <Input readOnly value={webhookUrl} className="font-mono text-[11px]" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(webhookUrl);
+                        toast.success(pt ? "Endereço copiado." : "Address copied.");
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
 
             <div>
               <Label>{pt ? "Chave Pix" : "Pix key"}</Label>
