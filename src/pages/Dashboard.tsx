@@ -24,17 +24,20 @@ import RentalCharges from "@/components/dashboard/rental/RentalCharges";
 import RentalInspections from "@/components/dashboard/rental/RentalInspections";
 import RentalReports from "@/components/dashboard/rental/RentalReports";
 import RentalBilling from "@/components/dashboard/rental/RentalBilling";
+import IdentityVerification from "@/components/dashboard/IdentityVerification";
+import AgencyTeam from "@/components/dashboard/AgencyTeam";
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "negociacoes", "contatos", "propostas", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
+  "verificacao", "equipe",
 ];
 
 const Dashboard = () => {
   const { locale } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, accountType } = useAuth();
   const navigate = useNavigate();
   const pt = locale === "pt-BR";
 
