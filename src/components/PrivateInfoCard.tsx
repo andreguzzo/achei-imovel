@@ -15,6 +15,7 @@ import {
   type AuthorizationType,
 } from "@/lib/saleAuthorization";
 import {
+import { MaskedCpfInput } from "@/components/MaskedCpf";
   Lock,
   Upload,
   X,
@@ -222,9 +223,12 @@ const PrivateInfoCard = ({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">CPF</label>
-            <Input
+            <MaskedCpfInput
               value={owner.cpf}
-              onChange={(e) => updateOwner(idx, "cpf", e.target.value)}
+              onChange={(v) => updateOwner(idx, "cpf", v)}
+              recordType="property_private_data"
+              recordId={propertyId ?? null}
+              fieldName="owner_cpf"
               placeholder="000.000.000-00"
             />
           </div>
