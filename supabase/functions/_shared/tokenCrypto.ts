@@ -3,26 +3,15 @@
  * Tokens are never stored in plain text: social_accounts.access_token_encrypted
  * holds base64(iv || ciphertext).
  *
- * Requires the SOCIAL_TOKEN_ENCRYPTION_KEY secret (32-byte key, base64 or hex).
+ * Requires the SOCIAL_TOKEN_ENCRYPTION_KEY secret; the AES key is derived from it with SHA-256.
  */
-
-const decodeKey = (raw: string): Uint8Array => {
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
-    const bytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) bytes[i] = parseInt(raw.slice(i * 2, i * 2 + 2), 16);
-    return bytes;
-  }
-  const bin = atob(raw);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  if (bytes.length !== 32) throw new Error("SOCIAL_TOKEN_ENCRYPTION_KEY must decode to 32 bytes");
-  return bytes;
-};
 
 const getKey = async (): Promise<CryptoKey> => {
   const raw = Deno.env.get("SOCIAL_TOKEN_ENCRYPTION_KEY");
   if (!raw) throw new Error("SOCIAL_TOKEN_ENCRYPTION_KEY is not configured");
-  return await crypto.subtle.importKey("raw", decodeKey(raw), { name: "AES-GCM" }, false, [
+  // Derive a stable 32-byte key from the configured secret.
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  return await crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, [
     "encrypt",
     "decrypt",
   ]);
