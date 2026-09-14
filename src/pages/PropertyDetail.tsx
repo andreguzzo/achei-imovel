@@ -111,12 +111,12 @@ const BrokerCard = ({
 
         {profile.phone && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <PhoneIcon className="h-3 w-3" /> {profile.phone}
+            <PhoneIcon className="h-3 w-3" /> {formatBrPhone(profile.phone)}
           </p>
         )}
-        {whatsappNumber ? (
+        {waUrl ? (
           <a
-            href={buildWhatsAppUrl(whatsappNumber, propertyTitle)}
+            href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-flex"
@@ -126,6 +126,11 @@ const BrokerCard = ({
               {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
             </Button>
           </a>
+        ) : whatsappNumber ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {formatBrPhone(whatsappNumber)} —{" "}
+            {pt ? "número não válido para WhatsApp" : "number not valid for WhatsApp"}
+          </p>
         ) : (
           <Link to="/login" className="mt-2 inline-flex">
             <Button size="sm" variant="outline" className="gap-1.5">
