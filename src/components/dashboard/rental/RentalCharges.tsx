@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Copy, Link2, Loader2, Receipt, Undo2, MessageCircle } from "lucide-react";
+import { CheckCircle2, Copy, Link2, Loader2, QrCode, Receipt, Undo2, MessageCircle } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import {
   brl, chargeMessage, chargeStatusClass, chargeStatusLabel, effectiveChargeStatus,
   formatCompetence, formatDate, monthKey, whatsappUrl,
   type ChargeStatus, type RentalCharge,
 } from "@/lib/rentals";
+import { buildPixPayload } from "@/lib/pix";
+import { canGeneratePix, fetchBillingSettings, type RentalBillingSettings } from "./RentalBilling";
 
 interface ChargeRow extends RentalCharge {
   rental_contracts: {
