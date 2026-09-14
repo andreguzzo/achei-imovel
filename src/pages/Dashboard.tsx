@@ -128,7 +128,11 @@ const Dashboard = () => {
           />
         );
       case "negociacoes":
-        return <SalesPipeline userId={user.id} />;
+        return (
+          <Suspense fallback={<ChartSkeleton />}>
+            <SalesPipeline userId={user.id} />
+          </Suspense>
+        );
       case "contatos":
         return <SalesContacts userId={user.id} />;
       case "propostas":
@@ -180,7 +184,9 @@ const Dashboard = () => {
               title={pt ? "Relatórios" : "Reports"}
               description={pt ? "VGV ativo, VGV realizado, comissões e desempenho dos anúncios." : "Active and closed sales volume, commissions and listing performance."}
             />
-            <BrokerAnalytics userId={user.id} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <BrokerAnalytics userId={user.id} />
+            </Suspense>
           </div>
         );
       case "perfil":
