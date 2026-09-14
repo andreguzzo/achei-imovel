@@ -384,18 +384,40 @@ const SalesPipeline = ({ userId }: Props) => {
                       <div className="space-y-2">
                         {(byStage[stage.key] ?? []).map((item) => (
                           <div key={item.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
-                            <p className="text-sm font-medium text-foreground">{item.client_name}</p>
-                            {item.property && (
-                              <p className="truncate text-xs text-muted-foreground">
-                                {item.property.title} — {item.property.city}
-                              </p>
-                            )}
-                            {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
-                            {item.commission_value != null && item.commission_value > 0 && (
-                              <p className="text-xs font-medium text-primary">
-                                R$ {item.commission_value.toLocaleString("pt-BR")}
-                              </p>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => openDeal(item)}
+                              className="w-full space-y-1 text-left"
+                            >
+                              <p className="text-sm font-medium text-foreground hover:text-primary">{item.client_name}</p>
+                              {item.property && (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {item.property.title} — {item.property.city}
+                                </p>
+                              )}
+                              {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
+                              {item.commission_value != null && item.commission_value > 0 && (
+                                <p className="text-xs font-medium text-primary">
+                                  R$ {item.commission_value.toLocaleString("pt-BR")}
+                                </p>
+                              )}
+                              {item.next_action_date && (
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                    item.next_action_date < todayIso()
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                                  }`}
+                                >
+                                  {item.next_action_date < todayIso() ? (
+                                    <AlertTriangle className="h-3 w-3" />
+                                  ) : (
+                                    <Clock className="h-3 w-3" />
+                                  )}
+                                  {item.next_action ?? (pt ? "Follow-up" : "Follow-up")} • {formatDay(item.next_action_date, pt)}
+                                </span>
+                              )}
+                            </button>
                             <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
                               <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
