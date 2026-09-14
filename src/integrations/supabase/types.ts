@@ -351,6 +351,27 @@ export type Database = {
           },
         ]
       }
+      broker_feed_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       broker_partnerships: {
         Row: {
           broker_a_id: string
@@ -803,6 +824,8 @@ export type Database = {
           condo_fee: number | null
           created_at: string
           description: string | null
+          external_ref: string | null
+          external_source: string | null
           features: string[] | null
           id: string
           iptu: number | null
@@ -841,6 +864,8 @@ export type Database = {
           condo_fee?: number | null
           created_at?: string
           description?: string | null
+          external_ref?: string | null
+          external_source?: string | null
           features?: string[] | null
           id?: string
           iptu?: number | null
@@ -879,6 +904,8 @@ export type Database = {
           condo_fee?: number | null
           created_at?: string
           description?: string | null
+          external_ref?: string | null
+          external_source?: string | null
           features?: string[] | null
           id?: string
           iptu?: number | null
@@ -1950,6 +1977,7 @@ export type Database = {
       }
       current_agency_id: { Args: never; Returns: string }
       detach_property_group: { Args: { _property_id: string }; Returns: string }
+      ensure_feed_token: { Args: never; Returns: string }
       find_property_group: {
         Args: {
           _address: string

@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle, FileText } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle, FileText, Download } from "lucide-react";
 import { authorizationStatus, authorizationBadgeText } from "@/lib/saleAuthorization";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
 import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
 import OwnerReportDialog from "@/components/dashboard/OwnerReportDialog";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
+import ImportListings from "@/components/dashboard/ImportListings";
+import FeedExportCard from "@/components/dashboard/FeedExportCard";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -38,6 +40,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
   const [reportTarget, setReportTarget] = useState<PropertyWithImages | null>(null);
   const [authEnds, setAuthEnds] = useState<Record<string, string>>({});
+  const [importOpen, setImportOpen] = useState(false);
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
@@ -207,11 +210,18 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
         description={pt ? "Gerencie status, fotos e informações de cada imóvel." : "Manage status, photos and details of each property."}
         count={properties.length}
         action={
-          <Link to="/anunciar">
-            <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo imóvel" : "New property"}</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-1" onClick={() => setImportOpen(true)}>
+              <Download className="h-4 w-4" /> {pt ? "Importar anúncios" : "Import listings"}
+            </Button>
+            <Link to="/anunciar">
+              <Button className="gap-1"><Plus className="h-4 w-4" /> {pt ? "Novo imóvel" : "New property"}</Button>
+            </Link>
+          </div>
         }
       />
+
+      <FeedExportCard />
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -389,6 +399,8 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ImportListings open={importOpen} onOpenChange={setImportOpen} onImported={fetchProperties} />
 
       <OwnerReportDialog property={reportTarget} broker={broker} onClose={() => setReportTarget(null)} />
 
