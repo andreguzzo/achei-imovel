@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Calculator, TrendingDown } from "lucide-react";
+import Seo from "@/components/Seo";
 
 const formatBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -80,7 +81,15 @@ const Financing = () => {
   };
 
   return (
-    <div className="container py-8 space-y-8">
+    <>
+      <Seo
+        title={pt ? "Simulador de Financiamento Imobiliário | Abitzo" : "Mortgage Simulator | Abitzo"}
+        description={pt
+          ? "Simule financiamento imobiliário SAC e Price. Compare parcelas, juros e amortização para escolher a melhor opção."
+          : "Simulate SAC and Price mortgage amortization. Compare payments, interest and choose the best option."}
+        canonical="/financiamento"
+      />
+      <div className="container py-8 space-y-8">
       <div className="text-center">
         <h1 className="font-display text-3xl font-bold text-foreground flex items-center justify-center gap-2">
           <Calculator className="h-8 w-8 text-primary" />
