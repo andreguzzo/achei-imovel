@@ -74,7 +74,7 @@ const AgencyTeam = ({ userId }: { userId: string }) => {
 
     if (memberRows.length > 0) {
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("brokers_public")
         .select("user_id, full_name")
         .in("user_id", memberRows.map((m) => m.user_id));
       const map: Record<string, string> = {};
