@@ -91,7 +91,7 @@ const clusterRenderer = {
   },
 };
 
-const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
+const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 5, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
   const ready = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
