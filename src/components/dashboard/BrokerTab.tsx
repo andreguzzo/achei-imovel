@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -71,11 +71,7 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
   const [partnerTerms, setPartnerTerms] = useState("");
   const [sendingProposal, setSendingProposal] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [userId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const [propsRes, photosRes, partnershipsRes] = await Promise.all([
       supabase
@@ -95,7 +91,7 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
         .order("created_at", { ascending: false }),
     ]);
 
-    setProperties((propsRes.data as any) ?? []);
+    setProperties((propsRes.data as unknown as PropertyWithViews[]) ?? []);
     setPhotos((photosRes.data as BrokerPhoto[]) ?? []);
     const parts = (partnershipsRes.data as Partnership[]) ?? [];
     setPartnerships(parts);
@@ -115,7 +111,11 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
     }
 
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const totalViews = properties.reduce((sum, p) => sum + (p.view_count ?? 0), 0);
 

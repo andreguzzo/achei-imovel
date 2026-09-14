@@ -47,8 +47,8 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
 
       setSent(true);
       toast({ title: pt ? "Mensagem enviada!" : "Message sent!" });
-    } catch (err: any) {
-      toast({ title: pt ? "Erro ao enviar" : "Error sending", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: pt ? "Erro ao enviar" : "Error sending", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
     }
     setSending(false);
   };

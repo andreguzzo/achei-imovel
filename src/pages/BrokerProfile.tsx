@@ -97,7 +97,7 @@ const BrokerProfile = () => {
         return;
       }
 
-      const profile = { ...profileData, phone: null, whatsapp: null } as any as BrokerData;
+      const profile = { ...profileData, phone: null, whatsapp: null } as unknown as BrokerData;
       setBroker(profile);
 
       // Contact details are only available to signed-in visitors
@@ -115,10 +115,10 @@ const BrokerProfile = () => {
         supabase.from("broker_partnerships").select("broker_a_id, broker_b_id").or(`broker_a_id.eq.${profile.user_id},broker_b_id.eq.${profile.user_id}`).eq("status", "active"),
       ]);
 
-      setPhotos((photosRes.data as any) ?? []);
-      setProperties((propsRes.data as any) ?? []);
+      setPhotos((photosRes.data as BrokerPhoto[]) ?? []);
+      setProperties((propsRes.data as unknown as PropertyItem[]) ?? []);
 
-      const parts = (partnershipsRes.data as any[]) ?? [];
+      const parts = (partnershipsRes.data as { broker_a_id: string; broker_b_id: string }[]) ?? [];
       const partnerIds = parts.map((p) =>
         p.broker_a_id === profile.user_id ? p.broker_b_id : p.broker_a_id
       );
@@ -127,7 +127,7 @@ const BrokerProfile = () => {
           .from("brokers_public")
           .select("full_name, avatar_url, creci, username")
           .in("user_id", partnerIds);
-        setPartners((partnerProfiles as any) ?? []);
+        setPartners((partnerProfiles as PartnerProfile[]) ?? []);
       }
 
       setLoading(false);
@@ -357,7 +357,7 @@ const BrokerProfile = () => {
             </h2>
             <div className="flex flex-wrap gap-3">
               {partners.map((p, i) => {
-                const partnerLink = (p as any).username ? `/corretor/${(p as any).username}` : null;
+                const partnerLink = p.username ? `/corretor/${p.username}` : null;
                 const content = (
                   <div className="flex items-center gap-3 rounded-xl border p-3 hover:bg-accent/50 hover:shadow-sm transition-all duration-200">
                     <Avatar className="h-10 w-10">

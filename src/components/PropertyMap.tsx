@@ -4,12 +4,12 @@ import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { asBoundary, boundaryToPaths } from "@/lib/kmlParser";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Property = Tables<"properties"> & {
+export type MapProperty = Tables<"properties"> & {
   property_images?: Tables<"property_images">[];
 };
 
 interface PropertyMapProps {
-  properties: Property[];
+  properties: MapProperty[];
   center?: [number, number];
   zoom?: number;
   onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;

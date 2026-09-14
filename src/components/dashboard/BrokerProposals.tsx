@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 interface BrokerProposalsProps {
   userId: string;
@@ -150,9 +151,9 @@ const BrokerProposals = ({ userId }: BrokerProposalsProps) => {
 
     let error;
     if (editId) {
-      ({ error } = await supabase.from("sales_pipeline").update(data as any).eq("id", editId));
+      ({ error } = await supabase.from("sales_pipeline").update(data as TablesUpdate<"sales_pipeline">).eq("id", editId));
     } else {
-      ({ error } = await supabase.from("sales_pipeline").insert({ ...data, broker_id: userId } as any));
+      ({ error } = await supabase.from("sales_pipeline").insert({ ...data, broker_id: userId } as TablesInsert<"sales_pipeline">));
     }
 
     if (error) {

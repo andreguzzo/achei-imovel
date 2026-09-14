@@ -48,13 +48,13 @@ Deno.serve(async (req) => {
     let startingAfter: string | undefined;
 
     while (hasMore) {
-      const params: any = { status: "active", limit: 100, expand: ["data.customer"] };
+      const params: Stripe.SubscriptionListParams = { status: "active", limit: 100, expand: ["data.customer"] };
       if (startingAfter) params.starting_after = startingAfter;
 
       const subs = await stripe.subscriptions.list(params);
 
       for (const sub of subs.data) {
-        const customer = sub.customer as any;
+        const customer = sub.customer as Stripe.Customer | null;
         subscribers.push({
           email: customer?.email || "—",
           product_id: sub.items.data[0]?.price?.product as string || null,

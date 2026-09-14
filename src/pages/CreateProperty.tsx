@@ -17,6 +17,7 @@ import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlPars
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
+import type { Enums, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
   PARTNERSHIP_KINDS,
   partnershipKindHint,
@@ -340,8 +341,8 @@ const CreateProperty = () => {
         if (data?.description) setDescription(data.description);
         toast({ title: pt ? "Título e descrição gerados!" : "Title and description generated!" });
       }
-    } catch (e: any) {
-      toast({ title: pt ? "Erro ao gerar" : "Generation error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: pt ? "Erro ao gerar" : "Generation error", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }
     setGeneratingAI(false);
   };
@@ -393,8 +394,8 @@ const CreateProperty = () => {
       setSoldByOtherPrice(prop.sold_by_other_price?.toString() ?? "");
 
       // Load existing images
-      const imgs = (prop.property_images ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
-      setExistingImages(imgs.map((img: any) => ({ id: img.id, url: img.url, position: img.position ?? 0 })));
+      const imgs = [...(prop.property_images ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      setExistingImages(imgs.map((img) => ({ id: img.id, url: img.url, position: img.position ?? 0 })));
 
       // Load private data
       const { data: privateData } = await supabase
@@ -405,7 +406,7 @@ const CreateProperty = () => {
       
       if (privateData) {
         setPrivateNotes(privateData.notes ?? "");
-        const ownersData = privateData.owners as any[];
+        const ownersData = privateData.owners as unknown as OwnerEntry[];
         if (ownersData && ownersData.length > 0) {
           setOwners(ownersData);
         } else if (privateData.owner_name) {
@@ -426,7 +427,7 @@ const CreateProperty = () => {
       setEditLoading(false);
     };
     loadProperty();
-  }, [editId, user, adminMode]);
+  }, [editId, user, adminMode, navigate, pt]);
 
   if (!user) {
     return (
@@ -577,7 +578,7 @@ const CreateProperty = () => {
       // Update existing property
       const { error } = await supabase
         .from("properties")
-        .update(propertyData as any)
+        .update(propertyData as TablesUpdate<"properties">)
         .eq("id", editId);
 
       if (error) {
@@ -590,7 +591,7 @@ const CreateProperty = () => {
       // Insert new property
       const { data: prop, error } = await supabase
         .from("properties")
-        .insert({ ...propertyData, user_id: user.id } as any)
+        .insert({ ...propertyData, user_id: user.id } as TablesInsert<"properties">)
         .select()
         .single();
 
@@ -632,7 +633,7 @@ const CreateProperty = () => {
       await supabase
         .from("sales_pipeline")
         .update({
-          stage: "closed_won" as any,
+          stage: "closed_won" as Enums<"pipeline_stage">,
           actual_close_date: new Date().toISOString().split("T")[0],
           commission_value: Number(soldCommission),
         })
@@ -685,12 +686,12 @@ const CreateProperty = () => {
           .maybeSingle();
         
         if (existing) {
-          await supabase.from("property_private_data").update(privatePayload as any).eq("id", existing.id);
+          await supabase.from("property_private_data").update(privatePayload as TablesUpdate<"property_private_data">).eq("id", existing.id);
         } else {
-          await supabase.from("property_private_data").insert(privatePayload as any);
+          await supabase.from("property_private_data").insert(privatePayload as TablesInsert<"property_private_data">);
         }
       } else {
-        await supabase.from("property_private_data").insert(privatePayload as any);
+        await supabase.from("property_private_data").insert(privatePayload as TablesInsert<"property_private_data">);
       }
     }
 
