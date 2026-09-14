@@ -608,7 +608,11 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
                             {typeLabel(appt.appointment_type)}
                           </Badge>
                           {appt.client_name && (
-                            <span className="text-xs text-muted-foreground truncate">{appt.client_name}</span>
+                            <ClientLink
+                              name={appt.client_name}
+                              phone={appt.client_phone}
+                              className="truncate text-xs text-muted-foreground"
+                            />
                           )}
                           {appt.reminder_minutes != null && (
                             <Bell className="h-3 w-3 text-muted-foreground" />
