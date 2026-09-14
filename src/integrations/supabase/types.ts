@@ -2027,6 +2027,35 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_click_log: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string
+          property_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip: string
+          property_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_click_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       brokers_public: {
