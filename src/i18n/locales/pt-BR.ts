@@ -12,7 +12,7 @@ export const ptBR = {
   },
   hero: {
     title: "Encontre o lar dos seus sonhos",
-    subtitle: "Milhares de imóveis à venda e para alugar em todo o Brasil",
+    subtitle: "Imóveis à venda e para alugar em todo o Brasil",
     searchPlaceholder: "Busque por cidade, bairro ou endereço...",
     searchButton: "Buscar",
   },
