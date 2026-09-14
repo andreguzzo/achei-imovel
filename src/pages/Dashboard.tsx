@@ -74,6 +74,7 @@ const Dashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newLeads, setNewLeads] = useState(0);
+  const [rentalAlerts, setRentalAlerts] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
   // "propostas", "negociacoes" and "contatos" were merged into "atendimentos"; keep old links working.
