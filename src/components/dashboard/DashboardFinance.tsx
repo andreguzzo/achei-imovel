@@ -21,6 +21,7 @@ interface Row {
   kind: "forecast" | "closed" | "rental";
   date: string;
   label: string;
+  clientName?: string | null;
   gross: number;
   partnerCut: number;
   agencyCut: number;
