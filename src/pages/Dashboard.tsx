@@ -138,7 +138,7 @@ const Dashboard = () => {
   // Non-brokers only get the general sections
   const effectiveSection: DashboardSection =
     !isBroker && [
-      "clientes", "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
+      "clientes", "negociacoes", "contatos", "agenda", "parcerias", "relatorios",
       "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao", "financeiro",
     ].includes(section)
       ? "imoveis"
