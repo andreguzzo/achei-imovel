@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, Users, CalendarDays, FileText, Handshake, Building2, DollarSign, Plus, ArrowRight, Clock, Mail,
-  KeyRound, Receipt, TrendingUp,
+  KeyRound, Receipt, TrendingUp, ShieldAlert,
 } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import {
@@ -181,6 +181,29 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
         (c) => c.next_adjustment_date && c.next_adjustment_date <= in30,
       ).length,
     });
+    // Private sale authorizations expiring soon (broker-only data)
+    const { data: authRows } = await supabase
+      .from("property_private_data")
+      .select("property_id, authorization_type, authorization_end, properties:property_id!inner(title, reference_code, user_id)")
+      .eq("properties.user_id", userId)
+      .not("authorization_end", "is", null)
+      .lte("authorization_end", in30)
+      .order("authorization_end", { ascending: true })
+      .limit(10);
+
+    setExpiringAuths(
+      (authRows ?? []).map((r) => {
+        const prop = r.properties as unknown as { title: string; reference_code: string | null };
+        return {
+          property_id: r.property_id,
+          title: prop?.title ?? "",
+          reference_code: prop?.reference_code ?? null,
+          authorization_type: r.authorization_type,
+          authorization_end: r.authorization_end as string,
+        };
+      }),
+    );
+
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
     setLoading(false);
