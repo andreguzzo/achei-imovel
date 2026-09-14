@@ -9,6 +9,7 @@ import { Loader2, Camera, Plus, X, ExternalLink, Instagram } from "lucide-react"
 import { toast } from "@/hooks/use-toast";
 import EmailVerification from "@/components/dashboard/EmailVerification";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
+import MyDataCard from "@/components/dashboard/MyDataCard";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface BrokerPhoto {
@@ -302,6 +303,8 @@ const DashboardProfile = ({ userId, email, isBroker, profile, onProfileSaved }: 
       </Card>
 
       <EmailVerification email={email} verified={emailVerified} onVerified={() => setEmailVerified(true)} />
+
+      <MyDataCard userId={userId} email={email} />
 
       {isBroker && (
         <Card>

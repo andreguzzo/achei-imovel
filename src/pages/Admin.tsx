@@ -14,6 +14,7 @@ import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
 import AdminFinanceTab from "@/components/admin/AdminFinanceTab";
 import AdminVerificationsTab from "@/components/admin/AdminVerificationsTab";
+import AdminDeletionRequestsTab from "@/components/admin/AdminDeletionRequestsTab";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -25,6 +26,7 @@ const Admin = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openSupport, setOpenSupport] = useState(0);
   const [pendingVerifications, setPendingVerifications] = useState(0);
+  const [pendingDeletions, setPendingDeletions] = useState(0);
 
   const rawSection = searchParams.get("secao") as AdminSection | null;
   const section: AdminSection =
@@ -39,15 +41,20 @@ const Admin = () => {
       if (!data) { navigate("/"); return; }
       setIsAdmin(true);
       setChecking(false);
-      const [support, verifications] = await Promise.all([
+      const [support, verifications, deletions] = await Promise.all([
         supabase.from("support_messages").select("id", { count: "exact", head: true }).eq("status", "open"),
         supabase
           .from("identity_verifications")
           .select("id", { count: "exact", head: true })
           .in("status", ["pending", "manual_review"]),
+        supabase
+          .from("deletion_requests")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["pending", "processing"]),
       ]);
       setOpenSupport(support.count ?? 0);
       setPendingVerifications(verifications.count ?? 0);
+      setPendingDeletions(deletions.count ?? 0);
     };
     checkAdmin();
   }, [user, authLoading, navigate]);
@@ -62,7 +69,7 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setSearchParams]);
 
-  const groups = useAdminNav({ suporte: openSupport, verificacoes: pendingVerifications });
+  const groups = useAdminNav({ suporte: openSupport, verificacoes: pendingVerifications, exclusoes: pendingDeletions });
 
   const activeLabel = useMemo(() => {
     for (const g of groups) {
@@ -86,6 +93,7 @@ const Admin = () => {
       case "financeiro": return <AdminFinanceTab />;
       case "verificacoes": return <AdminVerificationsTab />;
       case "suporte": return <AdminSupportTab />;
+      case "exclusoes": return <AdminDeletionRequestsTab />;
       default: return null;
     }
   };

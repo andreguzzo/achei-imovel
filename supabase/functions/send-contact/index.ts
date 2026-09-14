@@ -12,12 +12,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { property_id, name, email, phone, message } = await req.json();
+    const { property_id, name, email, phone, message, consent, consent_version, visitor_id } = await req.json();
 
     if (!property_id || !name?.trim() || !email?.trim()) {
       return new Response(JSON.stringify({ error: "property_id, name e email são obrigatórios" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (consent !== true) {
+      return new Response(
+        JSON.stringify({ error: "É necessário aceitar os Termos de Uso e a Política de Privacidade" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // Use service role to bypass RLS
@@ -61,6 +68,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Record the explicit consent given by the lead (LGPD)
+    try {
+      await supabase.from("consent_log").insert({
+        user_id: senderId,
+        visitor_id: typeof visitor_id === "string" ? visitor_id.slice(0, 100) : null,
+        consent_type: "contact_form",
+        document_version: typeof consent_version === "string" ? consent_version.slice(0, 40) : "unknown",
+        ip: (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null,
+        user_agent: (req.headers.get("user-agent") ?? "").slice(0, 500) || null,
+        context: { property_id, email: email.trim() },
+      });
+    } catch (consentError) {
+      console.error("consent log failed:", consentError);
     }
 
     // Notify the property owner by email. Never fail the request because of this.

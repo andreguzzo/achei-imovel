@@ -14,6 +14,7 @@ import {
   type ContractStatus, type GuaranteeType, type RentalContract, type RentalIndex,
 } from "@/lib/rentals";
 import RentalDocumentsVault, { type PendingDocument } from "./RentalDocumentsVault";
+import { MaskedCpfInput } from "@/components/MaskedCpf";
 
 interface PropertyOption {
   id: string;
@@ -256,7 +257,14 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
           </div>
           <div>
             <Label>CPF</Label>
-            <Input value={form.tenant_cpf} onChange={(e) => set("tenant_cpf", e.target.value)} />
+            <MaskedCpfInput
+              value={form.tenant_cpf}
+              onChange={(v) => set("tenant_cpf", v)}
+              recordType="rental_contracts"
+              recordId={contract?.id ?? null}
+              fieldName="tenant_cpf"
+              placeholder="000.000.000-00"
+            />
           </div>
           <div>
             <Label>{pt ? "WhatsApp do inquilino" : "Tenant WhatsApp"}</Label>

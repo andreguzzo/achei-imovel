@@ -43,8 +43,8 @@ const Footer = () => {
           <div>
             <h4 className="mb-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Legal</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><span className="text-muted-foreground">{t.footer.terms}</span></li>
-              <li><span className="text-muted-foreground">{t.footer.privacy}</span></li>
+              <li><Link to="/termos" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.terms}</Link></li>
+              <li><Link to="/privacidade" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.privacy}</Link></li>
             </ul>
           </div>
         </div>

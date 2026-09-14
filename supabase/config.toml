@@ -77,3 +77,9 @@ verify_jwt = true
 
 [functions.feed-xml]
 verify_jwt = false
+
+[functions.log-consent]
+verify_jwt = false
+
+[functions.export-my-data]
+verify_jwt = true

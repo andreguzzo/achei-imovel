@@ -10,6 +10,8 @@ import { Home, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { acceptanceConsents, logConsent } from "@/lib/legal";
 
 const ACCOUNT_OPTIONS = [
   {
@@ -39,15 +41,25 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState<"owner" | "broker" | "agency">("owner");
   const [loading, setLoading] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!accepted) {
+      toast({
+        title: "Aceite necessário",
+        description: "Para criar a conta é preciso aceitar os Termos de Uso e a Política de Privacidade.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     const { error } = await signUp(email, password, fullName, accountType);
     setLoading(false);
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
     } else {
+      await logConsent(acceptanceConsents(), { email: email.trim(), account_type: accountType, source: "signup" });
       toast({ title: t.auth.accountCreated, description: t.auth.accountCreatedDesc });
       navigate("/login");
     }
@@ -98,9 +110,24 @@ const Signup = () => {
               <Label htmlFor="password">{t.auth.password}</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
+            <div className="flex items-start gap-2 rounded-lg border border-border p-3">
+              <Checkbox
+                id="accept-terms"
+                checked={accepted}
+                onCheckedChange={(v) => setAccepted(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                Li e aceito os{" "}
+                <Link to="/termos" target="_blank" className="text-primary underline underline-offset-2">Termos de Uso</Link>{" "}
+                e a{" "}
+                <Link to="/privacidade" target="_blank" className="text-primary underline underline-offset-2">Política de Privacidade</Link>,
+                incluindo o tratamento dos meus dados pessoais descrito nela.
+              </Label>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !accepted}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t.auth.signupTitle}
             </Button>
