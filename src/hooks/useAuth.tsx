@@ -44,6 +44,9 @@ export function getMaxProperties(tier: TierKey): number {
   return TIERS[tier].maxProperties;
 }
 
+/** Paid professional plans sold today. */
+export const PRO_PLAN_SLUGS = ["corretor", "imobiliaria"] as const;
+
 /** Listing limit by account type: owners publish a single property, professionals are unlimited. */
 export function getAccountMaxProperties(accountType: AccountType, tier: TierKey): number {
   if (accountType === "owner") return tier === "free" ? 1 : getMaxProperties(tier);
