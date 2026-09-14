@@ -285,7 +285,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     },
     counts.proposals > 0 && {
       label: pt ? `${counts.proposals} propostas aguardando resposta` : `${counts.proposals} proposals awaiting reply`,
-      section: "propostas" as DashboardSection,
+      section: "negociacoes" as DashboardSection,
       icon: FileText,
     },
     counts.partnerships > 0 && {
