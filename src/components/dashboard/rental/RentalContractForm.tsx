@@ -356,7 +356,15 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
           <div className="sm:col-span-2">
             <Label>{pt ? "Observações" : "Notes"}</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
-          </div>
+        </div>
+
+        <RentalDocumentsVault
+          userId={userId}
+          contractId={contract?.id ?? null}
+          pending={pendingDocs}
+          onPendingChange={setPendingDocs}
+        />
+
         </div>
 
         <DialogFooter>
