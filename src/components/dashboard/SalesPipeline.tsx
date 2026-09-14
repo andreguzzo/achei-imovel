@@ -218,6 +218,100 @@ const SalesPipeline = ({ userId }: Props) => {
     </Dialog>
   );
 
+  const dealDialog = (
+    <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-4 w-4 text-primary" />
+            {selected?.client_name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {selected && (
+          <div className="space-y-6">
+            <div className="space-y-1 text-xs text-muted-foreground">
+              {selected.property && <p>{selected.property.title} — {selected.property.city}</p>}
+              {selected.client_phone && <p>{selected.client_phone}</p>}
+              {selected.client_email && <p>{selected.client_email}</p>}
+              {selected.next_action && (
+                <p className="text-foreground">
+                  {pt ? "Próxima ação" : "Next action"}: {selected.next_action}
+                  {selected.next_action_date ? ` — ${formatDay(selected.next_action_date, pt)}` : ""}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-sm font-medium text-foreground">
+                {pt ? "Registrar interação" : "Log interaction"}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select value={activityType} onValueChange={(v) => setActivityType(v as ActivityTypeKey)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ACTIVITY_TYPES.map((a) => (
+                      <SelectItem key={a.key} value={a.key}>{pt ? a.label : a.labelEn}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} />
+              </div>
+              <Textarea
+                placeholder={pt ? "O que aconteceu nessa interação?" : "What happened in this interaction?"}
+                value={activityDesc}
+                onChange={(e) => setActivityDesc(e.target.value)}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  placeholder={pt ? "Próxima ação (ex: enviar proposta)" : "Next action (e.g. send proposal)"}
+                  value={nextAction}
+                  onChange={(e) => setNextAction(e.target.value)}
+                />
+                <Input type="date" value={nextActionDate} onChange={(e) => setNextActionDate(e.target.value)} />
+              </div>
+              <Button onClick={handleAddActivity} disabled={savingActivity} className="w-full">
+                {savingActivity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {pt ? "Salvar interação" : "Save interaction"}
+              </Button>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-medium text-foreground">
+                {pt ? "Histórico" : "History"}
+              </p>
+              {loadingActivities ? (
+                <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+              ) : activities.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {pt ? "Nenhuma interação registrada ainda." : "No interactions logged yet."}
+                </p>
+              ) : (
+                <ol className="space-y-3 border-l border-border pl-4">
+                  {activities.map((a) => (
+                    <li key={a.id} className="relative">
+                      <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {activityLabel(a.activity_type, pt)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(a.occurred_at, pt)}</span>
+                      </div>
+                      {a.description && (
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{a.description}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
+
   return (
     <div className="space-y-6">
       <SectionHeader
