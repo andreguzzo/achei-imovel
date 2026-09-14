@@ -43,6 +43,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [soldPrice, setSoldPrice] = useState("");
   const [soldCommission, setSoldCommission] = useState("");
   const [soldByOtherPrice, setSoldByOtherPrice] = useState("");
+  const [closingPrice, setClosingPrice] = useState("");
 
   const fetchProperties = useCallback(async () => {
     setLoading(true);
