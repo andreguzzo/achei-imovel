@@ -116,7 +116,7 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium text-foreground">{c.name}</p>
+                <ClientLink name={c.name} phone={c.phone} email={c.email} className="font-medium text-foreground" />
                 <Badge variant={c.status === "new" ? "default" : "secondary"}>
                   {c.status === "new" ? (pt ? "Novo" : "New") : (pt ? "Contatado" : "Contacted")}
                 </Badge>
