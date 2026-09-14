@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -10,11 +11,11 @@ import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/comp
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
-import SalesPipeline from "@/components/dashboard/SalesPipeline";
+const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"));
 import SalesContacts from "@/components/dashboard/SalesContacts";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 import BrokerProposals from "@/components/dashboard/BrokerProposals";
-import BrokerAnalytics from "@/components/dashboard/BrokerAnalytics";
+const BrokerAnalytics = lazy(() => import("@/components/dashboard/BrokerAnalytics"));
 import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
@@ -34,6 +35,19 @@ const VALID_SECTIONS: DashboardSection[] = [
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
   "verificacao", "equipe",
 ];
+
+const ChartSkeleton = () => (
+  <div className="space-y-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full rounded-lg" />
+      ))}
+    </div>
+    <Skeleton className="h-72 w-full rounded-lg" />
+  </div>
+);
+
+
 
 const Dashboard = () => {
   const { locale } = useLanguage();
@@ -127,7 +141,11 @@ const Dashboard = () => {
           />
         );
       case "negociacoes":
-        return <SalesPipeline userId={user.id} />;
+        return (
+          <Suspense fallback={<ChartSkeleton />}>
+            <SalesPipeline userId={user.id} />
+          </Suspense>
+        );
       case "contatos":
         return <SalesContacts userId={user.id} />;
       case "propostas":
@@ -179,7 +197,9 @@ const Dashboard = () => {
               title={pt ? "Relatórios" : "Reports"}
               description={pt ? "VGV ativo, VGV realizado, comissões e desempenho dos anúncios." : "Active and closed sales volume, commissions and listing performance."}
             />
-            <BrokerAnalytics userId={user.id} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <BrokerAnalytics userId={user.id} />
+            </Suspense>
           </div>
         );
       case "perfil":
