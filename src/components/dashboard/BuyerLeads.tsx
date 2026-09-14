@@ -20,6 +20,7 @@ import {
   type BuyerCriteria, type BuyerLead, type MatchableProperty,
 } from "@/lib/buyerLeads";
 import type { Enums } from "@/integrations/supabase/types";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 const PROPERTY_TYPES: Enums<"property_type">[] = ["apartment", "house", "land", "commercial"];
 
@@ -266,9 +267,20 @@ const BuyerLeads = ({ userId }: Props) => {
             const count = matchCount(lead);
             return (
               <div key={lead.id} className="flex flex-wrap items-center gap-4 p-4">
-                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setDetail(lead)}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="min-w-0 flex-1 cursor-pointer text-left"
+                  onClick={() => setDetail(lead)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDetail(lead); }}
+                >
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate font-medium text-foreground">{lead.name}</p>
+                    <ClientLink
+                      name={lead.name}
+                      phone={lead.phone}
+                      email={lead.email}
+                      className="truncate font-medium text-foreground"
+                    />
                     <Badge variant={lead.status === "ativo" ? "default" : "secondary"} className="text-[10px]">
                       {statusLabel(lead.status, pt)}
                     </Badge>
@@ -286,7 +298,7 @@ const BuyerLeads = ({ userId }: Props) => {
                     {lead.budget_max ? `${pt ? "Até" : "Up to"} ${brl(Number(lead.budget_max))}` : ""}
                     {lead.financing_type ? ` • ${financingLabel(lead.financing_type, pt)}` : ""}
                   </p>
-                </button>
+                </div>
 
                 <div className="flex shrink-0 gap-1">
                   {lead.phone && (

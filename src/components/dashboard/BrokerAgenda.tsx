@@ -15,6 +15,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, isSameMonth, isToday, parseISO, differenceInMilliseconds, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 interface BrokerAgendaProps {
   userId: string;
@@ -325,7 +326,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
         </div>
         {!compact && appt.client_name && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground pl-6">
-            <User className="h-3 w-3" /> {appt.client_name}
+            <User className="h-3 w-3" /> <ClientLink name={appt.client_name} phone={appt.client_phone} />
             {appt.client_phone && ` • ${appt.client_phone}`}
           </p>
         )}
@@ -607,7 +608,11 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
                             {typeLabel(appt.appointment_type)}
                           </Badge>
                           {appt.client_name && (
-                            <span className="text-xs text-muted-foreground truncate">{appt.client_name}</span>
+                            <ClientLink
+                              name={appt.client_name}
+                              phone={appt.client_phone}
+                              className="truncate text-xs text-muted-foreground"
+                            />
                           )}
                           {appt.reminder_minutes != null && (
                             <Bell className="h-3 w-3 text-muted-foreground" />

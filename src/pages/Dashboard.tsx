@@ -11,6 +11,7 @@ import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/comp
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
+import ClientSheetProvider from "@/components/dashboard/ClientSheet";
 import SalesDesk from "@/components/dashboard/SalesDesk";
 import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
@@ -279,6 +280,7 @@ const Dashboard = () => {
   );
 
   return (
+    <ClientSheetProvider brokerId={user.id}>
     <div className="container py-6">
       <div className="mb-4 flex items-center gap-3 lg:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -302,6 +304,7 @@ const Dashboard = () => {
         <main className="min-w-0 flex-1">{renderSection()}</main>
       </div>
     </div>
+    </ClientSheetProvider>
   );
 };
 

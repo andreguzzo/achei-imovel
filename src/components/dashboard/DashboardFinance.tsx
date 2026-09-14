@@ -10,6 +10,7 @@ import { Loader2, Download, Wallet } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import { brl } from "@/lib/rentals";
 import { useAgency } from "@/hooks/useAgency";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 interface Props {
   userId: string;
@@ -21,6 +22,7 @@ interface Row {
   kind: "forecast" | "closed" | "rental";
   date: string;
   label: string;
+  clientName?: string | null;
   gross: number;
   partnerCut: number;
   agencyCut: number;
@@ -129,12 +131,12 @@ const DashboardFinance = ({ userId }: Props) => {
         const date = d.actual_close_date ?? d.updated_at.slice(0, 10);
         if (date < startIso) return;
         const s = split(gross, d.property_id);
-        out.push({ kind: "closed", date, label: d.client_name, gross, ...s });
+        out.push({ kind: "closed", date, label: d.client_name, clientName: d.client_name, gross, ...s });
       } else {
         const date = d.expected_close_date;
         if (!date || date < todayIso) return;
         const s = split(gross, d.property_id);
-        out.push({ kind: "forecast", date, label: d.client_name, gross, ...s });
+        out.push({ kind: "forecast", date, label: d.client_name, clientName: d.client_name, gross, ...s });
       }
     });
 
@@ -329,7 +331,9 @@ const DashboardFinance = ({ userId }: Props) => {
                 <tr key={`${r.kind}-${i}`} className="border-t border-border">
                   <td className="px-3 py-2">{kindLabel(r.kind)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{r.date.slice(0, 10).split("-").reverse().join("/")}</td>
-                  <td className="px-3 py-2">{r.label}</td>
+                  <td className="px-3 py-2">
+                    {r.clientName ? <ClientLink name={r.clientName} /> : r.label}
+                  </td>
                   <td className="px-3 py-2 text-right">{brl(r.gross)}</td>
                   <td className="px-3 py-2 text-right text-muted-foreground">{r.partnerCut ? `- ${brl(r.partnerCut)}` : "—"}</td>
                   <td className="px-3 py-2 text-right text-muted-foreground">{r.agencyCut ? `- ${brl(r.agencyCut)}` : "—"}</td>
