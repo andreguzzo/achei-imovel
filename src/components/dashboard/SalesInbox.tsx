@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, UserPlus, Phone, AlarmClock, XCircle } from "lucide-react";
+import { Loader2, Mail, UserPlus, Phone, AlarmClock, XCircle, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/dashboard/SectionHeader";
 import { ClientLink } from "@/components/dashboard/ClientSheet";
@@ -192,16 +192,18 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
                 </span>
               ))}
 
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1"
-                disabled={busy === c.id}
-                onClick={() => handleConvert(c)}
-              >
-                {busy === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
-                {pt ? "Abrir negociação" : "Open deal"}
-              </Button>
+              {!isWhatsAppLead && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  disabled={busy === c.id}
+                  onClick={() => handleConvert(c)}
+                >
+                  {busy === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                  {pt ? "Abrir negociação" : "Open deal"}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -210,12 +212,14 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
                 onClick={() => handleDiscard(c)}
               >
                 <XCircle className="h-3.5 w-3.5" />
-                {pt ? "Descartar" : "Discard"}
+                {pt ? (isWhatsAppLead ? "Arquivar" : "Descartar") : (isWhatsAppLead ? "Archive" : "Discard")}
               </Button>
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
+
     </div>
   );
 };
