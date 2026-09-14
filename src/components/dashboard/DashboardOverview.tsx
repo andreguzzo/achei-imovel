@@ -79,8 +79,7 @@ interface ExpiringAuth {
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
-const waLink = (phone: string | null | undefined) =>
-  phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+const waLink = (phone: string | null | undefined) => buildWhatsAppUrl(phone);
 
 const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) => {
   const { locale } = useLanguage();
