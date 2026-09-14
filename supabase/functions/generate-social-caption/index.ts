@@ -28,7 +28,27 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
     );
     const { data: claimsData } = await anonClient.auth.getClaims(token);
-    if (!claimsData?.claims?.sub) return json({ error: "Não autorizado" }, 401);
+    const userId = claimsData?.claims?.sub as string | undefined;
+    if (!userId) return json({ error: "Não autorizado" }, 401);
+
+    // Daily rate limit per user
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count, error: countError } = await serviceClient
+      .from("ai_usage_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("function_name", FUNCTION_NAME)
+      .gte("created_at", since);
+    if (countError) console.error("rate limit count error:", countError);
+    if ((count ?? 0) >= DAILY_LIMIT) {
+      return json({ error: `Você atingiu o limite de ${DAILY_LIMIT} gerações de IA por dia. Tente novamente amanhã.` }, 429);
+    }
+
 
     const body = await req.json();
     const {
