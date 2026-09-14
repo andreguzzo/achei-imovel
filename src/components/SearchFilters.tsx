@@ -241,7 +241,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
   if (filters.keywords.length > 0) {
     filters.keywords.forEach((kw) =>
       chips.push({
-        label: kw,
+        label: featureLabel(kw, pt),
         clear: () => update({ keywords: filters.keywords.filter((x) => x !== kw) }),
       })
     );
