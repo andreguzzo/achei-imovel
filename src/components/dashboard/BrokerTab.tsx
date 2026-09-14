@@ -71,11 +71,7 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
   const [partnerTerms, setPartnerTerms] = useState("");
   const [sendingProposal, setSendingProposal] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [userId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const [propsRes, photosRes, partnershipsRes] = await Promise.all([
       supabase

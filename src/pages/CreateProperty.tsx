@@ -427,7 +427,7 @@ const CreateProperty = () => {
       setEditLoading(false);
     };
     loadProperty();
-  }, [editId, user, adminMode]);
+  }, [editId, user, adminMode, navigate, pt]);
 
   if (!user) {
     return (
