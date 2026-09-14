@@ -172,6 +172,12 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
 
   const filteredSales = useMemo(() => sales.filter((s) => inPeriod(s.created_at)), [sales, inPeriod]);
   const filteredLeads = useMemo(() => leads.filter((l) => inPeriod(l.created_at)), [leads, inPeriod]);
+  // WhatsApp clicks are leads too — counted in the total and shown separately.
+  const whatsappLeads = useMemo(
+    () => filteredLeads.filter((l) => l.request_type === "whatsapp").length,
+    [filteredLeads],
+  );
+
 
   // Closings registered in the period
   const closedInPeriod = useMemo(
@@ -480,7 +486,9 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             <p className="mt-2 text-xl font-bold text-foreground">{leadToDeal !== null ? `${leadToDeal}%` : "—"}</p>
             <p className="text-xs text-muted-foreground">
               {filteredLeads.length} {pt ? "leads no período" : "leads in period"}
+              {whatsappLeads > 0 && (pt ? ` • ${whatsappLeads} via WhatsApp` : ` • ${whatsappLeads} via WhatsApp`)}
             </p>
+
           </CardContent>
         </Card>
 

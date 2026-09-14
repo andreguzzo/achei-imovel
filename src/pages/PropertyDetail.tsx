@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Heart, Copy, Home } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Heart, Copy, Home } from "lucide-react";
 import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageWithFallback from "@/components/ImageWithFallback";
@@ -17,7 +16,7 @@ import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
 import { getEmbedUrl } from "@/lib/video";
 import Seo from "@/components/Seo";
-import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
+
 
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -59,22 +58,22 @@ const formatPrice = (price: number, listingType: string) => {
 
 const BrokerCard = ({
   profile,
-  waMessage,
+  propertyId,
   pt,
   tagline,
   price,
   highlight = false,
 }: {
   profile: BrokerProfile;
-  waMessage: string;
+  propertyId: string;
   pt: boolean;
   tagline?: string;
   price?: number;
   highlight?: boolean;
 }) => {
-  const whatsappNumber = profile.whatsapp || profile.phone;
-  const waUrl = whatsappNumber ? buildWhatsAppUrl(whatsappNumber, waMessage) : null;
-
+  // The broker's number never reaches the browser: the public edge function
+  // resolves it server-side, records the lead and redirects to wa.me.
+  const whatsappHref = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-redirect?property_id=${encodeURIComponent(propertyId)}&broker_id=${encodeURIComponent(profile.user_id)}`;
 
   return (
     <div className={`flex items-start gap-3 rounded-xl border bg-card p-4 ${highlight ? "border-primary/40 bg-primary/5" : ""}`}>
@@ -105,46 +104,21 @@ const BrokerCard = ({
           <p className="text-xs text-muted-foreground">CRECI: {profile.creci}</p>
         )}
 
-        {profile.phone && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <PhoneIcon className="h-3 w-3" /> {formatBrPhone(profile.phone)}
-          </p>
-        )}
-        {waUrl ? (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex"
-          >
-            <Button size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white">
-              <MessageCircle className="h-4 w-4" />
-              {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
-            </Button>
-          </a>
-        ) : whatsappNumber ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {formatBrPhone(whatsappNumber)} —{" "}
-            {pt ? "número não válido para WhatsApp" : "number not valid for WhatsApp"}
-          </p>
-        ) : (
-          <Link to="/login" className="mt-2 inline-flex">
-            <Button size="sm" variant="outline" className="gap-1.5">
-              <PhoneIcon className="h-4 w-4" />
-              {pt ? "Entrar para ver o contato" : "Sign in to see contact"}
-            </Button>
-          </Link>
-        )}
-
+        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex">
+          <Button size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb855] text-white">
+            <MessageCircle className="h-4 w-4" />
+            {pt ? "Falar no WhatsApp" : "Chat on WhatsApp"}
+          </Button>
+        </a>
       </div>
     </div>
   );
 };
 
+
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { t, locale } = useLanguage();
-  const { user } = useAuth();
   const pt = locale === "pt-BR";
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,35 +230,9 @@ const PropertyDetail = () => {
     fetchData();
   }, [id]);
 
-  // Contact details (phone/WhatsApp) are only available to signed-in visitors
-  const ownerId = ownerProfile?.user_id;
-  const groupBrokerIds = groupBrokers.map((b) => b.broker_id).join(",");
-  useEffect(() => {
-    if (!user || !ownerId) return;
-    let cancelled = false;
-    const ids = [ownerId, ...groupBrokerIds.split(",").filter(Boolean)];
-    const load = async () => {
-      const results = await Promise.all(
-        ids.map((uid) => supabase.rpc("get_broker_contact", { _user_id: uid })),
-      );
-      if (cancelled) return;
-      const contacts = new Map<string, { phone: string | null; whatsapp: string | null }>();
-      results.forEach((res) => {
-        const row = (res.data as { user_id: string; phone: string | null; whatsapp: string | null }[] | null)?.[0];
-        if (row) contacts.set(row.user_id, { phone: row.phone, whatsapp: row.whatsapp });
-      });
-      setOwnerProfile((prev) => (prev && contacts.has(prev.user_id) ? { ...prev, ...contacts.get(prev.user_id)! } : prev));
-      setGroupBrokers((prev) =>
-        prev.map((b) =>
-          b.profile && contacts.has(b.broker_id)
-            ? { ...b, profile: { ...b.profile, ...contacts.get(b.broker_id)! } }
-            : b,
-        ),
-      );
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [user, ownerId, groupBrokerIds]);
+  // Broker phone numbers are never fetched in the browser — the public
+  // whatsapp-redirect function resolves them server-side.
+
 
   // JSON-LD structured data for RealEstateListing
   useEffect(() => {
@@ -582,23 +530,18 @@ const PropertyDetail = () => {
                     : "This listing is shared in partnership. Contact any of the brokers below."}
                 </p>
               )}
-              {brokerEntries.map((e) => {
-                const canonicalUrl = `${window.location.origin}/imovel/${property.id}`;
-                const waMessage = pt
-                  ? `Olá! Tenho interesse no imóvel ${property.reference_code ? `${property.reference_code} — ` : ""}${property.title}, ${formatPrice(property.price, property.listing_type)}. Vi na Abitzo: ${canonicalUrl}`
-                  : `Hello! I'm interested in the property ${property.reference_code ? `${property.reference_code} — ` : ""}${property.title}, ${formatPrice(property.price, property.listing_type)}. Seen on Abitzo: ${canonicalUrl}`;
-                return (
-                  <BrokerCard
-                    key={e.profile.user_id}
-                    profile={e.profile}
-                    waMessage={waMessage}
-                    pt={pt}
-                    tagline={e.tagline}
-                    price={e.price}
-                    highlight={e.highlight}
-                  />
-                );
-              })}
+              {brokerEntries.map((e) => (
+                <BrokerCard
+                  key={e.profile.user_id}
+                  profile={e.profile}
+                  propertyId={property.id}
+                  pt={pt}
+                  tagline={e.tagline}
+                  price={e.price}
+                  highlight={e.highlight}
+                />
+              ))}
+
               {brokerEntries.length === 0 && (
                 <p className="text-sm text-muted-foreground">{pt ? "Informações do corretor não disponíveis." : "Broker info not available."}</p>
 

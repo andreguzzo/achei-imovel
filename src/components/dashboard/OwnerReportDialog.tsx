@@ -47,11 +47,18 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
     const startTs = `${periodStart}T00:00:00`;
     const endTs = `${periodEnd}T23:59:59`;
 
-    const [leadsRes, apptRes, socialRes, privateRes, statsRes] = await Promise.all([
+    const [leadsRes, waLeadsRes, apptRes, socialRes, privateRes, statsRes] = await Promise.all([
       supabase
         .from("contact_requests")
         .select("id", { count: "exact", head: true })
         .eq("property_id", property.id)
+        .gte("created_at", startTs)
+        .lte("created_at", endTs),
+      supabase
+        .from("contact_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", property.id)
+        .eq("request_type", "whatsapp")
         .gte("created_at", startTs)
         .lte("created_at", endTs),
       supabase
@@ -121,6 +128,7 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
       broker: { name: broker.name, creci: broker.creci || null, phone: broker.phone || null },
       views: property.view_count ?? 0,
       leads: leadsRes.count ?? 0,
+      leads_whatsapp: waLeadsRes.count ?? 0,
       visits_scheduled: appts.length,
       visits_done: appts.filter((a) => a.completed).length,
       channels,
@@ -201,14 +209,15 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: "Visualizações", value: metrics.views },
-                  { label: "Contatos recebidos", value: metrics.leads },
-                  { label: "Visitas agendadas", value: metrics.visits_scheduled },
-                  { label: "Visitas realizadas", value: metrics.visits_done },
+                  { label: "Visualizações", value: metrics.views, hint: null },
+                  { label: "Contatos recebidos", value: metrics.leads, hint: metrics.leads_whatsapp ? `${metrics.leads_whatsapp} via WhatsApp` : null },
+                  { label: "Visitas agendadas", value: metrics.visits_scheduled, hint: null },
+                  { label: "Visitas realizadas", value: metrics.visits_done, hint: null },
                 ].map((m) => (
                   <div key={m.label} className="rounded-lg border border-border bg-muted/30 p-3">
                     <p className="text-[11px] text-muted-foreground">{m.label}</p>
                     <p className="text-xl font-semibold text-foreground">{m.value}</p>
+                    {m.hint && <p className="text-[10px] text-muted-foreground">{m.hint}</p>}
                   </div>
                 ))}
               </div>
