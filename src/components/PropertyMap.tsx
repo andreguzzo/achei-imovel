@@ -282,6 +282,13 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         poly.getPaths().forEach((ring) => ring.forEach((pt) => bounds.extend(pt)))
       );
       map.fitBounds(bounds, 40);
+      // Keep the initial fit from zooming too far in (single property) or too far out
+      google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+        const z = map.getZoom();
+        if (z != null) {
+          map.setZoom(Math.min(Math.max(z, MIN_FIT_ZOOM), MAX_FIT_ZOOM));
+        }
+      });
     } else {
       prevPropertyIdsRef.current = currentIds;
     }
