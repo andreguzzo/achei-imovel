@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Gift, Search, Loader2, Crown, RefreshCw, Sparkles, Settings2, History, CalendarClock, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { TIERS, getTierByProductId } from "@/hooks/useAuth";
 import { usePlans } from "@/hooks/usePlans";
 
