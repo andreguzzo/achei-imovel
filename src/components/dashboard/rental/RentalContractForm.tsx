@@ -13,6 +13,7 @@ import {
   contractStatusLabel, guaranteeLabel, indexLabel,
   type ContractStatus, type GuaranteeType, type RentalContract, type RentalIndex,
 } from "@/lib/rentals";
+import RentalDocumentsVault, { type PendingDocument } from "./RentalDocumentsVault";
 
 interface PropertyOption {
   id: string;

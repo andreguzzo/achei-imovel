@@ -294,6 +294,10 @@ const RentalCharges = ({ userId }: Props) => {
                       <Button size="sm" variant="ghost" onClick={() => copyMessage(c)} title={pt ? "Copiar cobrança" : "Copy invoice"}>
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={() => copyPix(c)}
+                        title={pt ? "Copiar Pix copia e cola" : "Copy Pix code"}>
+                        <QrCode className={`h-3.5 w-3.5 ${canGeneratePix(billing) ? "text-primary" : ""}`} />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => { setLinkTarget(c); setLinkValue(c.payment_link ?? ""); }}
                         title={pt ? "Link de pagamento" : "Payment link"}>
                         <Link2 className={`h-3.5 w-3.5 ${c.payment_link ? "text-primary" : ""}`} />
