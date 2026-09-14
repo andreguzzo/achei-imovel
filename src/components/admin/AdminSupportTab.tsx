@@ -87,6 +87,11 @@ const AdminSupportTab = () => {
 
   return (
     <div className="space-y-4">
+      <SectionHeader
+        title="Suporte"
+        description="Chamados abertos pelos corretores e histórico de respostas."
+        count={filtered.length}
+      />
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>

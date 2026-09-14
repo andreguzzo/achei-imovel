@@ -171,6 +171,10 @@ const AdminSubscriptionsTab = () => {
 
   return (
     <div className="space-y-6">
+      <SectionHeader
+        title="Assinaturas"
+        description="Consulte, conceda, troque, estenda ou cancele assinaturas e veja o histórico."
+      />
       {/* Check subscription */}
       <Card>
         <CardHeader><CardTitle className="text-base">Verificar Assinatura</CardTitle></CardHeader>
