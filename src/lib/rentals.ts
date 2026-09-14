@@ -96,17 +96,22 @@ export const chargeMessage = (
   charge: RentalCharge,
   contract: Pick<RentalContract, "tenant_name" | "property_label">,
   pt: boolean,
+  extras?: { pixCode?: string | null; instructions?: string | null },
 ) => {
   const total = brl(Number(charge.total_amount));
   const due = formatDate(charge.due_date, pt);
   const link = charge.payment_link ? `\n${charge.payment_link}` : "";
+  const pix = extras?.pixCode
+    ? `\n\n${pt ? "Pix copia e cola:" : "Pix code:"}\n${extras.pixCode}`
+    : "";
+  const notes = extras?.instructions ? `\n\n${extras.instructions}` : "";
   return pt
     ? `Olá, ${contract.tenant_name}! Segue a cobrança do aluguel de ${formatCompetence(charge.competence, true)}${
         contract.property_label ? ` — ${contract.property_label}` : ""
-      }.\nValor: ${total}\nVencimento: ${due}${link}`
+      }.\nValor: ${total}\nVencimento: ${due}${link}${pix}${notes}`
     : `Hi ${contract.tenant_name}! Here is your rent invoice for ${formatCompetence(charge.competence, false)}${
         contract.property_label ? ` — ${contract.property_label}` : ""
-      }.\nAmount: ${total}\nDue: ${due}${link}`;
+      }.\nAmount: ${total}\nDue: ${due}${link}${pix}${notes}`;
 };
 
 export const whatsappUrl = (phone: string, message: string) =>

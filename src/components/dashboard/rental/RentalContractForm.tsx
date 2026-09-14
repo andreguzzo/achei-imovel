@@ -13,6 +13,7 @@ import {
   contractStatusLabel, guaranteeLabel, indexLabel,
   type ContractStatus, type GuaranteeType, type RentalContract, type RentalIndex,
 } from "@/lib/rentals";
+import RentalDocumentsVault, { type PendingDocument } from "./RentalDocumentsVault";
 
 interface PropertyOption {
   id: string;
@@ -63,6 +64,7 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
   const [form, setForm] = useState(emptyForm);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [pendingDocs, setPendingDocs] = useState<PendingDocument[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +107,7 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
     } else {
       setForm(emptyForm);
     }
+    setPendingDocs([]);
   }, [open, contract]);
 
   const set = (key: keyof typeof emptyForm, value: string) => setForm((f) => ({ ...f, [key]: value }));
@@ -186,6 +189,22 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
       const { data: created, error: genError } = await supabase.rpc("generate_rental_charges", {
         _contract_id: data.id,
       });
+
+      if (pendingDocs.length) {
+        const { error: docError } = await supabase.from("rental_documents").insert(
+          pendingDocs.map((d) => ({
+            contract_id: data.id,
+            broker_id: userId,
+            name: d.name,
+            document_type: d.document_type || null,
+            file_path: d.file_path,
+          })),
+        );
+        if (docError) {
+          toast.error(pt ? "Contrato criado, mas os documentos não foram vinculados." : "Contract created, but documents were not linked.");
+        }
+      }
+
       setSaving(false);
       if (genError) {
         toast.error(pt ? "Contrato criado, mas as parcelas não foram geradas." : "Contract created, but charges were not generated.");
@@ -337,6 +356,15 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
           <div className="sm:col-span-2">
             <Label>{pt ? "Observações" : "Notes"}</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+          </div>
+
+          <div className="sm:col-span-2">
+            <RentalDocumentsVault
+              userId={userId}
+              contractId={contract?.id ?? null}
+              pending={pendingDocs}
+              onPendingChange={setPendingDocs}
+            />
           </div>
         </div>
 
