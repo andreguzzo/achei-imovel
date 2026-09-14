@@ -85,6 +85,7 @@ const Search = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const initialFetchDone = useRef(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const navigate = useNavigate();
 
   const fetchProperties = useCallback(
     async (f: SearchFiltersState, pageLimit: number, bounds: MapBounds | null) => {
