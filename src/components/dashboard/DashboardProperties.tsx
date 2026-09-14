@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle, FileText } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle, FileText, Download } from "lucide-react";
 import { authorizationStatus, authorizationBadgeText } from "@/lib/saleAuthorization";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
 import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
 import OwnerReportDialog from "@/components/dashboard/OwnerReportDialog";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
+import ImportListings from "@/components/dashboard/ImportListings";
+import FeedExportCard from "@/components/dashboard/FeedExportCard";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & { property_images: Tables<"property_images">[] };
@@ -38,6 +40,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
   const [reportTarget, setReportTarget] = useState<PropertyWithImages | null>(null);
   const [authEnds, setAuthEnds] = useState<Record<string, string>>({});
+  const [importOpen, setImportOpen] = useState(false);
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
