@@ -257,7 +257,7 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
 
     // Only fit bounds when the set of properties actually changes
     const currentIds = propsWithCoords.map((p) => p.id).sort().join(",");
-    if (currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
+    if (autoFit && currentIds !== prevPropertyIdsRef.current && propsWithCoords.length > 0) {
       prevPropertyIdsRef.current = currentIds;
       const bounds = new google.maps.LatLngBounds();
       propsWithCoords.forEach((p) => bounds.extend({ lat: p.latitude!, lng: p.longitude! }));
@@ -265,8 +265,11 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         poly.getPaths().forEach((ring) => ring.forEach((pt) => bounds.extend(pt)))
       );
       map.fitBounds(bounds, 40);
+    } else {
+      prevPropertyIdsRef.current = currentIds;
     }
-  }, [properties, selectedId, onSelect, ready]);
+  }, [properties, selectedId, onSelect, ready, autoFit]);
+
 
   return <div ref={mapRef} className="h-full w-full" />;
 };
