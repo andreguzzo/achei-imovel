@@ -16,6 +16,8 @@ import BoundaryEditor from "@/components/BoundaryEditor";
 import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PROPERTY_FEATURES, matchFeature } from "@/lib/propertyFeatures";
 import { z } from "zod";
 import type { Enums, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
