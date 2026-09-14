@@ -511,6 +511,42 @@ export type Database = {
           },
         ]
       }
+      consent_log: {
+        Row: {
+          consent_type: string
+          context: Json
+          created_at: string
+          document_version: string
+          id: string
+          ip: string | null
+          user_agent: string | null
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          consent_type: string
+          context?: Json
+          created_at?: string
+          document_version: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          consent_type?: string
+          context?: Json
+          created_at?: string
+          document_version?: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           broker_id: string | null
@@ -566,6 +602,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deletion_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string | null
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       favorites: {
         Row: {
@@ -1638,9 +1713,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sensitive_access_log: {
+        Row: {
+          actor_id: string
+          created_at: string
+          field_name: string
+          id: string
+          record_id: string | null
+          record_type: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          field_name: string
+          id?: string
+          record_id?: string | null
+          record_type: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          field_name?: string
+          id?: string
+          record_id?: string | null
+          record_type?: string
+        }
+        Relationships: []
+      }
       social_accounts: {
         Row: {
-          access_token: string | null
+          access_token_encrypted: string | null
           broker_id: string
           created_at: string
           external_id: string
@@ -1652,7 +1754,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
-          access_token?: string | null
+          access_token_encrypted?: string | null
           broker_id: string
           created_at?: string
           external_id: string
@@ -1664,7 +1766,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
-          access_token?: string | null
+          access_token_encrypted?: string | null
           broker_id?: string
           created_at?: string
           external_id?: string
