@@ -11,8 +11,7 @@ import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/comp
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
-const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"));
-import SalesContacts from "@/components/dashboard/SalesContacts";
+import SalesDesk from "@/components/dashboard/SalesDesk";
 import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 
@@ -32,7 +31,7 @@ const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFina
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
-  "inicio", "clientes", "negociacoes", "contatos", "agenda",
+  "inicio", "clientes", "atendimentos", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
   "verificacao", "equipe", "financeiro",
@@ -66,8 +65,10 @@ const Dashboard = () => {
   const [newLeads, setNewLeads] = useState(0);
 
   const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
-  // The old "propostas" screen was merged into "negociacoes"; keep old links working.
-  const normalizedSection = rawSection === "propostas" ? "negociacoes" : rawSection;
+  // "propostas", "negociacoes" and "contatos" were merged into "atendimentos"; keep old links working.
+  const legacyFunnel = rawSection === "propostas" || rawSection === "negociacoes";
+  const normalizedSection: DashboardSection | null =
+    legacyFunnel || rawSection === "contatos" ? "atendimentos" : (rawSection as DashboardSection | null);
   const section: DashboardSection =
     normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
@@ -108,18 +109,28 @@ const Dashboard = () => {
     if (!user) return;
     let cancelled = false;
     const loadLeads = async () => {
-      const { count } = await supabase
-        .from("contact_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("broker_id", user.id)
-        .eq("status", "new");
-      if (!cancelled) setNewLeads(count ?? 0);
+      const today = new Date().toISOString().slice(0, 10);
+      const [inbox, followups] = await Promise.all([
+        supabase
+          .from("contact_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .in("status", ["new", "contacted"]),
+        supabase
+          .from("sales_pipeline")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .not("next_action_date", "is", null)
+          .lt("next_action_date", today)
+          .not("stage", "in", "(closed_won,closed_lost)"),
+      ]);
+      if (!cancelled) setNewLeads((inbox.count ?? 0) + (followups.count ?? 0));
     };
     loadLeads();
     return () => { cancelled = true; };
   }, [user, section]);
 
-  const badges = useMemo(() => ({ contatos: newLeads }), [newLeads]);
+  const badges = useMemo(() => ({ atendimentos: newLeads }), [newLeads]);
   const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
@@ -138,7 +149,7 @@ const Dashboard = () => {
   // Non-brokers only get the general sections
   const effectiveSection: DashboardSection =
     !isBroker && [
-      "clientes", "negociacoes", "contatos", "agenda", "parcerias", "relatorios",
+      "clientes", "atendimentos", "agenda", "parcerias", "relatorios",
       "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao", "financeiro",
     ].includes(section)
       ? "imoveis"
@@ -163,14 +174,8 @@ const Dashboard = () => {
         );
       case "clientes":
         return <BuyerLeads userId={user.id} />;
-      case "negociacoes":
-        return (
-          <Suspense fallback={<ChartSkeleton />}>
-            <SalesPipeline userId={user.id} />
-          </Suspense>
-        );
-      case "contatos":
-        return <SalesContacts userId={user.id} />;
+      case "atendimentos":
+        return <SalesDesk userId={user.id} defaultTab={legacyFunnel ? "funnel" : "inbox"} />;
       case "agenda":
         return (
           <div className="space-y-6">

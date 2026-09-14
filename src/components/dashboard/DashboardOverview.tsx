@@ -261,9 +261,9 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   }
 
   const kpis: { label: string; value: string | number; icon: typeof Users; section: DashboardSection }[] = [
-    { label: pt ? "Leads novos" : "New leads", value: counts.leads, icon: Users, section: "negociacoes" },
+    { label: pt ? "Leads novos" : "New leads", value: counts.leads, icon: Users, section: "atendimentos" },
     { label: pt ? "Visitas hoje" : "Visits today", value: todayAppointments.length, icon: CalendarDays, section: "agenda" },
-    { label: pt ? "Propostas em aberto" : "Open proposals", value: counts.proposals, icon: FileText, section: "negociacoes" },
+    { label: pt ? "Propostas em aberto" : "Open proposals", value: counts.proposals, icon: FileText, section: "atendimentos" },
     { label: pt ? "Parcerias pendentes" : "Pending partnerships", value: counts.partnerships, icon: Handshake, section: "parcerias" },
     { label: pt ? "Anúncios ativos" : "Active listings", value: counts.activeListings, icon: Building2, section: "imoveis" },
     { label: pt ? "Comissão realizada" : "Earned commission", value: brl(counts.commission), icon: DollarSign, section: "relatorios" },
@@ -280,12 +280,12 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       hint: pt
         ? staleContacts > 0 ? `${staleContacts} nos últimos 7 dias` : undefined
         : staleContacts > 0 ? `${staleContacts} in the last 7 days` : undefined,
-      section: "contatos" as DashboardSection,
+      section: "atendimentos" as DashboardSection,
       icon: Mail,
     },
     counts.proposals > 0 && {
       label: pt ? `${counts.proposals} propostas aguardando resposta` : `${counts.proposals} proposals awaiting reply`,
-      section: "negociacoes" as DashboardSection,
+      section: "atendimentos" as DashboardSection,
       icon: FileText,
     },
     counts.partnerships > 0 && {
@@ -330,7 +330,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
             </Link>
             {isBroker && (
               <>
-                <Button size="sm" variant="outline" onClick={() => onNavigate("negociacoes")}>
+                <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
                   {pt ? "Novo lead" : "New lead"}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => onNavigate("agenda")}>
@@ -451,7 +451,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
               <Clock className="h-4 w-4 text-primary" />
               Follow-ups
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate("negociacoes")}>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate("atendimentos")}>
               {pt ? "Ver negociações" : "View deals"}
             </Button>
           </CardHeader>
@@ -483,7 +483,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
                                   .join(" • ") || (pt ? "Sem descrição" : "No description")}
                           </p>
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => onNavigate("negociacoes")}>
+                        <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
                           {pt ? "Abrir" : "Open"}
                         </Button>
                       </div>
