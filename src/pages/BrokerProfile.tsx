@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
+import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ interface PropertyItem {
   listing_type: string;
   bedrooms: number | null;
   area: number | null;
+  reference_code: string | null;
   property_images: { url: string }[];
 }
 
@@ -122,7 +124,7 @@ const BrokerProfile = () => {
 
       const [photosRes, propsRes, partnershipsRes] = await Promise.all([
         supabase.from("broker_photos").select("id, url, is_cover, is_banner").eq("user_id", profile.user_id).order("position"),
-        supabase.from("properties").select("id, title, city, state, price, property_type, listing_type, bedrooms, area, property_images(url)").eq("user_id", profile.user_id).eq("status", "active").order("created_at", { ascending: false }).limit(50),
+        supabase.from("properties").select("id, title, city, state, price, property_type, listing_type, bedrooms, area, reference_code, property_images(url)").eq("user_id", profile.user_id).eq("status", "active").order("created_at", { ascending: false }).limit(50),
         supabase.from("broker_partnerships").select("broker_a_id, broker_b_id").or(`broker_a_id.eq.${profile.user_id},broker_b_id.eq.${profile.user_id}`).eq("status", "active"),
       ]);
 
@@ -454,6 +456,25 @@ const BrokerProfile = () => {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <span
+                          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        >
+                          <ShareMenu
+                            url={`${window.location.origin}/imovel/${p.id}`}
+                            title={p.title}
+                            whatsappMessage={buildPropertyShareText({
+                              title: p.title,
+                              referenceCode: p.reference_code,
+                              priceText: fmt.format(p.price),
+                              url: `${window.location.origin}/imovel/${p.id}`,
+                              pt,
+                            })}
+                            pt={pt}
+                            className="h-8 w-8"
+                            iconClassName="h-4 w-4"
+                          />
+                        </span>
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium text-foreground truncate text-sm">{p.title}</h3>

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check, Home } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Heart, Copy, Home } from "lucide-react";
+import { ShareMenu, buildPropertyShareText } from "@/components/ShareMenu";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import ContactForm from "@/components/ContactForm";
@@ -153,7 +154,6 @@ const PropertyDetail = () => {
   const [ownerPartnershipType, setOwnerPartnershipType] = useState<PartnershipKind | null>(null);
 
   const [selectedImage, setSelectedImage] = useState(0);
-  const [copied, setCopied] = useState(false);
   const { isFavorited: isFavFn, toggle: toggleFav } = useFavorites();
 
   useEffect(() => {
@@ -163,19 +163,16 @@ const PropertyDetail = () => {
     });
   }, [id]);
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: property?.title, url });
-      } catch { /* user cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast({ title: pt ? "Link copiado!" : "Link copied!" });
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  const canonicalUrl = id ? `${window.location.origin}/imovel/${id}` : "";
+  const shareMessage = property
+    ? buildPropertyShareText({
+        title: property.title,
+        referenceCode: property.reference_code,
+        priceText: formatPrice(property.price, property.listing_type),
+        url: canonicalUrl,
+        pt,
+      })
+    : "";
 
   useEffect(() => {
     if (!id) return;
@@ -440,9 +437,7 @@ const PropertyDetail = () => {
                 <Button variant="ghost" size="icon" onClick={() => id && toggleFav(id)} className="h-9 w-9">
                   <Heart className={`h-5 w-5 ${id && isFavFn(id) ? "fill-destructive text-destructive" : ""}`} />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleShare} className="h-9 w-9">
-                  {copied ? <Check className="h-5 w-5 text-primary" /> : <Share2 className="h-5 w-5" />}
-                </Button>
+                <ShareMenu url={canonicalUrl} title={property.title} whatsappMessage={shareMessage} pt={pt} />
               </div>
             </div>
             <p className="mt-1 flex items-center gap-1 text-muted-foreground">
