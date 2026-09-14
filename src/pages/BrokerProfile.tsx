@@ -238,9 +238,12 @@ const BrokerProfile = () => {
           {/* CTA buttons */}
           <div className="flex flex-wrap gap-2 justify-center sm:justify-end shrink-0">
             {broker.whatsapp && (() => {
+              const profileUrl = `${window.location.origin}/corretor/${broker.username}`;
               const waUrl = buildWhatsAppUrl(
                 broker.whatsapp,
-                pt ? "Olá! Vi seu perfil e gostaria de conversar." : "Hi! I saw your profile and would like to chat.",
+                pt
+                  ? `Olá ${broker.full_name}! Vi seu perfil de corretor na Abitzo e gostaria de conversar: ${profileUrl}`
+                  : `Hi ${broker.full_name}! I saw your broker profile on Abitzo and would like to chat: ${profileUrl}`,
               );
               return waUrl ? (
                 <a href={waUrl} target="_blank" rel="noopener noreferrer">
