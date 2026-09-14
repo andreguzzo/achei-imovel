@@ -12,6 +12,7 @@ import AdminUsersTab from "@/components/admin/AdminUsersTab";
 import AdminPropertiesTab from "@/components/admin/AdminPropertiesTab";
 import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
+import AdminFinanceTab from "@/components/admin/AdminFinanceTab";
 import AdminVerificationsTab from "@/components/admin/AdminVerificationsTab";
 
 const Admin = () => {
@@ -82,6 +83,7 @@ const Admin = () => {
       case "imoveis": return <AdminPropertiesTab />;
       case "planos": return <AdminPlansTab />;
       case "assinaturas": return <AdminSubscriptionsTab />;
+      case "financeiro": return <AdminFinanceTab />;
       case "verificacoes": return <AdminVerificationsTab />;
       case "suporte": return <AdminSupportTab />;
       default: return null;
