@@ -8,6 +8,9 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const FUNCTION_NAME = "generate-social-caption";
+const DAILY_LIMIT = 20;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -25,7 +28,27 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
     );
     const { data: claimsData } = await anonClient.auth.getClaims(token);
-    if (!claimsData?.claims?.sub) return json({ error: "Não autorizado" }, 401);
+    const userId = claimsData?.claims?.sub as string | undefined;
+    if (!userId) return json({ error: "Não autorizado" }, 401);
+
+    // Daily rate limit per user
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count, error: countError } = await serviceClient
+      .from("ai_usage_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("function_name", FUNCTION_NAME)
+      .gte("created_at", since);
+    if (countError) console.error("rate limit count error:", countError);
+    if ((count ?? 0) >= DAILY_LIMIT) {
+      return json({ error: `Você atingiu o limite de ${DAILY_LIMIT} gerações de IA por dia. Tente novamente amanhã.` }, 429);
+    }
+
 
     const body = await req.json();
     const {
@@ -112,6 +135,12 @@ Deno.serve(async (req) => {
     if (!toolCall) return json({ error: "Resposta inesperada da IA" }, 500);
 
     const result = JSON.parse(toolCall.function.arguments);
+
+    const { error: logError } = await serviceClient
+      .from("ai_usage_log")
+      .insert({ user_id: userId, function_name: FUNCTION_NAME });
+    if (logError) console.error("ai_usage_log insert error:", logError);
+
     return json({ caption: String(result.caption ?? "").trim() });
   } catch (e) {
     console.error("generate-social-caption error:", e);

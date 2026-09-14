@@ -72,7 +72,7 @@ const PropertyPartnerships = ({ userId }: Props) => {
     const brokerIds = Array.from(new Set(list.map((m) => m.broker_id)));
     const [propsRes, profilesRes] = await Promise.all([
       supabase.from("properties").select("id, title").in("id", propIds),
-      supabase.from("profiles").select("user_id, full_name").in("user_id", brokerIds),
+      supabase.from("brokers_public").select("user_id, full_name").in("user_id", brokerIds),
     ]);
     setTitles(new Map((propsRes.data ?? []).map((p) => [p.id, p.title])));
     setNames(new Map((profilesRes.data ?? []).map((p) => [p.user_id, p.full_name ?? "Corretor"])));
