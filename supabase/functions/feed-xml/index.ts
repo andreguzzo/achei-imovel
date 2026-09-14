@@ -13,7 +13,7 @@ const esc = (value: unknown): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;")
-    // strip control chars XML cannot carry
+    // eslint-disable-next-line no-control-regex -- Intencional: remove caracteres de controle para gerar XML válido
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
 
 const PROPERTY_TYPE: Record<string, string> = {
