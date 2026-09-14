@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   Home, TrendingUp, Mail, FileText, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
-  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode,
+  KeyRound, Receipt, ClipboardCheck, PieChart, QrCode, ShieldCheck, Users2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ export interface NavItem {
   label: string;
   icon: typeof Home;
   brokerOnly?: boolean;
+  professionalOnly?: boolean;
+  agencyOnly?: boolean;
   badge?: number;
 }
 
