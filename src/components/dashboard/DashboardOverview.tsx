@@ -63,7 +63,10 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     const today = new Date().toISOString().split("T")[0];
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes] = await Promise.all([
+    const in90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+    const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes, contractsRes, chargesRes] = await Promise.all([
       supabase.from("sales_pipeline").select("id, stage, commission_value").eq("broker_id", userId),
       supabase
         .from("broker_appointments")
@@ -83,6 +86,19 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       isBroker
         ? supabase.from("property_group_members").select("group_id, role").eq("broker_id", userId)
         : Promise.resolve({ data: [] as { group_id: string; role: string }[] }),
+      isBroker
+        ? supabase
+            .from("rental_contracts")
+            .select("id, status, end_date, next_adjustment_date, rent_amount, admin_fee_percent")
+            .eq("broker_id", userId)
+        : Promise.resolve({ data: [] as null }),
+      isBroker
+        ? supabase
+            .from("rental_charges")
+            .select("id, status, due_date, total_amount")
+            .eq("broker_id", userId)
+            .eq("status", "pending")
+        : Promise.resolve({ data: [] as null }),
     ]);
 
     const pipeline = pipelineRes.data ?? [];
