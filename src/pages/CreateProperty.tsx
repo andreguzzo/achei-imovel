@@ -133,7 +133,8 @@ interface DetailsProps {
   parkingSpots: string; setParkingSpots: (v: string) => void;
   condoFee: string; setCondoFee: (v: string) => void;
   iptu: string; setIptu: (v: string) => void;
-  features: string; setFeatures: (v: string) => void;
+  features: string[]; setFeatures: (v: string[]) => void;
+  legacyFeatures: string[];
 }
 
 const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuites, bathrooms, setBathrooms, parkingSpots, setParkingSpots, condoFee, setCondoFee, iptu, setIptu, features, setFeatures }: DetailsProps) => (
