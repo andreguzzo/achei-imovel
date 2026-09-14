@@ -49,7 +49,14 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    let override: { product_id: string | null; subscription_end: string } | null = null;
+    const { data: planRows } = await serviceClient
+      .from("subscription_plans")
+      .select("slug, stripe_product_id, stripe_price_id");
+    const plans = planRows ?? [];
+    const slugForProduct = (productId: string | null) =>
+      plans.find((p) => p.stripe_product_id && p.stripe_product_id === productId)?.slug ?? null;
+
+    let override: { product_id: string | null; plan_slug: string; subscription_end: string } | null = null;
     const { data: ov } = await serviceClient
       .from("subscription_overrides")
       .select("plan_slug, expires_at, cancelled_at")
@@ -57,29 +64,54 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (ov && !ov.cancelled_at && (!ov.expires_at || new Date(ov.expires_at) > new Date())) {
-      const { data: plan } = await serviceClient
-        .from("subscription_plans")
-        .select("stripe_product_id")
-        .eq("slug", ov.plan_slug)
-        .maybeSingle();
-      if (plan?.stripe_product_id) {
+      const plan = plans.find((p) => p.slug === ov.plan_slug);
+      if (plan) {
         override = {
-          product_id: plan.stripe_product_id,
+          product_id: plan.stripe_product_id ?? null,
+          plan_slug: plan.slug,
           subscription_end: ov.expires_at ?? new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
         };
         logStep("Manual subscription found", override);
       }
     }
 
+    // Local snapshot kept up to date by the Stripe webhook — used as a fallback.
+    const { data: localSub } = await serviceClient
+      .from("billing_subscriptions")
+      .select("plan_slug, status, current_period_end, cancel_at_period_end")
+      .eq("user_id", authUserId)
+      .in("status", ["active", "trialing", "past_due"])
+      .order("current_period_end", { ascending: false })
+      .maybeSingle();
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email, limit: 1 });
+    let customers;
+    try {
+      customers = await stripe.customers.list({ email, limit: 1 });
+    } catch (stripeErr) {
+      logStep("Stripe unavailable, using local snapshot", {
+        message: stripeErr instanceof Error ? stripeErr.message : String(stripeErr),
+      });
+      const fallback = localSub ?? override;
+      return new Response(JSON.stringify({
+        subscribed: !!fallback,
+        product_id: override?.product_id ?? null,
+        plan_slug: localSub?.plan_slug ?? override?.plan_slug ?? null,
+        subscription_end: localSub?.current_period_end ?? override?.subscription_end ?? null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
+      const fallback = localSub ?? override;
       return new Response(JSON.stringify({
-        subscribed: !!override,
+        subscribed: !!fallback,
         product_id: override?.product_id ?? null,
-        subscription_end: override?.subscription_end ?? null,
+        plan_slug: localSub?.plan_slug ?? override?.plan_slug ?? null,
+        subscription_end: localSub?.current_period_end ?? override?.subscription_end ?? null,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
