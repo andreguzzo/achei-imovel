@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ExternalLink, Loader2 } from "lucide-react";

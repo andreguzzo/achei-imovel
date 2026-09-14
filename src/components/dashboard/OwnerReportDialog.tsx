@@ -260,16 +260,21 @@ const OwnerReportDialog = ({ property, broker, onClose }: Props) => {
                     >
                       <Copy className="h-3.5 w-3.5" /> Copiar link
                     </Button>
-                    <Button size="sm" className="gap-1" disabled={!ownerPhone} onClick={sendWhatsapp}>
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      {ownerPhone ? "Enviar ao proprietário" : "Sem telefone cadastrado"}
-                    </Button>
+                    {buildWhatsAppUrl(ownerPhone) && (
+                      <Button size="sm" className="gap-1" onClick={sendWhatsapp}>
+                        <MessageCircle className="h-3.5 w-3.5" /> Enviar ao proprietário
+                      </Button>
+                    )}
                   </div>
-                  {!ownerPhone && (
+                  {!ownerPhone ? (
                     <p className="text-xs text-muted-foreground">
                       Cadastre o telefone do proprietário nos dados privados do imóvel para enviar por WhatsApp.
                     </p>
-                  )}
+                  ) : !buildWhatsAppUrl(ownerPhone) ? (
+                    <p className="text-xs text-muted-foreground">
+                      {formatBrPhone(ownerPhone)} — número cadastrado não é válido para WhatsApp.
+                    </p>
+                  ) : null}
                 </div>
               )}
 

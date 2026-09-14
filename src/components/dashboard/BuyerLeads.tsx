@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildWhatsAppUrl, formatBrPhone } from "@/lib/phone";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import BuyerLeadMatches from "@/components/dashboard/BuyerLeadMatches";
 import { PROPERTY_FEATURES } from "@/lib/propertyFeatures";
 import {
   BUYER_STATUSES, BUYER_URGENCIES, FINANCING_TYPES,
-  financingLabel, parseCriteria, statusLabel, urgencyLabel, whatsappLink,
+  financingLabel, parseCriteria, statusLabel, urgencyLabel,
   fetchAvailableStock, propertyMatchesLead,
   type BuyerCriteria, type BuyerLead, type MatchableProperty,
 } from "@/lib/buyerLeads";
