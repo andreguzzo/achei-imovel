@@ -82,7 +82,7 @@ const AdminVerificationsTab = () => {
       <SectionHeader
         title="Verificações de identidade"
         description="Fila de documentos enviados por corretores e imobiliárias, com o que a IA leu em cada um."
-        actions={
+        action={
           <Button variant="outline" size="sm" onClick={() => setOnlyPending((v) => !v)}>
             {onlyPending ? "Ver todas" : "Ver pendentes"}
           </Button>
