@@ -5,10 +5,10 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Loader2, Users, CalendarDays, FileText, Handshake, Building2, DollarSign, Plus, ArrowRight, Clock, Mail,
-  KeyRound, Receipt, TrendingUp, ShieldAlert,
+  Loader2, CalendarDays, Plus, ArrowRight, Clock, Mail,
+  Receipt, ShieldAlert, CheckCircle2, MessageCircle, KeyRound,
 } from "lucide-react";
-import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import {
   authorizationLabel,
   authorizationStatus,
@@ -27,58 +27,44 @@ interface Props {
 interface Appointment {
   id: string;
   title: string;
+  appointment_date: string;
   start_time: string | null;
   client_name: string | null;
   client_phone: string | null;
   location: string | null;
+  completed: boolean;
 }
 
-interface Counts {
-  leads: number;
-  contacts: number;
-  proposals: number;
-  partnerships: number;
-  activeListings: number;
-  commission: number;
-  rentalActive: number;
-  rentalDueSoon: number;
-  rentalOverdue: number;
-  rentalOverdueAmount: number;
-  rentalRevenue: number;
-  contractsEnding: number;
-  adjustmentsDue: number;
-}
-
-interface RentalContractRow {
+interface LeadRow {
   id: string;
+  name: string;
+  phone: string;
   status: string;
-  end_date: string;
-  next_adjustment_date: string | null;
-  rent_amount: number;
-  admin_fee_percent: number;
-}
-
-interface RentalChargeRow {
-  id: string;
-  status: string;
-  due_date: string;
-  total_amount: number;
-}
-
-interface FollowUpDeal {
-  id: string;
-  client_name: string;
-  next_action: string | null;
-  next_action_date: string | null;
-  last_activity_at: string | null;
   created_at: string;
 }
 
-interface FollowUps {
-  overdue: FollowUpDeal[];
-  today: FollowUpDeal[];
-  week: FollowUpDeal[];
-  stalled: FollowUpDeal[];
+interface DealRow {
+  id: string;
+  stage: string;
+  client_name: string;
+  client_phone: string | null;
+  next_action: string | null;
+  next_action_date: string | null;
+  created_at: string;
+}
+
+interface PropertyRow {
+  id: string;
+  status: string;
+  price: number;
+  sold_at: string | null;
+  closed_price: number | null;
+}
+
+interface ChargeRow {
+  id: string;
+  due_date: string;
+  total_amount: number;
 }
 
 interface ExpiringAuth {
@@ -92,165 +78,107 @@ interface ExpiringAuth {
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
+const waLink = (phone: string | null | undefined) =>
+  phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+
 const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) => {
   const { locale } = useLanguage();
   const pt = locale === "pt-BR";
   const [loading, setLoading] = useState(true);
-  const [counts, setCounts] = useState<Counts>({
-    leads: 0, contacts: 0, proposals: 0, partnerships: 0, activeListings: 0, commission: 0,
-    rentalActive: 0, rentalDueSoon: 0, rentalOverdue: 0, rentalOverdueAmount: 0,
-    rentalRevenue: 0, contractsEnding: 0, adjustmentsDue: 0,
-  });
-  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
-  const [staleContacts, setStaleContacts] = useState(0);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [deals, setDeals] = useState<DealRow[]>([]);
+  const [weekAppointments, setWeekAppointments] = useState<Appointment[]>([]);
   const [expiringAuths, setExpiringAuths] = useState<ExpiringAuth[]>([]);
-  const [followUps, setFollowUps] = useState<FollowUps>({ overdue: [], today: [], week: [], stalled: [] });
+  const [dueCharges, setDueCharges] = useState<ChargeRow[]>([]);
+  const [monthStats, setMonthStats] = useState({ leads: 0, openDeals: 0, closings: 0, vgv: 0 });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
-    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
+    const in30 = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+    const monthStart = `${today.slice(0, 7)}-01`;
 
-    const in90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
-    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-
-    const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes, contractsRes, chargesRes] = await Promise.all([
-      supabase
-        .from("sales_pipeline")
-        .select("id, stage, commission_value, client_name, next_action, next_action_date, last_activity_at, created_at")
-        .eq("broker_id", userId),
-      supabase
-        .from("broker_appointments")
-        .select("id, title, start_time, client_name, client_phone, location")
-        .eq("broker_id", userId)
-        .eq("appointment_date", today)
-        .eq("completed", false)
-        .order("start_time"),
+    const [leadsRes, pipelineRes, apptRes, propsRes, chargesRes, authRes] = await Promise.all([
       supabase
         .from("contact_requests")
-        .select("id, created_at, properties:property_id!inner(user_id)")
+        .select("id, name, phone, status, created_at, properties:property_id!inner(user_id)")
         .eq("properties.user_id", userId)
         .neq("sender_id", userId)
         .order("created_at", { ascending: false })
-        .limit(100),
-      supabase.from("properties").select("id, status, sold_commission").eq("user_id", userId),
-      isBroker
-        ? supabase.from("property_group_members").select("group_id, role").eq("broker_id", userId)
-        : Promise.resolve({ data: [] as { group_id: string; role: string }[] }),
-      isBroker
-        ? supabase
-            .from("rental_contracts")
-            .select("id, status, end_date, next_adjustment_date, rent_amount, admin_fee_percent")
-            .eq("broker_id", userId)
-        : Promise.resolve({ data: [] as RentalContractRow[] }),
+        .limit(200),
+      supabase
+        .from("sales_pipeline")
+        .select("id, stage, client_name, client_phone, next_action, next_action_date, created_at")
+        .eq("broker_id", userId),
+      supabase
+        .from("broker_appointments")
+        .select("id, title, appointment_date, start_time, client_name, client_phone, location, completed")
+        .eq("broker_id", userId)
+        .gte("appointment_date", today)
+        .lte("appointment_date", in7)
+        .order("appointment_date")
+        .order("start_time"),
+      supabase
+        .from("properties")
+        .select("id, status, price, sold_at, closed_price")
+        .eq("user_id", userId),
       isBroker
         ? supabase
             .from("rental_charges")
-            .select("id, status, due_date, total_amount")
+            .select("id, due_date, total_amount")
             .eq("broker_id", userId)
             .eq("status", "pending")
-        : Promise.resolve({ data: [] as RentalChargeRow[] }),
+            .gte("due_date", today)
+            .lte("due_date", in7)
+            .order("due_date")
+        : Promise.resolve({ data: [] as ChargeRow[] }),
+      isBroker
+        ? supabase
+            .from("property_private_data")
+            .select("property_id, authorization_type, authorization_end, properties:property_id!inner(title, reference_code, user_id)")
+            .eq("properties.user_id", userId)
+            .not("authorization_end", "is", null)
+            .gte("authorization_end", today)
+            .lte("authorization_end", in30)
+            .order("authorization_end", { ascending: true })
+            .limit(10)
+        : Promise.resolve({ data: [] as never[] }),
     ]);
 
-    const pipeline = pipelineRes.data ?? [];
-    const props = propsRes.data ?? [];
-    const contacts = contactsRes.data ?? [];
+    const leadRows = (leadsRes.data ?? []) as unknown as LeadRow[];
+    const dealRows = (pipelineRes.data ?? []) as DealRow[];
+    const propRows = (propsRes.data ?? []) as PropertyRow[];
 
-    let partnerships = 0;
-    const captadorGroups = (myMembersRes.data ?? [])
-      .filter((m) => m.role === "captador")
-      .map((m) => m.group_id);
-    if (captadorGroups.length > 0) {
-      const { data: pending } = await supabase
-        .from("property_group_members")
-        .select("id, broker_id, status")
-        .in("group_id", captadorGroups)
-        .eq("status", "pending");
-      partnerships = (pending ?? []).filter((p) => p.broker_id !== userId).length;
-    }
-
-    const soldCommission = props
-      .filter((p) => p.status === "sold")
-      .reduce((acc, p) => acc + (p.sold_commission ?? 0), 0);
-    const pipelineCommission = pipeline
-      .filter((p) => p.stage === "closed_won")
-      .reduce((acc, p) => acc + (p.commission_value ?? 0), 0);
-
-    const rentalContracts = (contractsRes.data ?? []) as RentalContractRow[];
-    const pendingCharges = (chargesRes.data ?? []) as RentalChargeRow[];
-    const runningContracts = rentalContracts.filter((c) => c.status === "active" || c.status === "notice");
-    const overdueCharges = pendingCharges.filter((c) => c.due_date < today);
-
-    setCounts({
-      leads: pipeline.filter((p) => p.stage === "lead").length,
-      contacts: contacts.length,
-      proposals: pipeline.filter((p) => ["proposal", "negotiation"].includes(p.stage)).length,
-      partnerships,
-      activeListings: props.filter((p) => p.status === "active").length,
-      commission: soldCommission + pipelineCommission,
-      rentalActive: runningContracts.length,
-      rentalDueSoon: pendingCharges.filter((c) => c.due_date >= today && c.due_date <= in30).length,
-      rentalOverdue: overdueCharges.length,
-      rentalOverdueAmount: overdueCharges.reduce((acc, c) => acc + Number(c.total_amount), 0),
-      rentalRevenue: runningContracts.reduce(
-        (acc, c) => acc + (Number(c.rent_amount) * Number(c.admin_fee_percent)) / 100,
-        0,
-      ),
-      contractsEnding: runningContracts.filter((c) => c.end_date <= in90).length,
-      adjustmentsDue: runningContracts.filter(
-        (c) => c.next_adjustment_date && c.next_adjustment_date <= in30,
-      ).length,
-    });
-    // Private sale authorizations expiring soon (broker-only data)
-    const { data: authRows } = await supabase
-      .from("property_private_data")
-      .select("property_id, authorization_type, authorization_end, properties:property_id!inner(title, reference_code, user_id)")
-      .eq("properties.user_id", userId)
-      .not("authorization_end", "is", null)
-      .lte("authorization_end", in30)
-      .order("authorization_end", { ascending: true })
-      .limit(10);
-
+    setLeads(leadRows);
+    setDeals(dealRows);
+    setWeekAppointments((apptRes.data as Appointment[]) ?? []);
+    setDueCharges((chargesRes.data ?? []) as ChargeRow[]);
     setExpiringAuths(
-      (authRows ?? []).map((r) => {
-        const prop = r.properties as unknown as { title: string; reference_code: string | null };
-        return {
-          property_id: r.property_id,
-          title: prop?.title ?? "",
-          reference_code: prop?.reference_code ?? null,
-          authorization_type: r.authorization_type,
-          authorization_end: r.authorization_end as string,
-        };
-      }),
+      ((authRes.data ?? []) as {
+        property_id: string;
+        authorization_type: string | null;
+        authorization_end: string;
+        properties: { title: string; reference_code: string | null };
+      }[]).map((r) => ({
+        property_id: r.property_id,
+        title: r.properties?.title ?? "",
+        reference_code: r.properties?.reference_code ?? null,
+        authorization_type: r.authorization_type,
+        authorization_end: r.authorization_end,
+      })),
     );
 
-    // Follow-ups: open deals grouped by next action date, plus stalled ones
-    const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-    const stalledLimit = new Date(Date.now() - 15 * 86400000).toISOString();
-    const openDeals: FollowUpDeal[] = pipeline
-      .filter((d) => !["closed_won", "closed_lost"].includes(d.stage))
-      .map((d) => ({
-        id: d.id,
-        client_name: d.client_name,
-        next_action: d.next_action,
-        next_action_date: d.next_action_date,
-        last_activity_at: d.last_activity_at,
-        created_at: d.created_at,
-      }));
-    const byDate = (a: FollowUpDeal, b: FollowUpDeal) =>
-      (a.next_action_date ?? "").localeCompare(b.next_action_date ?? "");
-
-    setFollowUps({
-      overdue: openDeals.filter((d) => d.next_action_date && d.next_action_date < today).sort(byDate),
-      today: openDeals.filter((d) => d.next_action_date === today),
-      week: openDeals
-        .filter((d) => d.next_action_date && d.next_action_date > today && d.next_action_date <= in7)
-        .sort(byDate),
-      stalled: openDeals.filter((d) => (d.last_activity_at ?? d.created_at) < stalledLimit).slice(0, 10),
+    const closedThisMonth = propRows.filter(
+      (p) => (p.status === "sold" || p.status === "rented") && p.sold_at && p.sold_at.slice(0, 10) >= monthStart,
+    );
+    setMonthStats({
+      leads: leadRows.filter((l) => l.created_at.slice(0, 10) >= monthStart).length,
+      openDeals: dealRows.filter((d) => !["closed_won", "closed_lost"].includes(d.stage)).length,
+      closings: closedThisMonth.length,
+      vgv: closedThisMonth.reduce((acc, p) => acc + Number(p.closed_price ?? p.price ?? 0), 0),
     });
-
-    setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
-    setTodayAppointments((apptRes.data as Appointment[]) ?? []);
     setLoading(false);
   }, [userId, isBroker]);
 
@@ -260,63 +188,34 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
-  const kpis: { label: string; value: string | number; icon: typeof Users; section: DashboardSection }[] = [
-    { label: pt ? "Leads novos" : "New leads", value: counts.leads, icon: Users, section: "atendimentos" },
-    { label: pt ? "Visitas hoje" : "Visits today", value: todayAppointments.length, icon: CalendarDays, section: "agenda" },
-    { label: pt ? "Propostas em aberto" : "Open proposals", value: counts.proposals, icon: FileText, section: "atendimentos" },
-    { label: pt ? "Parcerias pendentes" : "Pending partnerships", value: counts.partnerships, icon: Handshake, section: "parcerias" },
-    { label: pt ? "Anúncios ativos" : "Active listings", value: counts.activeListings, icon: Building2, section: "imoveis" },
-    { label: pt ? "Comissão realizada" : "Earned commission", value: brl(counts.commission), icon: DollarSign, section: "relatorios" },
-    { label: pt ? "Locações administradas" : "Managed rentals", value: counts.rentalActive, icon: KeyRound, section: "contratos" },
-    { label: pt ? "Aluguéis a vencer (30 dias)" : "Rent due (30 days)", value: counts.rentalDueSoon, icon: Receipt, section: "alugueis" },
-    { label: pt ? "Receita de administração / mês" : "Management revenue / month", value: brl(counts.rentalRevenue), icon: TrendingUp, section: "relatorios_locacao" },
+  const today = new Date().toISOString().slice(0, 10);
+  const unansweredLeads = leads.filter((l) => l.status === "new" || l.status === "contacted");
+  const overdueFollowUps = deals
+    .filter((d) => !["closed_won", "closed_lost"].includes(d.stage) && d.next_action_date && d.next_action_date < today)
+    .sort((a, b) => (a.next_action_date ?? "").localeCompare(b.next_action_date ?? ""));
+  const todayAppointments = weekAppointments.filter((a) => a.appointment_date === today);
+  const unconfirmedToday = todayAppointments.filter((a) => !a.completed);
+  const weekFollowUps = deals
+    .filter(
+      (d) =>
+        !["closed_won", "closed_lost"].includes(d.stage) &&
+        d.next_action_date &&
+        d.next_action_date >= today &&
+        d.next_action_date <= new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    )
+    .sort((a, b) => (a.next_action_date ?? "").localeCompare(b.next_action_date ?? ""));
+  const futureAppointments = weekAppointments.filter((a) => a.appointment_date > today);
+
+  const needsNow = unansweredLeads.length + overdueFollowUps.length + unconfirmedToday.length > 0;
+  const hasWeek =
+    weekFollowUps.length + futureAppointments.length + expiringAuths.length + dueCharges.length > 0;
+
+  const monthKpis: { label: string; value: string | number; section: DashboardSection }[] = [
+    { label: pt ? "Leads recebidos" : "Leads received", value: monthStats.leads, section: "atendimentos" },
+    { label: pt ? "Negociações abertas" : "Open deals", value: monthStats.openDeals, section: "atendimentos" },
+    { label: pt ? "Fechamentos" : "Closings", value: monthStats.closings, section: "desempenho" },
+    { label: pt ? "VGV" : "Sales volume", value: brl(monthStats.vgv), section: "desempenho" },
   ];
-
-  const visibleKpis = isBroker ? kpis : kpis.filter((k) => k.section === "imoveis");
-
-  const attention = [
-    counts.contacts > 0 && {
-      label: pt ? `${counts.contacts} contatos recebidos` : `${counts.contacts} contacts received`,
-      hint: pt
-        ? staleContacts > 0 ? `${staleContacts} nos últimos 7 dias` : undefined
-        : staleContacts > 0 ? `${staleContacts} in the last 7 days` : undefined,
-      section: "atendimentos" as DashboardSection,
-      icon: Mail,
-    },
-    counts.proposals > 0 && {
-      label: pt ? `${counts.proposals} propostas aguardando resposta` : `${counts.proposals} proposals awaiting reply`,
-      section: "atendimentos" as DashboardSection,
-      icon: FileText,
-    },
-    counts.partnerships > 0 && {
-      label: pt ? `${counts.partnerships} solicitações de parceria para aprovar` : `${counts.partnerships} partnership requests to approve`,
-      section: "parcerias" as DashboardSection,
-      icon: Handshake,
-    },
-    counts.rentalOverdue > 0 && {
-      label: pt
-        ? `${counts.rentalOverdue} aluguéis em atraso`
-        : `${counts.rentalOverdue} rent charges overdue`,
-      hint: pt ? `Total de ${brl(counts.rentalOverdueAmount)}` : `${brl(counts.rentalOverdueAmount)} total`,
-      section: "alugueis" as DashboardSection,
-      icon: Receipt,
-    },
-    counts.contractsEnding > 0 && {
-      label: pt
-        ? `${counts.contractsEnding} contratos vencendo em 90 dias`
-        : `${counts.contractsEnding} contracts ending within 90 days`,
-      hint: pt ? "Fale com inquilino e proprietário sobre a renovação." : "Talk to tenant and owner about renewal.",
-      section: "contratos" as DashboardSection,
-      icon: KeyRound,
-    },
-    counts.adjustmentsDue > 0 && {
-      label: pt
-        ? `${counts.adjustmentsDue} reajustes a aplicar`
-        : `${counts.adjustmentsDue} rent adjustments to apply`,
-      section: "contratos" as DashboardSection,
-      icon: TrendingUp,
-    },
-  ].filter(Boolean) as { label: string; hint?: string; section: DashboardSection; icon: typeof Mail }[];
 
   return (
     <div className="space-y-6">
@@ -342,208 +241,253 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleKpis.map((kpi) => (
-          <button
-            key={kpi.label}
-            type="button"
-            onClick={() => onNavigate(kpi.section)}
-            className="group rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50"
-          >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <kpi.icon className="h-4 w-4" />
-                <p className="text-xs">{kpi.label}</p>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{kpi.value}</p>
-          </button>
-        ))}
-      </div>
-
+      {/* 1. Precisa de você agora */}
       {isBroker && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">{pt ? "Sua agenda de hoje" : "Today's schedule"}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("agenda")}>
-                {pt ? "Ver agenda" : "Open calendar"}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {todayAppointments.length === 0 ? (
-                <EmptyState
-                  icon={<CalendarDays className="h-7 w-7" />}
-                  title={pt ? "Nenhum compromisso para hoje" : "Nothing scheduled today"}
-                  action={
-                    <Button size="sm" variant="outline" onClick={() => onNavigate("agenda")}>
-                      {pt ? "Agendar visita" : "Schedule visit"}
-                    </Button>
-                  }
-                />
-              ) : (
-                <div className="divide-y divide-border">
-                  {todayAppointments.map((a) => (
-                    <div key={a.id} className="flex items-center gap-3 py-3">
-                      <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-semibold text-primary">
-                        <Clock className="h-3.5 w-3.5" />
-                        {a.start_time?.slice(0, 5) ?? "--:--"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {[a.client_name, a.location].filter(Boolean).join(" • ") || "—"}
-                        </p>
-                      </div>
-                      {a.client_phone && (
-                        <Button asChild size="sm" variant="ghost">
-                          <a href={`https://wa.me/${a.client_phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                            WhatsApp
-                          </a>
-                        </Button>
-                      )}
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {pt ? "Precisa de você agora" : "Needs you now"}
+          </h2>
+          {!needsNow ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              {pt ? "Tudo em dia por aqui." : "You're all caught up."}
+            </p>
+          ) : (
+            <Card>
+              <CardContent className="divide-y divide-border p-0 px-4">
+                {unansweredLeads.map((l) => (
+                  <div key={`lead-${l.id}`} className="flex items-center gap-3 py-3">
+                    <Mail className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{l.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {pt ? "Lead aguardando resposta" : "Lead awaiting reply"} · {formatDateBr(l.created_at.slice(0, 10))}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{pt ? "Precisa de atenção" : "Needs attention"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {attention.length === 0 ? (
-                <EmptyState
-                  title={pt ? "Tudo em ordem" : "All clear"}
-                  description={pt ? "Nenhuma pendência no momento." : "Nothing pending right now."}
-                />
-              ) : (
-                <div className="divide-y divide-border">
-                  {attention.map((a) => (
-                    <button
-                      key={a.label}
-                      type="button"
-                      onClick={() => onNavigate(a.section)}
-                      className="flex w-full items-center gap-3 py-3 text-left hover:text-primary"
-                    >
-                      <a.icon className="h-4 w-4 shrink-0 text-primary" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">{a.label}</p>
-                        {a.hint && <p className="text-xs text-muted-foreground">{a.hint}</p>}
-                      </div>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {isBroker && (followUps.overdue.length + followUps.today.length + followUps.week.length + followUps.stalled.length) > 0 && (
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Clock className="h-4 w-4 text-primary" />
-              Follow-ups
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate("atendimentos")}>
-              {pt ? "Ver negociações" : "View deals"}
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {([
-              { key: "overdue", title: pt ? "Atrasados" : "Overdue", tone: "text-destructive", list: followUps.overdue },
-              { key: "today", title: pt ? "Hoje" : "Today", tone: "text-primary", list: followUps.today },
-              { key: "week", title: pt ? "Próximos 7 dias" : "Next 7 days", tone: "text-foreground", list: followUps.week },
-              { key: "stalled", title: pt ? "Paradas (15+ dias sem contato)" : "Stalled (15+ days no contact)", tone: "text-amber-600", list: followUps.stalled },
-            ] as const)
-              .filter((g) => g.list.length > 0)
-              .map((g) => (
-                <div key={g.key}>
-                  <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.tone}`}>
-                    {g.title} · {g.list.length}
-                  </p>
-                  <div className="divide-y divide-border">
-                    {g.list.map((d) => (
-                      <div key={d.id} className="flex items-center gap-3 py-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{d.client_name}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {g.key === "stalled"
-                              ? pt
-                                ? `Sem interação desde ${formatDateBr((d.last_activity_at ?? d.created_at).slice(0, 10))}`
-                                : `No interaction since ${formatDateBr((d.last_activity_at ?? d.created_at).slice(0, 10))}`
-                              : [d.next_action, d.next_action_date ? formatDateBr(d.next_action_date) : null]
-                                  .filter(Boolean)
-                                  .join(" • ") || (pt ? "Sem descrição" : "No description")}
-                          </p>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
-                          {pt ? "Abrir" : "Open"}
-                        </Button>
-                      </div>
-                    ))}
+                    {waLink(l.phone) && (
+                      <Button asChild size="sm" variant="ghost" className="gap-1">
+                        <a href={waLink(l.phone)!} target="_blank" rel="noopener noreferrer">
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </a>
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
                   </div>
-                </div>
-              ))}
-          </CardContent>
-        </Card>
+                ))}
+                {overdueFollowUps.map((d) => (
+                  <div key={`deal-${d.id}`} className="flex items-center gap-3 py-3">
+                    <Clock className="h-4 w-4 shrink-0 text-destructive" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{d.client_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[d.next_action, d.next_action_date ? formatDateBr(d.next_action_date) : null]
+                          .filter(Boolean)
+                          .join(" • ") || (pt ? "Follow-up atrasado" : "Overdue follow-up")}
+                      </p>
+                    </div>
+                    {waLink(d.client_phone) && (
+                      <Button asChild size="sm" variant="ghost" className="gap-1">
+                        <a href={waLink(d.client_phone)!} target="_blank" rel="noopener noreferrer">
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </a>
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
+                  </div>
+                ))}
+                {unconfirmedToday.map((a) => (
+                  <div key={`appt-${a.id}`} className="flex items-center gap-3 py-3">
+                    <CalendarDays className="h-4 w-4 shrink-0 text-amber-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {a.start_time?.slice(0, 5) ?? "--:--"} · {a.title}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {pt ? "Visita de hoje não confirmada" : "Today's visit not confirmed"}
+                        {a.client_name ? ` · ${a.client_name}` : ""}
+                      </p>
+                    </div>
+                    {waLink(a.client_phone) && (
+                      <Button asChild size="sm" variant="ghost" className="gap-1">
+                        <a href={waLink(a.client_phone)!} target="_blank" rel="noopener noreferrer">
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </a>
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("agenda")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </section>
       )}
 
-      {isBroker && expiringAuths.length > 0 && (
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldAlert className="h-4 w-4 text-amber-600" />
-              {pt ? "Autorizações a vencer" : "Authorizations expiring"}
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate("imoveis")}>
-              {pt ? "Ver anúncios" : "View listings"}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-border">
-              {expiringAuths.map((a) => {
-                const { status, days } = authorizationStatus(a.authorization_end);
-                const badge = authorizationBadgeText(status, days, pt);
-                return (
-                  <div key={a.property_id} className="flex items-center gap-3 py-3">
+      {/* 2. Hoje */}
+      {isBroker && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {pt ? "Hoje" : "Today"}
+          </h2>
+          {todayAppointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {pt ? "Nenhum compromisso para hoje." : "Nothing scheduled for today."}
+            </p>
+          ) : (
+            <Card>
+              <CardContent className="divide-y divide-border p-0 px-4">
+                {todayAppointments.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3 py-3">
+                    <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-semibold text-primary">
+                      <Clock className="h-3.5 w-3.5" />
+                      {a.start_time?.slice(0, 5) ?? "--:--"}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {[
-                          a.reference_code ? `${pt ? "Cód." : "Ref."} ${a.reference_code}` : null,
-                          a.authorization_type ? authorizationLabel(a.authorization_type, pt) : null,
-                          `${pt ? "até" : "until"} ${formatDateBr(a.authorization_end)}`,
-                        ]
+                        {[a.client_name, a.location].filter(Boolean).join(" • ") || "—"}
+                      </p>
+                    </div>
+                    {waLink(a.client_phone) && (
+                      <Button asChild size="sm" variant="ghost">
+                        <a href={waLink(a.client_phone)!} target="_blank" rel="noopener noreferrer">
+                          WhatsApp
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
+
+      {/* 3. Esta semana */}
+      {isBroker && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {pt ? "Esta semana" : "This week"}
+          </h2>
+          {!hasWeek ? (
+            <p className="text-sm text-muted-foreground">
+              {pt ? "Nada programado para os próximos dias." : "Nothing scheduled for the next few days."}
+            </p>
+          ) : (
+            <Card>
+              <CardContent className="divide-y divide-border p-0 px-4">
+                {weekFollowUps.map((d) => (
+                  <div key={`wf-${d.id}`} className="flex items-center gap-3 py-3">
+                    <Clock className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{d.client_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {(pt ? "Follow-up" : "Follow-up") +
+                          " · " +
+                          [d.next_action, d.next_action_date ? formatDateBr(d.next_action_date) : null]
+                            .filter(Boolean)
+                            .join(" • ")}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("atendimentos")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
+                  </div>
+                ))}
+                {futureAppointments.map((a) => (
+                  <div key={`wa-${a.id}`} className="flex items-center gap-3 py-3">
+                    <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[formatDateBr(a.appointment_date), a.start_time?.slice(0, 5), a.client_name]
                           .filter(Boolean)
                           .join(" • ")}
                       </p>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        status === "expired"
-                          ? "bg-destructive/10 text-destructive"
-                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                      }`}
-                    >
-                      {badge}
-                    </span>
-                    <Link to={`/editar/${a.property_id}`}>
-                      <Button size="sm" variant="outline">{pt ? "Abrir" : "Open"}</Button>
-                    </Link>
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("agenda")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+                {expiringAuths.map((a) => {
+                  const { status, days } = authorizationStatus(a.authorization_end);
+                  const badge = authorizationBadgeText(status, days, pt);
+                  return (
+                    <div key={`auth-${a.property_id}`} className="flex items-center gap-3 py-3">
+                      <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {[
+                            pt ? "Autorização de venda" : "Sale authorization",
+                            a.reference_code ? `${pt ? "Cód." : "Ref."} ${a.reference_code}` : null,
+                            a.authorization_type ? authorizationLabel(a.authorization_type, pt) : null,
+                            `${pt ? "até" : "until"} ${formatDateBr(a.authorization_end)}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                        {badge}
+                      </span>
+                      <Link to={`/editar/${a.property_id}`}>
+                        <Button size="sm" variant="outline">{pt ? "Abrir" : "Open"}</Button>
+                      </Link>
+                    </div>
+                  );
+                })}
+                {dueCharges.map((c) => (
+                  <div key={`charge-${c.id}`} className="flex items-center gap-3 py-3">
+                    <Receipt className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {pt ? "Aluguel a vencer" : "Rent due"} · {brl(Number(c.total_amount))}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {pt ? "Vencimento" : "Due"} {formatDateBr(c.due_date)}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => onNavigate("locacao")}>
+                      {pt ? "Abrir" : "Open"}
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </section>
       )}
+
+      {/* 4. Indicadores do mês */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {pt ? "Indicadores do mês" : "This month's numbers"}
+        </h2>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {monthKpis.map((kpi) => (
+            <button
+              key={kpi.label}
+              type="button"
+              onClick={() => onNavigate(kpi.section)}
+              className="group rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between text-muted-foreground">
+                <p className="text-xs">{kpi.label}</p>
+                <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+              <p className="mt-2 text-2xl font-semibold text-foreground">{kpi.value}</p>
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
