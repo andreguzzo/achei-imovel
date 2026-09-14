@@ -34,11 +34,18 @@ const Favorites = () => {
 
     const fetchProps = async () => {
       setLoading(true);
-      const { data } = await supabase
+      setError(false);
+      const { data, error: fetchError } = await supabase
         .from("properties")
         .select("*, property_images(*)")
         .in("id", ids);
-      setProperties((data as PropertyWithImages[]) ?? []);
+      if (fetchError) {
+        console.warn("Favorites error:", fetchError.message);
+        setError(true);
+        setProperties([]);
+      } else {
+        setProperties((data as PropertyWithImages[]) ?? []);
+      }
       setLoading(false);
     };
     fetchProps();
@@ -46,8 +53,22 @@ const Favorites = () => {
 
   if (favLoading || loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container py-8">
+        <PropertyCardSkeletonGrid count={3} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-20 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+        <p className="mt-4 text-lg font-medium">
+          {pt ? "Não foi possível carregar seus favoritos" : "Could not load your favorites"}
+        </p>
+        <Button className="mt-4" onClick={() => window.location.reload()}>
+          {pt ? "Tentar novamente" : "Try again"}
+        </Button>
       </div>
     );
   }
