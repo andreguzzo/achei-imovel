@@ -15,6 +15,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, isSameMonth, isToday, parseISO, differenceInMilliseconds, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 interface BrokerAgendaProps {
   userId: string;

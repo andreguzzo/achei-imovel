@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 import {
   ACTIVITY_TYPES,
   activityLabel,

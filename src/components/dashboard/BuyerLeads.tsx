@@ -20,6 +20,7 @@ import {
   type BuyerCriteria, type BuyerLead, type MatchableProperty,
 } from "@/lib/buyerLeads";
 import type { Enums } from "@/integrations/supabase/types";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 const PROPERTY_TYPES: Enums<"property_type">[] = ["apartment", "house", "land", "commercial"];
 
