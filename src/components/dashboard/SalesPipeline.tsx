@@ -56,6 +56,17 @@ const SalesPipeline = ({ userId }: Props) => {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Deal detail + interaction history
+  const [selected, setSelected] = useState<PipelineItem | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [savingActivity, setSavingActivity] = useState(false);
+  const [activityType, setActivityType] = useState<ActivityTypeKey>("ligacao");
+  const [activityDesc, setActivityDesc] = useState("");
+  const [activityDate, setActivityDate] = useState(todayIso());
+  const [nextAction, setNextAction] = useState("");
+  const [nextActionDate, setNextActionDate] = useState("");
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
