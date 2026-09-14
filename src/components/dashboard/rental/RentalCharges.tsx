@@ -66,7 +66,9 @@ const RentalCharges = ({ userId }: Props) => {
 
   const pixFor = useCallback(
     (charge: ChargeRow) =>
-      canGeneratePix(billing)
+      charge.pix_payload
+        ? charge.pix_payload
+        : canGeneratePix(billing)
         ? buildPixPayload({
             key: billing!.pix_key!,
             beneficiaryName: billing!.beneficiary_name!,
@@ -314,6 +316,15 @@ const RentalCharges = ({ userId }: Props) => {
                         title={pt ? "Copiar Pix copia e cola" : "Copy Pix code"}>
                         <QrCode className={`h-3.5 w-3.5 ${canGeneratePix(billing) ? "text-primary" : ""}`} />
                       </Button>
+                      {canIssueCharges(billing) && !c.provider_charge_id && s !== "paid" && (
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => issueCharge(c)}
+                          disabled={issuing === c.id}>
+                          {issuing === c.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Zap className="h-3.5 w-3.5" />}
+                          {pt ? "Emitir" : "Issue"}
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" onClick={() => { setLinkTarget(c); setLinkValue(c.payment_link ?? ""); }}
                         title={pt ? "Link de pagamento" : "Payment link"}>
                         <Link2 className={`h-3.5 w-3.5 ${c.payment_link ? "text-primary" : ""}`} />
