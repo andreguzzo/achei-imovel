@@ -205,7 +205,7 @@ const BrokerProfile = () => {
       {/* Hero Cover - uses banner photo */}
       <div className="relative h-48 sm:h-64 md:h-72 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 overflow-hidden">
         {bannerPhoto && (
-          <img src={bannerPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+          <ImageWithFallback src={bannerPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" width={1600} height={400} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
@@ -435,7 +435,7 @@ const BrokerProfile = () => {
                     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-transparent hover:border-primary/20">
                       <div className="aspect-video overflow-hidden bg-muted relative">
                         {p.property_images?.[0]?.url ? (
-                          <img src={p.property_images[0].url} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <ImageWithFallback src={p.property_images[0].url} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" width={640} height={360} />
                         ) : (
                           <div className="flex h-full items-center justify-center text-muted-foreground">
                             <Building2 className="h-8 w-8" />
