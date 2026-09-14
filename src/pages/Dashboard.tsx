@@ -78,8 +78,16 @@ const Dashboard = () => {
   const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
   // "propostas", "negociacoes" and "contatos" were merged into "atendimentos"; keep old links working.
   const legacyFunnel = rawSection === "propostas" || rawSection === "negociacoes";
+  const rentalTab = rawSection ? RENTAL_TABS[rawSection] : undefined;
+  const performanceTab = rawSection ? PERFORMANCE_TABS[rawSection] : undefined;
   const normalizedSection: DashboardSection | null =
-    legacyFunnel || rawSection === "contatos" ? "atendimentos" : (rawSection as DashboardSection | null);
+    legacyFunnel || rawSection === "contatos"
+      ? "atendimentos"
+      : rentalTab
+        ? "locacao"
+        : performanceTab
+          ? "desempenho"
+          : (rawSection as DashboardSection | null);
   const section: DashboardSection =
     normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
