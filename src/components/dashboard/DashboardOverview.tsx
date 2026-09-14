@@ -65,6 +65,22 @@ interface RentalChargeRow {
   total_amount: number;
 }
 
+interface FollowUpDeal {
+  id: string;
+  client_name: string;
+  next_action: string | null;
+  next_action_date: string | null;
+  last_activity_at: string | null;
+  created_at: string;
+}
+
+interface FollowUps {
+  overdue: FollowUpDeal[];
+  today: FollowUpDeal[];
+  week: FollowUpDeal[];
+  stalled: FollowUpDeal[];
+}
+
 interface ExpiringAuth {
   property_id: string;
   title: string;
