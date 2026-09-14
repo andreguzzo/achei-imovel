@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Loader2, Search, RotateCcw, Eye, ExternalLink, MoreVertical, Trash2, Edit, Ban, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables, Database } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & { property_images: { url: string }[] };
@@ -152,6 +153,11 @@ const AdminPropertiesTab = () => {
 
   return (
     <div className="space-y-4">
+      <SectionHeader
+        title="Imóveis"
+        description="Todos os anúncios da plataforma, com acesso completo à edição."
+        count={filtered.length}
+      />
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -169,7 +175,12 @@ const AdminPropertiesTab = () => {
         </Select>
       </div>
 
-      <p className="text-sm text-muted-foreground">{filtered.length} imóveis encontrados</p>
+      {filtered.length === 0 && (
+        <EmptyState
+          title="Nenhum imóvel encontrado"
+          description="Ajuste a busca ou o filtro de situação para ver outros anúncios."
+        />
+      )}
 
       <div className="space-y-2">
         {filtered.map(p => (

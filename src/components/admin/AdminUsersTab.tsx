@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Tables, Database } from "@/integrations/supabase/types";
+import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 
 type Profile = Tables<"profiles">;
 type Role = Tables<"user_roles">;
@@ -213,6 +214,12 @@ const AdminUsersTab = () => {
 
   return (
     <div className="space-y-4">
+      <SectionHeader
+        title="Usuários"
+        description="Contas, papéis, acesso e histórico de atividade."
+        count={filtered.length}
+        action={<Button onClick={() => setCreateOpen(true)} className="gap-1"><Plus className="h-4 w-4" /> Novo usuário</Button>}
+      />
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -235,10 +242,14 @@ const AdminUsersTab = () => {
             <SelectItem value="suspended">Suspensas</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={() => setCreateOpen(true)} className="gap-1"><Plus className="h-4 w-4" /> Novo usuário</Button>
       </div>
 
-      <p className="text-sm text-muted-foreground">{filtered.length} usuários encontrados</p>
+      {filtered.length === 0 && (
+        <EmptyState
+          title="Nenhum usuário encontrado"
+          description="Ajuste a busca ou os filtros de papel e situação."
+        />
+      )}
 
       <div className="space-y-2">
         {filtered.map(p => {
