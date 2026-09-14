@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera } from "lucide-react";
+import { Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera, AlertCircle } from "lucide-react";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { motion, AnimatePresence } from "framer-motion";
 import Seo from "@/components/Seo";
 
@@ -74,6 +75,7 @@ const BrokerProfile = () => {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
