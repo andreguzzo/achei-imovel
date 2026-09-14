@@ -21,22 +21,32 @@ import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
-import RentalContracts from "@/components/dashboard/rental/RentalContracts";
-import RentalCharges from "@/components/dashboard/rental/RentalCharges";
-import RentalInspections from "@/components/dashboard/rental/RentalInspections";
-import RentalReports from "@/components/dashboard/rental/RentalReports";
-import RentalBilling from "@/components/dashboard/rental/RentalBilling";
 import IdentityVerification from "@/components/dashboard/IdentityVerification";
 import AgencyTeam from "@/components/dashboard/AgencyTeam";
-const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFinance"));
+import type { RentalTab } from "@/components/dashboard/rental/RentalHub";
+import type { PerformanceTab } from "@/components/dashboard/PerformanceHub";
+const RentalHub = lazy(() => import("@/components/dashboard/rental/RentalHub"));
+const PerformanceHub = lazy(() => import("@/components/dashboard/PerformanceHub"));
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "clientes", "atendimentos", "agenda",
-  "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
-  "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
-  "verificacao", "equipe", "financeiro",
+  "imoveis", "parcerias", "perfil", "assinatura", "suporte",
+  "locacao", "desempenho", "verificacao", "equipe",
 ];
+
+/** Old deep-linked sections now live as tabs inside the grouped screens. */
+const RENTAL_TABS: Record<string, RentalTab> = {
+  contratos: "contratos",
+  alugueis: "alugueis",
+  vistorias: "vistorias",
+  cobranca_locacao: "cobranca",
+  relatorios_locacao: "relatorios",
+};
+const PERFORMANCE_TABS: Record<string, PerformanceTab> = {
+  relatorios: "vendas",
+  financeiro: "financeiro",
+};
 
 const ChartSkeleton = () => (
   <div className="space-y-4">
