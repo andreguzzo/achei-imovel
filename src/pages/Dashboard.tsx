@@ -303,6 +303,7 @@ const Dashboard = () => {
         <main className="min-w-0 flex-1">{renderSection()}</main>
       </div>
     </div>
+    </ClientSheetProvider>
   );
 };
 
