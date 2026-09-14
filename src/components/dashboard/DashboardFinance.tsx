@@ -10,6 +10,7 @@ import { Loader2, Download, Wallet } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import { brl } from "@/lib/rentals";
 import { useAgency } from "@/hooks/useAgency";
+import { ClientLink } from "@/components/dashboard/ClientSheet";
 
 interface Props {
   userId: string;
