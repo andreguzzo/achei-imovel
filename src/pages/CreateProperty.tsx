@@ -595,7 +595,7 @@ const CreateProperty = () => {
       zip_code: zipCode || null,
       condo_fee: condoFee ? Number(condoFee) : null,
       iptu: iptu ? Number(iptu) : null,
-      features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
+      features,
       video_url: videoUrl || null,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
