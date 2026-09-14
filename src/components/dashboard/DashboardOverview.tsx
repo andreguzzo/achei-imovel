@@ -141,6 +141,11 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       .filter((p) => p.stage === "closed_won")
       .reduce((acc, p) => acc + (p.commission_value ?? 0), 0);
 
+    const rentalContracts = (contractsRes.data ?? []) as RentalContractRow[];
+    const pendingCharges = (chargesRes.data ?? []) as RentalChargeRow[];
+    const runningContracts = rentalContracts.filter((c) => c.status === "active" || c.status === "notice");
+    const overdueCharges = pendingCharges.filter((c) => c.due_date < today);
+
     setCounts({
       leads: pipeline.filter((p) => p.stage === "lead").length,
       contacts: contacts.length,
@@ -148,6 +153,18 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
       partnerships,
       activeListings: props.filter((p) => p.status === "active").length,
       commission: soldCommission + pipelineCommission,
+      rentalActive: runningContracts.length,
+      rentalDueSoon: pendingCharges.filter((c) => c.due_date >= today && c.due_date <= in30).length,
+      rentalOverdue: overdueCharges.length,
+      rentalOverdueAmount: overdueCharges.reduce((acc, c) => acc + Number(c.total_amount), 0),
+      rentalRevenue: runningContracts.reduce(
+        (acc, c) => acc + (Number(c.rent_amount) * Number(c.admin_fee_percent)) / 100,
+        0,
+      ),
+      contractsEnding: runningContracts.filter((c) => c.end_date <= in90).length,
+      adjustmentsDue: runningContracts.filter(
+        (c) => c.next_adjustment_date && c.next_adjustment_date <= in30,
+      ).length,
     });
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
