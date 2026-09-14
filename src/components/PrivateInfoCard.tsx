@@ -393,7 +393,14 @@ const PrivateInfoCard = ({
               </div>
             )}
 
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-2.5 text-sm font-medium hover:border-primary/50 transition-colors">
+            <label
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-6 text-sm font-medium transition-colors ${
+                dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"
+              }`}
+            >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -403,7 +410,12 @@ const PrivateInfoCard = ({
                 onChange={handleFileAdd}
               />
               <Upload className="h-4 w-4 text-muted-foreground" />
-              {pt ? "Adicionar documentos" : "Add documents"}
+              <span>
+                {pt ? "Arraste os documentos aqui ou clique para escolher" : "Drag documents here or click to choose"}
+              </span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {pt ? "PDF ou imagens até 20MB" : "PDF or images up to 20MB"}
+              </span>
             </label>
           </div>
         </CardContent>
