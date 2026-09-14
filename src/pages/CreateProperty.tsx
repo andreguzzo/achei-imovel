@@ -137,7 +137,7 @@ interface DetailsProps {
   legacyFeatures: string[];
 }
 
-const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuites, bathrooms, setBathrooms, parkingSpots, setParkingSpots, condoFee, setCondoFee, iptu, setIptu, features, setFeatures }: DetailsProps) => (
+const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuites, bathrooms, setBathrooms, parkingSpots, setParkingSpots, condoFee, setCondoFee, iptu, setIptu, features, setFeatures, legacyFeatures }: DetailsProps) => (
   <Card>
     <CardHeader><CardTitle className="text-base">{pt ? "Detalhes" : "Details"}</CardTitle></CardHeader>
     <CardContent className="grid gap-4 sm:grid-cols-5">
