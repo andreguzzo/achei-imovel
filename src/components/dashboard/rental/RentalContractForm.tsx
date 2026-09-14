@@ -144,6 +144,14 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
       toast.error(pt ? "Informe o valor do aluguel." : "Enter the rent amount.");
       return;
     }
+    if (form.tenant_phone.trim() && !normalizeBrPhone(form.tenant_phone)) {
+      toast.error(pt ? "Telefone do inquilino inválido. Informe DDD + número." : "Invalid tenant phone. Enter area code + number.");
+      return;
+    }
+    if (form.owner_phone.trim() && !normalizeBrPhone(form.owner_phone)) {
+      toast.error(pt ? "Telefone do proprietário inválido. Informe DDD + número." : "Invalid owner phone. Enter area code + number.");
+      return;
+    }
 
     setSaving(true);
     const payload = {
@@ -268,7 +276,7 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
           </div>
           <div>
             <Label>{pt ? "WhatsApp do inquilino" : "Tenant WhatsApp"}</Label>
-            <Input value={form.tenant_phone} onChange={(e) => set("tenant_phone", e.target.value)} />
+            <Input value={form.tenant_phone} onChange={(e) => set("tenant_phone", maskBrPhone(e.target.value))} placeholder="(27) 99999-8888" />
           </div>
           <div>
             <Label>{pt ? "E-mail do inquilino" : "Tenant e-mail"}</Label>
@@ -281,7 +289,7 @@ const RentalContractForm = ({ userId, open, onOpenChange, contract, onSaved }: P
           </div>
           <div>
             <Label>{pt ? "WhatsApp do proprietário" : "Owner WhatsApp"}</Label>
-            <Input value={form.owner_phone} onChange={(e) => set("owner_phone", e.target.value)} />
+            <Input value={form.owner_phone} onChange={(e) => set("owner_phone", maskBrPhone(e.target.value))} placeholder="(27) 99999-8888" />
           </div>
 
           <div>

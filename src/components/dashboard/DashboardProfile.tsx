@@ -91,6 +91,22 @@ const DashboardProfile = ({ userId, email, isBroker, profile, onProfileSaved }: 
       toast({ title: pt ? "Telefone é obrigatório" : "Phone is required", variant: "destructive" });
       return;
     }
+    if (!normalizeBrPhone(phone)) {
+      toast({
+        title: pt ? "Telefone inválido" : "Invalid phone",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (whatsapp.trim() && !normalizeBrPhone(whatsapp)) {
+      toast({
+        title: pt ? "WhatsApp inválido" : "Invalid WhatsApp",
+        description: pt ? "Informe DDD + número, ex: (27) 99999-8888." : "Enter area code + number, e.g. (27) 99999-8888.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (username.trim() && !/^[a-zA-Z0-9._-]{3,30}$/.test(username.trim())) {
       toast({
         title: pt ? "Username inválido (3-30 caracteres, letras, números, . _ -)" : "Invalid username (3-30 chars, letters, numbers, . _ -)",
