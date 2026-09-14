@@ -55,14 +55,11 @@ const formatPrice = (price: number, listingType: string) => {
 
 
 
-const cleanPhone = (phone: string) => phone.replace(/\D/g, "");
-
-const buildWhatsAppUrl = (phone: string, propertyTitle: string) => {
-  const cleaned = cleanPhone(phone);
-  const number = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-  const msg = encodeURIComponent(`Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`);
-  return `https://wa.me/${number}?text=${msg}`;
-};
+const brokerWhatsAppUrl = (phone: string, propertyTitle: string) =>
+  buildWhatsAppUrl(
+    phone,
+    `Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`,
+  );
 
 const BrokerCard = ({
   profile,
@@ -80,6 +77,7 @@ const BrokerCard = ({
   highlight?: boolean;
 }) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
+  const waUrl = whatsappNumber ? brokerWhatsAppUrl(whatsappNumber, propertyTitle) : null;
 
 
   return (
