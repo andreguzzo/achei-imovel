@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Seo from "@/components/Seo";
 
 interface BrokerData {
   user_id: string;
@@ -133,13 +134,6 @@ const BrokerProfile = () => {
     };
     fetchBroker();
   }, [username]);
-
-  // SEO: set document title
-  useEffect(() => {
-    if (!broker) return;
-    document.title = `${displayName} — Corretor de Imóveis | Abitzo`;
-    return () => { document.title = "Abitzo"; };
-  }, [displayName, broker]);
 
   // Close lightbox on Escape
   useEffect(() => {
