@@ -140,17 +140,29 @@ const Search = () => {
           .lte("longitude", bounds.east);
       }
 
-      const { data } = await q.range(0, pageLimit - 1);
-      const rows = (data as PropertyWithImages[]) ?? [];
-      const { items, groupInfo } = await dedupeByGroup(rows);
-      setProperties(items);
-      setGroupInfo(groupInfo);
-      setHasMore(rows.length >= pageLimit);
+      const { data, error: fetchError } = await q.range(0, pageLimit - 1);
+      if (fetchError) {
+        console.warn("Search error:", fetchError.message);
+        setError(true);
+        setProperties([]);
+        setGroupInfo(new Map());
+        setHasMore(false);
+      } else {
+        const rows = (data as PropertyWithImages[]) ?? [];
+        const { items, groupInfo } = await dedupeByGroup(rows);
+        setProperties(items);
+        setGroupInfo(groupInfo);
+        setHasMore(rows.length >= pageLimit);
+      }
       setLoading(false);
       setLoadingMore(false);
     },
     []
   );
+
+  const retrySearch = useCallback(() => {
+    fetchProperties(filters, limit, areaBounds);
+  }, [fetchProperties, filters, limit, areaBounds]);
 
   // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
