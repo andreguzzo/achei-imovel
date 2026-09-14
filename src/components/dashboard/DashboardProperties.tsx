@@ -112,6 +112,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
     setSoldPrice("");
     setSoldCommission("");
     setSoldByOtherPrice("");
+    setClosingPrice(p.closed_price != null ? String(p.closed_price) : "");
     setStatusDialogOpen(true);
   };
 
@@ -121,8 +122,16 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
       toast({ title: pt ? "Informe o valor e a comissão" : "Enter value and commission", variant: "destructive" });
       return;
     }
+    if (statusAction === "rented" && !closingPrice) {
+      toast({
+        title: pt ? "Informe o valor final de fechamento" : "Enter the final closing value",
+        variant: "destructive",
+      });
+      return;
+    }
     const isSoldByOther = statusAction === "sold_by_other";
     const finalStatus = isSoldByOther ? "sold" : statusAction;
+    const isClosing = finalStatus === "sold" || finalStatus === "rented";
 
     const updateData: Record<string, unknown> = { status: finalStatus };
     if (statusAction === "sold") {
@@ -131,6 +140,34 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
     }
     if (isSoldByOther && soldByOtherPrice) {
       updateData.sold_by_other_price = Number(soldByOtherPrice);
+    }
+
+    if (isClosing) {
+      const finalValue =
+        closingPrice !== ""
+          ? Number(closingPrice)
+          : statusAction === "sold"
+            ? Number(soldPrice)
+            : isSoldByOther && soldByOtherPrice
+              ? Number(soldByOtherPrice)
+              : statusTarget.price;
+      updateData.closed_price = finalValue;
+      updateData.sold_at = statusTarget.sold_at ?? new Date().toISOString();
+
+      // Link the closing to the broker's deal for this property, if there is one
+      const { data: deal } = await supabase
+        .from("sales_pipeline")
+        .select("id")
+        .eq("broker_id", userId)
+        .eq("property_id", statusTarget.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (deal?.id) updateData.closed_pipeline_id = deal.id;
+    } else {
+      updateData.closed_price = null;
+      updateData.sold_at = null;
+      updateData.closed_pipeline_id = null;
     }
 
     const { error } = await supabase.from("properties").update(updateData).eq("id", statusTarget.id);
