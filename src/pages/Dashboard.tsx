@@ -31,7 +31,7 @@ const DashboardFinance = lazy(() => import("@/components/dashboard/DashboardFina
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
-  "inicio", "clientes", "negociacoes", "contatos", "agenda",
+  "inicio", "clientes", "atendimentos", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
   "verificacao", "equipe", "financeiro",
