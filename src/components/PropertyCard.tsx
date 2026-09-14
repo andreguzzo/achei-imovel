@@ -4,6 +4,7 @@ import { Bed, Bath, Car, Maximize, Heart, Users, ChevronLeft, ChevronRight, Mess
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties"> & {
@@ -83,11 +84,12 @@ const PropertyCard = ({
     >
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {current ? (
-          <img
+          <ImageWithFallback
             src={current.url}
             alt={property.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
+            width={640}
+            height={480}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
