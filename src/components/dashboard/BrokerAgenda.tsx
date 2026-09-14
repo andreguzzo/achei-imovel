@@ -326,7 +326,7 @@ const BrokerAgenda = ({ userId }: BrokerAgendaProps) => {
         </div>
         {!compact && appt.client_name && (
           <p className="flex items-center gap-1 text-xs text-muted-foreground pl-6">
-            <User className="h-3 w-3" /> {appt.client_name}
+            <User className="h-3 w-3" /> <ClientLink name={appt.client_name} phone={appt.client_phone} />
             {appt.client_phone && ` • ${appt.client_phone}`}
           </p>
         )}
