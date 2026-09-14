@@ -193,7 +193,7 @@ const ClientSheetDialog = ({
             {/* Contact */}
             <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/30 p-4">
               <div className="min-w-0 flex-1 space-y-1 text-sm">
-                {phone && <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {phone}</p>}
+                {phone && <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {formatBrPhone(phone)}</p>}
                 {email && <p className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" /> {email}</p>}
                 {firstContact && (
                   <p className="text-xs text-muted-foreground">
@@ -203,13 +203,17 @@ const ClientSheetDialog = ({
                   </p>
                 )}
               </div>
-              {phone && (
+              {phone && (buildWhatsAppUrl(phone) ? (
                 <Button asChild className="gap-1">
-                  <a href={`https://wa.me/${phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWhatsAppUrl(phone)!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-4 w-4" /> WhatsApp
                   </a>
                 </Button>
-              )}
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {pt ? "Número não válido para WhatsApp" : "Number not valid for WhatsApp"}
+                </span>
+              ))}
             </div>
 
             {/* Quick note */}

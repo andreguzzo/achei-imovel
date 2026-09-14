@@ -192,7 +192,16 @@ const RentalCharges = ({ userId }: Props) => {
       toast.error(pt ? "Este inquilino não tem WhatsApp cadastrado." : "This tenant has no WhatsApp number.");
       return;
     }
-    window.open(whatsappUrl(contract.tenant_phone, chargeMessage(charge, contract, pt, extrasFor(charge))), "_blank");
+    const url = buildWhatsAppUrl(contract.tenant_phone, chargeMessage(charge, contract, pt, extrasFor(charge)));
+    if (!url) {
+      toast.error(
+        pt
+          ? `O telefone ${formatBrPhone(contract.tenant_phone)} não é válido para WhatsApp.`
+          : `The phone ${formatBrPhone(contract.tenant_phone)} is not valid for WhatsApp.`,
+      );
+      return;
+    }
+    window.open(url, "_blank");
   };
 
   const copyMessage = async (charge: ChargeRow) => {
