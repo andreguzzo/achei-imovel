@@ -9,6 +9,12 @@ import {
   KeyRound, Receipt, TrendingUp,
 } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
+import {
+  authorizationLabel,
+  authorizationStatus,
+  authorizationBadgeText,
+  formatDateBr,
+} from "@/lib/saleAuthorization";
 import type { DashboardSection } from "@/components/dashboard/DashboardSidebar";
 
 interface Props {
@@ -59,6 +65,14 @@ interface RentalChargeRow {
   total_amount: number;
 }
 
+interface ExpiringAuth {
+  property_id: string;
+  title: string;
+  reference_code: string | null;
+  authorization_type: string | null;
+  authorization_end: string;
+}
+
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
@@ -73,6 +87,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   });
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
+  const [expiringAuths, setExpiringAuths] = useState<ExpiringAuth[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
