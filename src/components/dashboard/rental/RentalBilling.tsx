@@ -16,6 +16,10 @@ import { buildPixPayload, providerLabel } from "@/lib/pix";
 export interface RentalBillingSettings {
   provider: string;
   provider_account_id: string | null;
+  provider_connected_at: string | null;
+  environment: string;
+  api_key: string | null;
+  webhook_token: string | null;
   auto_charge_enabled: boolean;
   pix_key: string | null;
   pix_key_type: string | null;
@@ -30,6 +34,10 @@ export interface RentalBillingSettings {
 export const emptyBillingSettings: RentalBillingSettings = {
   provider: "manual",
   provider_account_id: null,
+  provider_connected_at: null,
+  environment: "sandbox",
+  api_key: null,
+  webhook_token: null,
   auto_charge_enabled: false,
   pix_key: null,
   pix_key_type: null,
@@ -41,10 +49,13 @@ export const emptyBillingSettings: RentalBillingSettings = {
   instructions: null,
 };
 
+const SELECT_COLUMNS =
+  "provider, provider_account_id, provider_connected_at, environment, api_key, webhook_token, auto_charge_enabled, pix_key, pix_key_type, beneficiary_name, beneficiary_city, bank_name, bank_agency, bank_account, instructions";
+
 export const fetchBillingSettings = async (userId: string): Promise<RentalBillingSettings | null> => {
   const { data } = await supabase
     .from("rental_payment_settings")
-    .select("provider, provider_account_id, auto_charge_enabled, pix_key, pix_key_type, beneficiary_name, beneficiary_city, bank_name, bank_agency, bank_account, instructions")
+    .select(SELECT_COLUMNS)
     .eq("broker_id", userId)
     .maybeSingle();
   return data ?? null;
@@ -52,6 +63,10 @@ export const fetchBillingSettings = async (userId: string): Promise<RentalBillin
 
 export const canGeneratePix = (s: RentalBillingSettings | null) =>
   !!s?.pix_key && !!s.beneficiary_name;
+
+/** The broker connected a real billing account, so charges can be issued automatically. */
+export const canIssueCharges = (s: RentalBillingSettings | null) =>
+  !!s && s.provider !== "manual" && !!s.api_key && s.auto_charge_enabled;
 
 interface Props {
   userId: string;
