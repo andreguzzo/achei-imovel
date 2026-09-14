@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import {
   Home, TrendingUp, Mail, FileText, CalendarDays, Building2, Handshake, BarChart3,
   User, CreditCard, MessageCircle, ChevronsLeft, ChevronsRight,
+  KeyRound, Receipt, ClipboardCheck, PieChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,7 +10,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 export type DashboardSection =
   | "inicio" | "negociacoes" | "contatos" | "propostas" | "agenda"
-  | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte";
+  | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
+  | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao";
 
 export interface NavItem {
   key: DashboardSection;
@@ -55,8 +57,17 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
       ],
     },
     {
+      label: pt ? "Locação" : "Rentals",
+      items: [
+        { key: "contratos", label: pt ? "Contratos" : "Contracts", icon: KeyRound, brokerOnly: true, badge: badges?.contratos },
+        { key: "alugueis", label: pt ? "Aluguéis do mês" : "Monthly charges", icon: Receipt, brokerOnly: true, badge: badges?.alugueis },
+        { key: "vistorias", label: pt ? "Vistorias" : "Inspections", icon: ClipboardCheck, brokerOnly: true },
+        { key: "relatorios_locacao", label: pt ? "Relatórios de locação" : "Rental reports", icon: PieChart, brokerOnly: true },
+      ],
+    },
+    {
       label: pt ? "Desempenho" : "Performance",
-      items: [{ key: "relatorios", label: pt ? "Relatórios" : "Reports", icon: BarChart3, brokerOnly: true }],
+      items: [{ key: "relatorios", label: pt ? "Relatórios de venda" : "Sales reports", icon: BarChart3, brokerOnly: true }],
     },
     {
       label: pt ? "Conta" : "Account",
