@@ -45,7 +45,7 @@ describe("normalizeBrPhone", () => {
   });
 
   it("rejects invalid DDDs", () => {
-    expect(normalizeBrPhone("01999998888")).toBeNull();
+    expect(normalizeBrPhone("1099998888")).toBeNull();
   });
 });
 
