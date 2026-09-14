@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.sitemap]
 verify_jwt = false
+
+[functions.import-listings]
+verify_jwt = true
+
+[functions.feed-xml]
+verify_jwt = false
