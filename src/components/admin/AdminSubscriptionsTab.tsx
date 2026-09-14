@@ -97,16 +97,16 @@ const AdminSubscriptionsTab = () => {
   };
   const [audit, setAudit] = useState<AuditEntry[]>([]);
 
-  const fetchAudit = async () => {
+  const fetchAudit = useCallback(async () => {
     const { data } = await supabase
       .from("subscription_audit_log")
       .select("id, action, target_email, created_at, after_state")
       .order("created_at", { ascending: false })
       .limit(20);
     setAudit((data ?? []) as AuditEntry[]);
-  };
+  }, []);
 
-  useEffect(() => { fetchAudit(); }, []);
+  useEffect(() => { fetchAudit(); }, [fetchAudit]);
 
   const runManage = async (action: "set_plan" | "set_expiry" | "cancel") => {
     if (!manageEmail.trim()) {

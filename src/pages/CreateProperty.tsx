@@ -17,6 +17,7 @@ import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlPars
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
 import { z } from "zod";
+import type { Enums, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
   PARTNERSHIP_KINDS,
   partnershipKindHint,
@@ -405,7 +406,7 @@ const CreateProperty = () => {
       
       if (privateData) {
         setPrivateNotes(privateData.notes ?? "");
-        const ownersData = privateData.owners as OwnerData[];
+        const ownersData = privateData.owners as unknown as OwnerEntry[];
         if (ownersData && ownersData.length > 0) {
           setOwners(ownersData);
         } else if (privateData.owner_name) {

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 interface BrokerProposalsProps {
   userId: string;

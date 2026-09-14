@@ -127,7 +127,7 @@ const BrokerProfile = () => {
           .from("brokers_public")
           .select("full_name, avatar_url, creci, username")
           .in("user_id", partnerIds);
-        setPartners((partnerProfiles as PartnerItem[]) ?? []);
+        setPartners((partnerProfiles as PartnerProfile[]) ?? []);
       }
 
       setLoading(false);
