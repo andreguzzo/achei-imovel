@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -10,11 +11,11 @@ import DashboardSidebar, { useDashboardNav, type DashboardSection } from "@/comp
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
-import SalesPipeline from "@/components/dashboard/SalesPipeline";
+const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"));
 import SalesContacts from "@/components/dashboard/SalesContacts";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 import BrokerProposals from "@/components/dashboard/BrokerProposals";
-import BrokerAnalytics from "@/components/dashboard/BrokerAnalytics";
+const BrokerAnalytics = lazy(() => import("@/components/dashboard/BrokerAnalytics"));
 import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
 import SupportForm from "@/components/dashboard/SupportForm";
