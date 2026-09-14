@@ -44,6 +44,23 @@ const RentalCharges = ({ userId }: Props) => {
   const [linkTarget, setLinkTarget] = useState<ChargeRow | null>(null);
   const [linkValue, setLinkValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [billing, setBilling] = useState<RentalBillingSettings | null>(null);
+
+  useEffect(() => { fetchBillingSettings(userId).then(setBilling); }, [userId]);
+
+  const pixFor = useCallback(
+    (charge: ChargeRow) =>
+      canGeneratePix(billing)
+        ? buildPixPayload({
+            key: billing!.pix_key!,
+            beneficiaryName: billing!.beneficiary_name!,
+            beneficiaryCity: billing!.beneficiary_city ?? "",
+            amount: Number(charge.total_amount),
+            reference: `ALUGUEL${charge.competence.replace("-", "")}`,
+          })
+        : null,
+    [billing],
+  );
 
   const fetchCharges = useCallback(async () => {
     setLoading(true);
@@ -145,19 +162,36 @@ const RentalCharges = ({ userId }: Props) => {
     fetchCharges();
   };
 
+  const extrasFor = (charge: ChargeRow) => ({
+    pixCode: pixFor(charge),
+    instructions: billing?.instructions ?? null,
+  });
+
   const sendWhatsapp = (charge: ChargeRow) => {
     const contract = charge.rental_contracts;
     if (!contract?.tenant_phone) {
       toast.error(pt ? "Este inquilino não tem WhatsApp cadastrado." : "This tenant has no WhatsApp number.");
       return;
     }
-    window.open(whatsappUrl(contract.tenant_phone, chargeMessage(charge, contract, pt)), "_blank");
+    window.open(whatsappUrl(contract.tenant_phone, chargeMessage(charge, contract, pt, extrasFor(charge))), "_blank");
   };
 
   const copyMessage = async (charge: ChargeRow) => {
     const contract = charge.rental_contracts ?? { tenant_name: "", property_label: null };
-    await navigator.clipboard.writeText(chargeMessage(charge, contract, pt));
+    await navigator.clipboard.writeText(chargeMessage(charge, contract, pt, extrasFor(charge)));
     toast.success(pt ? "Cobrança copiada." : "Invoice copied.");
+  };
+
+  const copyPix = async (charge: ChargeRow) => {
+    const code = pixFor(charge);
+    if (!code) {
+      toast.error(pt
+        ? "Cadastre sua chave Pix em Locação › Cobrança e recebimento."
+        : "Add your Pix key under Rentals › Billing setup.");
+      return;
+    }
+    await navigator.clipboard.writeText(code);
+    toast.success(pt ? "Pix copia e cola copiado." : "Pix code copied.");
   };
 
   if (loading) {
