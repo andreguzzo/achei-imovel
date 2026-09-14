@@ -118,6 +118,66 @@ const SalesPipeline = ({ userId }: Props) => {
     fetchData();
   };
 
+  const openDeal = async (item: PipelineItem) => {
+    setSelected(item);
+    setActivityType("ligacao");
+    setActivityDesc("");
+    setActivityDate(todayIso());
+    setNextAction(item.next_action ?? "");
+    setNextActionDate(item.next_action_date ?? "");
+    setLoadingActivities(true);
+    const { data } = await supabase
+      .from("pipeline_activities")
+      .select("*")
+      .eq("pipeline_id", item.id)
+      .order("occurred_at", { ascending: false });
+    setActivities(data ?? []);
+    setLoadingActivities(false);
+  };
+
+  const handleAddActivity = async () => {
+    if (!selected) return;
+    setSavingActivity(true);
+    const occurredAt = activityDate
+      ? new Date(`${activityDate}T${new Date().toTimeString().slice(0, 8)}`).toISOString()
+      : new Date().toISOString();
+
+    const { error } = await supabase.from("pipeline_activities").insert({
+      pipeline_id: selected.id,
+      broker_id: userId,
+      activity_type: activityType,
+      description: activityDesc || null,
+      occurred_at: occurredAt,
+    });
+
+    if (error) {
+      toast({ title: pt ? "Erro ao registrar" : "Error saving", description: error.message, variant: "destructive" });
+      setSavingActivity(false);
+      return;
+    }
+
+    const { error: upErr } = await supabase
+      .from("sales_pipeline")
+      .update({ next_action: nextAction || null, next_action_date: nextActionDate || null })
+      .eq("id", selected.id);
+    if (upErr) {
+      toast({ title: pt ? "Erro ao salvar próxima ação" : "Error saving next action", description: upErr.message, variant: "destructive" });
+    }
+
+    toast({ title: pt ? "Interação registrada" : "Interaction saved" });
+    setActivityDesc("");
+    const refreshed = { ...selected, next_action: nextAction || null, next_action_date: nextActionDate || null };
+    setSelected(refreshed);
+    const { data } = await supabase
+      .from("pipeline_activities")
+      .select("*")
+      .eq("pipeline_id", selected.id)
+      .order("occurred_at", { ascending: false });
+    setActivities(data ?? []);
+    setSavingActivity(false);
+    fetchData();
+  };
+
   const stageLabel = (s: typeof STAGES[number]) => (pt ? s.label : s.labelEn);
 
   const totalLeads = items.filter((i) => i.stage === "lead").length;
