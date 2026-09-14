@@ -1,0 +1,1 @@
+ALTER TABLE public.contact_requests ALTER COLUMN sender_id DROP NOT NULL;
