@@ -286,6 +286,32 @@ const Search = () => {
     </div>
   );
 
+  const errorState = (
+    <div className="py-20 text-center">
+      <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
+      <p className="mt-4 text-lg font-medium text-foreground">
+        {pt ? "Não foi possível carregar os imóveis" : "Could not load properties"}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {pt ? "Verifique sua conexão e tente novamente." : "Check your connection and try again."}
+      </p>
+      <Button className="mt-4" onClick={retrySearch}>
+        {pt ? "Tentar novamente" : "Try again"}
+      </Button>
+    </div>
+  );
+
+  const emptyState = (
+    <div className="py-20 text-center">
+      <SearchX className="mx-auto h-10 w-10 text-muted-foreground" />
+      <p className="mt-4 text-lg font-medium text-foreground">{t.filters.noResults}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
+      <Button variant="outline" className="mt-4" onClick={() => setFilters(defaultFilters)}>
+        {pt ? "Limpar filtros" : "Clear filters"}
+      </Button>
+    </div>
+  );
+
   const loadMoreButton = hasMore && (
     <div className="mt-6 flex justify-center">
       <Button variant="outline" onClick={() => setLimit((l) => l + PAGE_SIZE)} disabled={loadingMore}>
