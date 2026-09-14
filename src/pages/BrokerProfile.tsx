@@ -162,9 +162,19 @@ const BrokerProfile = () => {
   const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
   const bannerPhoto = photos.find(p => p.is_banner);
   const galleryPhotos = photos.filter(p => !p.is_cover && !p.is_banner);
+  const brokerCity = properties[0]?.city;
 
   return (
-    <div className="min-h-screen">
+    <>
+      <Seo
+        title={`${displayName}${broker.creci ? ` - CRECI ${broker.creci}` : ""}${brokerCity ? ` - Corretor em ${brokerCity}` : " - Corretor de Imóveis"} | Abitzo`}
+        description={pt
+          ? `Perfil profissional de ${displayName}${broker.creci ? `, CRECI ${broker.creci}` : ""}${brokerCity ? ` em ${brokerCity}` : ""}. Veja imóveis e entre em contato.`
+          : `Professional profile of ${displayName}${broker.creci ? `, CRECI ${broker.creci}` : ""}${brokerCity ? ` in ${brokerCity}` : ""}. View listings and get in touch.`}
+        canonical={`/corretor/${username}`}
+        image={avatarSrc}
+      />
+      <div className="min-h-screen">
       {/* Hero Cover - uses banner photo */}
       <div className="relative h-48 sm:h-64 md:h-72 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 overflow-hidden">
         {bannerPhoto && (
