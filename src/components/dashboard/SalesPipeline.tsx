@@ -8,15 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign } from "lucide-react";
+import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign, History, AlertTriangle, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
+import {
+  ACTIVITY_TYPES,
+  activityLabel,
+  formatDateTime,
+  formatDay,
+  todayIso,
+  type ActivityTypeKey,
+} from "@/lib/pipelineActivities";
 
 type PipelineItem = Tables<"sales_pipeline"> & {
   property?: { title: string; city: string } | null;
 };
+
+type Activity = Tables<"pipeline_activities">;
 
 interface Props {
   userId: string;
