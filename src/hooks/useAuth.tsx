@@ -147,6 +147,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setTier("free");
         setSubscriptionEnd(null);
+        setPlanSlug(null);
+        setSubscribed(false);
         setAccountType("owner");
         setVerificationStatus("unverified");
         setVerified(false);
