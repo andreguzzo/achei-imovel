@@ -297,7 +297,7 @@ const BuyerLeads = ({ userId }: Props) => {
                     {lead.budget_max ? `${pt ? "Até" : "Up to"} ${brl(Number(lead.budget_max))}` : ""}
                     {lead.financing_type ? ` • ${financingLabel(lead.financing_type, pt)}` : ""}
                   </p>
-                </button>
+                </div>
 
                 <div className="flex shrink-0 gap-1">
                   {lead.phone && (
