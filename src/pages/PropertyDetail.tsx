@@ -451,6 +451,25 @@ const PropertyDetail = () => {
               <MapPin className="h-4 w-4" />
               {property.address && `${property.address}, `}{property.neighborhood && `${property.neighborhood}, `}{property.city} - {property.state}
             </p>
+            {property.reference_code && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                  {pt ? "Código" : "Ref."}: {property.reference_code}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(property.reference_code!);
+                    toast({ title: pt ? "Código copiado!" : "Code copied!" });
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {pt ? "Copiar" : "Copy"}
+                </Button>
+              </div>
+            )}
             <p className="mt-3 text-3xl font-bold text-primary">{formatPrice(property.price, property.listing_type)}</p>
           </div>
 
