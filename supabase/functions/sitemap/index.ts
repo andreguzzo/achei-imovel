@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     return new Response(buildXml(entries.slice(0, MAX_URLS)), {
       headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
+        'content-type': 'application/xml',
         'Cache-Control': 'public, max-age=3600, s-maxage=3600',
         'Access-Control-Allow-Origin': '*',
       },
