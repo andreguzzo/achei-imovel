@@ -65,9 +65,11 @@ const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newLeads, setNewLeads] = useState(0);
 
-  const rawSection = searchParams.get("secao") as DashboardSection | null;
+  const rawSection = searchParams.get("secao") as DashboardSection | "propostas" | null;
+  // The old "propostas" screen was merged into "negociacoes"; keep old links working.
+  const normalizedSection = rawSection === "propostas" ? "negociacoes" : rawSection;
   const section: DashboardSection =
-    rawSection && VALID_SECTIONS.includes(rawSection) ? rawSection : "inicio";
+    normalizedSection && VALID_SECTIONS.includes(normalizedSection) ? normalizedSection : "inicio";
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
