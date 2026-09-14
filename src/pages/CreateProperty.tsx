@@ -246,7 +246,7 @@ const StatusChangeDialog = ({ pt, open, onOpenChange, statusAction, setStatusAct
 // --- Main component ---
 
 const CreateProperty = () => {
-  const { user, tier } = useAuth();
+  const { user, accountType, verified, maxProperties: accountMaxProperties } = useAuth();
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
@@ -261,7 +261,7 @@ const CreateProperty = () => {
   const [existingImages, setExistingImages] = useState<{ id: string; url: string; position: number }[]>([]);
   const [propertyCount, setPropertyCount] = useState<number | null>(null);
   const [editLoading, setEditLoading] = useState(false);
-  const maxProperties = getMaxProperties(tier);
+  const maxProperties = adminMode ? Infinity : accountMaxProperties;
 
   useEffect(() => {
     if (!user || isEditMode) return;
@@ -439,6 +439,25 @@ const CreateProperty = () => {
     );
   }
 
+  if (!adminMode && !isEditMode && accountType !== "owner" && !verified) {
+    return (
+      <div className="container max-w-lg py-20 text-center">
+        <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">
+          {pt ? "Verificação necessária" : "Verification required"}
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          {pt
+            ? "Para publicar como corretor ou imobiliária, envie seu CRECI e um documento pessoal para verificação."
+            : "To publish as a broker or agency, send your professional licence and a personal document for verification."}
+        </p>
+        <Button onClick={() => navigate("/painel?secao=verificacao")}>
+          {pt ? "Enviar documentos" : "Send documents"}
+        </Button>
+      </div>
+    );
+  }
+
   if (!isEditMode && propertyCount !== null && propertyCount >= maxProperties) {
     return (
       <div className="container max-w-lg py-20 text-center">
@@ -448,8 +467,8 @@ const CreateProperty = () => {
         </h2>
         <p className="text-muted-foreground mb-6">
           {pt
-            ? `Você já possui ${propertyCount} imóveis cadastrados. Seu plano permite no máximo ${maxProperties}. Faça upgrade para cadastrar mais.`
-            : `You already have ${propertyCount} properties. Your plan allows ${maxProperties}. Upgrade to add more.`}
+            ? `Você já possui ${propertyCount} imóvel(is) cadastrado(s). Seu plano permite no máximo ${maxProperties}. Assine o plano Corretor para anúncios ilimitados.`
+            : `You already have ${propertyCount} properties. Your plan allows ${maxProperties}. Upgrade for unlimited listings.`}
         </p>
         <Button onClick={() => navigate("/planos")}>
           {pt ? "Ver planos" : "View plans"}
@@ -457,6 +476,7 @@ const CreateProperty = () => {
       </div>
     );
   }
+
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
