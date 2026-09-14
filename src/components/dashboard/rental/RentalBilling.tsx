@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, QrCode, ShieldCheck } from "lucide-react";
+import { Copy, Loader2, PlugZap, QrCode, ShieldCheck } from "lucide-react";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { buildPixPayload, providerLabel } from "@/lib/pix";
 
