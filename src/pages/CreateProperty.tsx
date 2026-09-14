@@ -18,6 +18,8 @@ import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } 
 import { compressImage } from "@/lib/imageCompression";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PROPERTY_FEATURES, matchFeature } from "@/lib/propertyFeatures";
+import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
+import { propertyMatchesLead, type MatchableProperty } from "@/lib/buyerLeads";
 import { z } from "zod";
 import type { Enums, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
@@ -735,8 +737,36 @@ const CreateProperty = () => {
     }
 
     toast({ title: isEditMode ? (pt ? "Anúncio atualizado!" : "Listing updated!") : (pt ? "Anúncio criado com sucesso!" : "Listing created!") });
-    navigate(adminMode ? "/admin?secao=imoveis" : `/imovel/${propId}`);
+
+    const nextRoute = adminMode ? "/admin?secao=imoveis" : `/imovel/${propId}`;
+
+    // New listing: warn the broker when buyers in his book match this property
+    if (!isEditMode && !adminMode) {
+      const { data: created } = await supabase
+        .from("properties")
+        .select("id, title, price, city, state, neighborhood, property_type, listing_type, status, bedrooms, area, features, reference_code")
+        .eq("id", propId)
+        .maybeSingle();
+      const { data: leads } = await supabase
+        .from("buyer_leads")
+        .select("id, criteria, budget_min, budget_max")
+        .eq("broker_id", user.id)
+        .eq("status", "ativo");
+      if (created && (leads ?? []).some((l) => propertyMatchesLead(created as MatchableProperty, l))) {
+        setMatchProperty(created as MatchableProperty);
+        setAfterMatchRoute(nextRoute);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    navigate(nextRoute);
     setSubmitting(false);
+  };
+
+  const closeMatchDialog = () => {
+    setMatchProperty(null);
+    navigate(afterMatchRoute || "/painel?secao=imoveis");
   };
 
   const statusLabel: Record<string, string> = pt
@@ -996,6 +1026,13 @@ const CreateProperty = () => {
           {isEditMode ? (pt ? "Salvar Alterações" : "Save Changes") : (pt ? "Publicar Anúncio" : "Publish Listing")}
         </Button>
       </form>
+
+      <PropertyMatchingLeads
+        open={!!matchProperty}
+        onOpenChange={(o) => !o && closeMatchDialog()}
+        brokerId={user?.id ?? ""}
+        property={matchProperty}
+      />
     </div>
   );
 };
