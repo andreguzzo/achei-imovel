@@ -40,6 +40,7 @@ const RentalDocumentsVault = ({ userId, contractId, pending, onPendingChange }: 
   const [type, setType] = useState("");
   const [uploading, setUploading] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const fetchDocs = useCallback(async () => {
     if (!contractId) { setDocs([]); return; }
@@ -140,28 +141,43 @@ const RentalDocumentsVault = ({ userId, contractId, pending, onPendingChange }: 
           : "Store the signed contract, tenant and owner documents as PDF or image. Private area: only you can access it."}
       </p>
 
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <div className="min-w-[180px] flex-1">
-          <Label className="text-xs">{pt ? "Tipo (opcional)" : "Type (optional)"}</Label>
-          <Input
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            placeholder={pt ? "Ex.: contrato assinado, RG, comprovante" : "e.g. signed contract, ID, receipt"}
-          />
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          multiple
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
+      <div className="mt-3">
+        <Label className="text-xs">{pt ? "Tipo (opcional)" : "Type (optional)"}</Label>
+        <Input
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          placeholder={pt ? "Ex.: contrato assinado, RG, comprovante" : "e.g. signed contract, ID, receipt"}
         />
-        <Button type="button" variant="outline" className="gap-1.5" disabled={uploading}
-          onClick={() => inputRef.current?.click()}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          {pt ? "Enviar arquivos" : "Upload files"}
-        </Button>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT}
+        multiple
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => !uploading && inputRef.current?.click()}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); if (!uploading) handleFiles(e.dataTransfer.files); }}
+        className={`mt-3 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-6 text-sm font-medium transition-colors ${
+          dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"
+        } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+      >
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
+        <span>
+          {pt ? "Arraste os arquivos aqui ou clique para escolher" : "Drag files here or click to choose"}
+        </span>
+        <span className="text-xs font-normal text-muted-foreground">
+          {pt ? "PDF, JPG ou PNG até 15 MB" : "PDF, JPG or PNG up to 15 MB"}
+        </span>
       </div>
 
       {rows.length > 0 && (

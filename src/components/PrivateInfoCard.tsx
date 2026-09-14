@@ -82,6 +82,7 @@ const PrivateInfoCard = ({
 }: PrivateInfoCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   /* ── Owner helpers ── */
   const updateOwner = (idx: number, field: keyof OwnerEntry, value: string | boolean) => {
@@ -97,8 +98,7 @@ const PrivateInfoCard = ({
   };
 
   /* ── File helpers ── */
-  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  const addFiles = (files: File[]) => {
     const valid = files.filter((f) => {
       const ext = f.name.split(".").pop()?.toLowerCase();
       const ok =
@@ -117,6 +117,16 @@ const PrivateInfoCard = ({
     });
     setPendingFiles((prev) => [...prev, ...valid]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(e.target.files ?? []));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(Array.from(e.dataTransfer.files ?? []));
   };
 
   const removePendingFile = (idx: number) => {
@@ -383,7 +393,14 @@ const PrivateInfoCard = ({
               </div>
             )}
 
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-2.5 text-sm font-medium hover:border-primary/50 transition-colors">
+            <label
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-6 text-sm font-medium transition-colors ${
+                dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"
+              }`}
+            >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -393,7 +410,12 @@ const PrivateInfoCard = ({
                 onChange={handleFileAdd}
               />
               <Upload className="h-4 w-4 text-muted-foreground" />
-              {pt ? "Adicionar documentos" : "Add documents"}
+              <span>
+                {pt ? "Arraste os documentos aqui ou clique para escolher" : "Drag documents here or click to choose"}
+              </span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {pt ? "PDF ou imagens até 20MB" : "PDF or images up to 20MB"}
+              </span>
             </label>
           </div>
         </CardContent>
