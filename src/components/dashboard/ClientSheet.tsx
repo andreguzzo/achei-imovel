@@ -172,6 +172,10 @@ const ClientSheetDialog = ({
     load();
   };
 
+  // Saudação curta com o primeiro nome — o corretor escreve o resto da mensagem.
+  const firstName = identity.name.trim().split(/\s+/)[0];
+  const greeting = pt ? `Olá ${firstName}! ` : `Hi ${firstName}! `;
+
   const kindStyle: Record<string, string> = {
     lead: "bg-primary/10 text-primary",
     deal: "bg-emerald-500/10 text-emerald-600",
@@ -203,9 +207,9 @@ const ClientSheetDialog = ({
                   </p>
                 )}
               </div>
-              {phone && (buildWhatsAppUrl(phone) ? (
+              {phone && (buildWhatsAppUrl(phone, greeting) ? (
                 <Button asChild className="gap-1">
-                  <a href={buildWhatsAppUrl(phone)!} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWhatsAppUrl(phone, greeting)!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-4 w-4" /> WhatsApp
                   </a>
                 </Button>

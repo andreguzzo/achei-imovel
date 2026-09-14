@@ -95,6 +95,12 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  // Saudação curta com o primeiro nome — o corretor escreve o resto da mensagem.
+  const inboxGreeting = (name: string, isPt: boolean) => {
+    const firstName = name.trim().split(/\s+/)[0] || "";
+    return firstName ? (isPt ? `Olá ${firstName}! ` : `Hi ${firstName}! `) : "";
+  };
+
   if (contacts.length === 0) {
     return (
       <EmptyState
@@ -145,9 +151,9 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
               )}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {c.phone && (buildWhatsAppUrl(c.phone) ? (
+              {c.phone && (buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt)) ? (
                 <Button asChild size="sm" variant="secondary" className="gap-1">
-                  <a href={buildWhatsAppUrl(c.phone)!} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt))!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-3.5 w-3.5" /> WhatsApp
                   </a>
                 </Button>

@@ -56,29 +56,23 @@ const formatPrice = (price: number, listingType: string) => {
 
 
 
-const brokerWhatsAppUrl = (phone: string, propertyTitle: string) =>
-  buildWhatsAppUrl(
-    phone,
-    `Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`,
-  );
-
 const BrokerCard = ({
   profile,
-  propertyTitle,
+  waMessage,
   pt,
   tagline,
   price,
   highlight = false,
 }: {
   profile: BrokerProfile;
-  propertyTitle: string;
+  waMessage: string;
   pt: boolean;
   tagline?: string;
   price?: number;
   highlight?: boolean;
 }) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
-  const waUrl = whatsappNumber ? brokerWhatsAppUrl(whatsappNumber, propertyTitle) : null;
+  const waUrl = whatsappNumber ? buildWhatsAppUrl(whatsappNumber, waMessage) : null;
 
 
   return (
@@ -593,17 +587,23 @@ const PropertyDetail = () => {
                     : "This listing is shared in partnership. Contact any of the brokers below."}
                 </p>
               )}
-              {brokerEntries.map((e) => (
-                <BrokerCard
-                  key={e.profile.user_id}
-                  profile={e.profile}
-                  propertyTitle={property.title}
-                  pt={pt}
-                  tagline={e.tagline}
-                  price={e.price}
-                  highlight={e.highlight}
-                />
-              ))}
+              {brokerEntries.map((e) => {
+                const canonicalUrl = `${window.location.origin}/imovel/${property.id}`;
+                const waMessage = pt
+                  ? `Olá! Tenho interesse no imóvel ${property.reference_code ? `${property.reference_code} — ` : ""}${property.title}, ${formatPrice(property.price, property.listing_type)}. Vi na Abitzo: ${canonicalUrl}`
+                  : `Hello! I'm interested in the property ${property.reference_code ? `${property.reference_code} — ` : ""}${property.title}, ${formatPrice(property.price, property.listing_type)}. Seen on Abitzo: ${canonicalUrl}`;
+                return (
+                  <BrokerCard
+                    key={e.profile.user_id}
+                    profile={e.profile}
+                    waMessage={waMessage}
+                    pt={pt}
+                    tagline={e.tagline}
+                    price={e.price}
+                    highlight={e.highlight}
+                  />
+                );
+              })}
               {brokerEntries.length === 0 && (
                 <p className="text-sm text-muted-foreground">{pt ? "Informações do corretor não disponíveis." : "Broker info not available."}</p>
 
