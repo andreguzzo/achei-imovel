@@ -8,15 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign } from "lucide-react";
+import { Loader2, Plus, Users, Calendar, FileText, TrendingUp, DollarSign, History, AlertTriangle, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
+import {
+  ACTIVITY_TYPES,
+  activityLabel,
+  formatDateTime,
+  formatDay,
+  todayIso,
+  type ActivityTypeKey,
+} from "@/lib/pipelineActivities";
 
 type PipelineItem = Tables<"sales_pipeline"> & {
   property?: { title: string; city: string } | null;
 };
+
+type Activity = Tables<"pipeline_activities">;
 
 interface Props {
   userId: string;
@@ -45,6 +55,17 @@ const SalesPipeline = ({ userId }: Props) => {
   const [clientPhone, setClientPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Deal detail + interaction history
+  const [selected, setSelected] = useState<PipelineItem | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [savingActivity, setSavingActivity] = useState(false);
+  const [activityType, setActivityType] = useState<ActivityTypeKey>("ligacao");
+  const [activityDesc, setActivityDesc] = useState("");
+  const [activityDate, setActivityDate] = useState(todayIso());
+  const [nextAction, setNextAction] = useState("");
+  const [nextActionDate, setNextActionDate] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -97,6 +118,66 @@ const SalesPipeline = ({ userId }: Props) => {
     fetchData();
   };
 
+  const openDeal = async (item: PipelineItem) => {
+    setSelected(item);
+    setActivityType("ligacao");
+    setActivityDesc("");
+    setActivityDate(todayIso());
+    setNextAction(item.next_action ?? "");
+    setNextActionDate(item.next_action_date ?? "");
+    setLoadingActivities(true);
+    const { data } = await supabase
+      .from("pipeline_activities")
+      .select("*")
+      .eq("pipeline_id", item.id)
+      .order("occurred_at", { ascending: false });
+    setActivities(data ?? []);
+    setLoadingActivities(false);
+  };
+
+  const handleAddActivity = async () => {
+    if (!selected) return;
+    setSavingActivity(true);
+    const occurredAt = activityDate
+      ? new Date(`${activityDate}T${new Date().toTimeString().slice(0, 8)}`).toISOString()
+      : new Date().toISOString();
+
+    const { error } = await supabase.from("pipeline_activities").insert({
+      pipeline_id: selected.id,
+      broker_id: userId,
+      activity_type: activityType,
+      description: activityDesc || null,
+      occurred_at: occurredAt,
+    });
+
+    if (error) {
+      toast({ title: pt ? "Erro ao registrar" : "Error saving", description: error.message, variant: "destructive" });
+      setSavingActivity(false);
+      return;
+    }
+
+    const { error: upErr } = await supabase
+      .from("sales_pipeline")
+      .update({ next_action: nextAction || null, next_action_date: nextActionDate || null })
+      .eq("id", selected.id);
+    if (upErr) {
+      toast({ title: pt ? "Erro ao salvar próxima ação" : "Error saving next action", description: upErr.message, variant: "destructive" });
+    }
+
+    toast({ title: pt ? "Interação registrada" : "Interaction saved" });
+    setActivityDesc("");
+    const refreshed = { ...selected, next_action: nextAction || null, next_action_date: nextActionDate || null };
+    setSelected(refreshed);
+    const { data } = await supabase
+      .from("pipeline_activities")
+      .select("*")
+      .eq("pipeline_id", selected.id)
+      .order("occurred_at", { ascending: false });
+    setActivities(data ?? []);
+    setSavingActivity(false);
+    fetchData();
+  };
+
   const stageLabel = (s: typeof STAGES[number]) => (pt ? s.label : s.labelEn);
 
   const totalLeads = items.filter((i) => i.stage === "lead").length;
@@ -136,6 +217,100 @@ const SalesPipeline = ({ userId }: Props) => {
       </DialogContent>
     </Dialog>
   );
+
+  const dealDialog = (
+    <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-4 w-4 text-primary" />
+            {selected?.client_name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {selected && (
+          <div className="space-y-6">
+            <div className="space-y-1 text-xs text-muted-foreground">
+              {selected.property && <p>{selected.property.title} — {selected.property.city}</p>}
+              {selected.client_phone && <p>{selected.client_phone}</p>}
+              {selected.client_email && <p>{selected.client_email}</p>}
+              {selected.next_action && (
+                <p className="text-foreground">
+                  {pt ? "Próxima ação" : "Next action"}: {selected.next_action}
+                  {selected.next_action_date ? ` — ${formatDay(selected.next_action_date, pt)}` : ""}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-sm font-medium text-foreground">
+                {pt ? "Registrar interação" : "Log interaction"}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select value={activityType} onValueChange={(v) => setActivityType(v as ActivityTypeKey)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ACTIVITY_TYPES.map((a) => (
+                      <SelectItem key={a.key} value={a.key}>{pt ? a.label : a.labelEn}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} />
+              </div>
+              <Textarea
+                placeholder={pt ? "O que aconteceu nessa interação?" : "What happened in this interaction?"}
+                value={activityDesc}
+                onChange={(e) => setActivityDesc(e.target.value)}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  placeholder={pt ? "Próxima ação (ex: enviar proposta)" : "Next action (e.g. send proposal)"}
+                  value={nextAction}
+                  onChange={(e) => setNextAction(e.target.value)}
+                />
+                <Input type="date" value={nextActionDate} onChange={(e) => setNextActionDate(e.target.value)} />
+              </div>
+              <Button onClick={handleAddActivity} disabled={savingActivity} className="w-full">
+                {savingActivity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {pt ? "Salvar interação" : "Save interaction"}
+              </Button>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-medium text-foreground">
+                {pt ? "Histórico" : "History"}
+              </p>
+              {loadingActivities ? (
+                <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+              ) : activities.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {pt ? "Nenhuma interação registrada ainda." : "No interactions logged yet."}
+                </p>
+              ) : (
+                <ol className="space-y-3 border-l border-border pl-4">
+                  {activities.map((a) => (
+                    <li key={a.id} className="relative">
+                      <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {activityLabel(a.activity_type, pt)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(a.occurred_at, pt)}</span>
+                      </div>
+                      {a.description && (
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{a.description}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
 
   return (
     <div className="space-y-6">
@@ -209,18 +384,40 @@ const SalesPipeline = ({ userId }: Props) => {
                       <div className="space-y-2">
                         {(byStage[stage.key] ?? []).map((item) => (
                           <div key={item.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
-                            <p className="text-sm font-medium text-foreground">{item.client_name}</p>
-                            {item.property && (
-                              <p className="truncate text-xs text-muted-foreground">
-                                {item.property.title} — {item.property.city}
-                              </p>
-                            )}
-                            {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
-                            {item.commission_value != null && item.commission_value > 0 && (
-                              <p className="text-xs font-medium text-primary">
-                                R$ {item.commission_value.toLocaleString("pt-BR")}
-                              </p>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => openDeal(item)}
+                              className="w-full space-y-1 text-left"
+                            >
+                              <p className="text-sm font-medium text-foreground hover:text-primary">{item.client_name}</p>
+                              {item.property && (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {item.property.title} — {item.property.city}
+                                </p>
+                              )}
+                              {item.client_phone && <p className="text-xs text-muted-foreground">{item.client_phone}</p>}
+                              {item.commission_value != null && item.commission_value > 0 && (
+                                <p className="text-xs font-medium text-primary">
+                                  R$ {item.commission_value.toLocaleString("pt-BR")}
+                                </p>
+                              )}
+                              {item.next_action_date && (
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                    item.next_action_date < todayIso()
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                                  }`}
+                                >
+                                  {item.next_action_date < todayIso() ? (
+                                    <AlertTriangle className="h-3 w-3" />
+                                  ) : (
+                                    <Clock className="h-3 w-3" />
+                                  )}
+                                  {item.next_action ?? (pt ? "Follow-up" : "Follow-up")} • {formatDay(item.next_action_date, pt)}
+                                </span>
+                              )}
+                            </button>
                             <Select value={item.stage} onValueChange={(v) => handleStageChange(item.id, v)}>
                               <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
@@ -242,6 +439,7 @@ const SalesPipeline = ({ userId }: Props) => {
       )}
 
       {newDealDialog}
+      {dealDialog}
     </div>
   );
 };

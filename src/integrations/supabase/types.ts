@@ -632,6 +632,44 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_activities: {
+        Row: {
+          activity_type: string
+          broker_id: string
+          created_at: string
+          description: string | null
+          id: string
+          occurred_at: string
+          pipeline_id: string
+        }
+        Insert: {
+          activity_type: string
+          broker_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          occurred_at?: string
+          pipeline_id: string
+        }
+        Update: {
+          activity_type?: string
+          broker_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          occurred_at?: string
+          pipeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_activities_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "sales_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
@@ -1435,6 +1473,9 @@ export type Database = {
           created_at: string
           expected_close_date: string | null
           id: string
+          last_activity_at: string | null
+          next_action: string | null
+          next_action_date: string | null
           notes: string | null
           property_id: string | null
           stage: Database["public"]["Enums"]["pipeline_stage"]
@@ -1450,6 +1491,9 @@ export type Database = {
           created_at?: string
           expected_close_date?: string | null
           id?: string
+          last_activity_at?: string | null
+          next_action?: string | null
+          next_action_date?: string | null
           notes?: string | null
           property_id?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]
@@ -1465,6 +1509,9 @@ export type Database = {
           created_at?: string
           expected_close_date?: string | null
           id?: string
+          last_activity_at?: string | null
+          next_action?: string | null
+          next_action_date?: string | null
           notes?: string | null
           property_id?: string | null
           stage?: Database["public"]["Enums"]["pipeline_stage"]

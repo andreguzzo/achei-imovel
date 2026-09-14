@@ -65,6 +65,22 @@ interface RentalChargeRow {
   total_amount: number;
 }
 
+interface FollowUpDeal {
+  id: string;
+  client_name: string;
+  next_action: string | null;
+  next_action_date: string | null;
+  last_activity_at: string | null;
+  created_at: string;
+}
+
+interface FollowUps {
+  overdue: FollowUpDeal[];
+  today: FollowUpDeal[];
+  week: FollowUpDeal[];
+  stalled: FollowUpDeal[];
+}
+
 interface ExpiringAuth {
   property_id: string;
   title: string;
@@ -88,6 +104,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
   const [expiringAuths, setExpiringAuths] = useState<ExpiringAuth[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUps>({ overdue: [], today: [], week: [], stalled: [] });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -98,7 +115,10 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 
     const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes, contractsRes, chargesRes] = await Promise.all([
-      supabase.from("sales_pipeline").select("id, stage, commission_value").eq("broker_id", userId),
+      supabase
+        .from("sales_pipeline")
+        .select("id, stage, commission_value, client_name, next_action, next_action_date, last_activity_at, created_at")
+        .eq("broker_id", userId),
       supabase
         .from("broker_appointments")
         .select("id, title, start_time, client_name, client_phone, location")
@@ -203,6 +223,31 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
         };
       }),
     );
+
+    // Follow-ups: open deals grouped by next action date, plus stalled ones
+    const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const stalledLimit = new Date(Date.now() - 15 * 86400000).toISOString();
+    const openDeals: FollowUpDeal[] = pipeline
+      .filter((d) => !["closed_won", "closed_lost"].includes(d.stage))
+      .map((d) => ({
+        id: d.id,
+        client_name: d.client_name,
+        next_action: d.next_action,
+        next_action_date: d.next_action_date,
+        last_activity_at: d.last_activity_at,
+        created_at: d.created_at,
+      }));
+    const byDate = (a: FollowUpDeal, b: FollowUpDeal) =>
+      (a.next_action_date ?? "").localeCompare(b.next_action_date ?? "");
+
+    setFollowUps({
+      overdue: openDeals.filter((d) => d.next_action_date && d.next_action_date < today).sort(byDate),
+      today: openDeals.filter((d) => d.next_action_date === today),
+      week: openDeals
+        .filter((d) => d.next_action_date && d.next_action_date > today && d.next_action_date <= in7)
+        .sort(byDate),
+      stalled: openDeals.filter((d) => (d.last_activity_at ?? d.created_at) < stalledLimit).slice(0, 10),
+    });
 
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
@@ -397,6 +442,57 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {isBroker && (followUps.overdue.length + followUps.today.length + followUps.week.length + followUps.stalled.length) > 0 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4 text-primary" />
+              Follow-ups
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate("negociacoes")}>
+              {pt ? "Ver negociações" : "View deals"}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {([
+              { key: "overdue", title: pt ? "Atrasados" : "Overdue", tone: "text-destructive", list: followUps.overdue },
+              { key: "today", title: pt ? "Hoje" : "Today", tone: "text-primary", list: followUps.today },
+              { key: "week", title: pt ? "Próximos 7 dias" : "Next 7 days", tone: "text-foreground", list: followUps.week },
+              { key: "stalled", title: pt ? "Paradas (15+ dias sem contato)" : "Stalled (15+ days no contact)", tone: "text-amber-600", list: followUps.stalled },
+            ] as const)
+              .filter((g) => g.list.length > 0)
+              .map((g) => (
+                <div key={g.key}>
+                  <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${g.tone}`}>
+                    {g.title} · {g.list.length}
+                  </p>
+                  <div className="divide-y divide-border">
+                    {g.list.map((d) => (
+                      <div key={d.id} className="flex items-center gap-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">{d.client_name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {g.key === "stalled"
+                              ? pt
+                                ? `Sem interação desde ${formatDateBr((d.last_activity_at ?? d.created_at).slice(0, 10))}`
+                                : `No interaction since ${formatDateBr((d.last_activity_at ?? d.created_at).slice(0, 10))}`
+                              : [d.next_action, d.next_action_date ? formatDateBr(d.next_action_date) : null]
+                                  .filter(Boolean)
+                                  .join(" • ") || (pt ? "Sem descrição" : "No description")}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => onNavigate("negociacoes")}>
+                          {pt ? "Abrir" : "Open"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
       )}
 
       {isBroker && expiringAuths.length > 0 && (
