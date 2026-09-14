@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check, Home } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import ContactForm from "@/components/ContactForm";
 import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
@@ -319,18 +321,24 @@ const PropertyDetail = () => {
 
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PropertyDetailSkeleton />;
   }
 
   if (!property) {
     return (
       <div className="container py-20 text-center">
-        <p className="text-lg font-medium">{pt ? "Imóvel não encontrado" : "Property not found"}</p>
-        <Link to="/busca"><Button variant="link">{t.common.back}</Button></Link>
+        <Home className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h1 className="mt-4 text-xl font-semibold text-foreground">
+          {pt ? "Imóvel não encontrado" : "Property not found"}
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {pt
+            ? "Este imóvel não existe, foi removido ou está desativado no momento."
+            : "This property doesn't exist, was removed or is currently deactivated."}
+        </p>
+        <Link to="/busca">
+          <Button className="mt-6">{pt ? "Ver outros imóveis" : "Browse other properties"}</Button>
+        </Link>
       </div>
     );
   }
@@ -402,7 +410,7 @@ const PropertyDetail = () => {
           <div className="space-y-2">
             <div className="aspect-[16/9] overflow-hidden rounded-xl bg-muted">
               {images.length > 0 ? (
-                <img src={images[selectedImage]?.url} alt={property.title} className="h-full w-full object-cover" loading="eager" decoding="async" fetchPriority="high" />
+                <ImageWithFallback src={images[selectedImage]?.url} alt={property.title} className="h-full w-full object-cover" loading="eager" decoding="async" fetchPriority="high" width={1280} height={720} />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">Sem foto</div>
               )}
@@ -415,7 +423,7 @@ const PropertyDetail = () => {
                     onClick={() => setSelectedImage(i)}
                     className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${i === selectedImage ? "border-primary" : "border-transparent"}`}
                   >
-                    <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                    <ImageWithFallback src={img.url} alt="" className="h-full w-full object-cover" width={96} height={64} />
                   </button>
                 ))}
               </div>
@@ -591,5 +599,41 @@ const PropertyDetail = () => {
   </>
   );
 };
+
+/** Skeleton loader for the property detail page (gallery + data). */
+const PropertyDetailSkeleton = () => (
+  <div className="container py-8">
+    <Skeleton className="mb-6 h-4 w-24" />
+    <div className="grid gap-8 lg:grid-cols-3">
+      <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="aspect-[16/9] w-full rounded-xl" />
+          <div className="flex gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-24 rounded-lg" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-9 w-40" />
+        </div>
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    </div>
+  </div>
+);
 
 export default PropertyDetail;

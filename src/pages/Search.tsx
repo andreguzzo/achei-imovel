@@ -3,7 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useFavorites } from "@/hooks/useFavorites";
-import { Loader2, Map as MapIcon, List, ArrowDownUp, X, Crosshair } from "lucide-react";
+import { Loader2, Map as MapIcon, List, ArrowDownUp, X, Crosshair, SearchX, AlertCircle } from "lucide-react";
+import { PropertyCardSkeletonGrid } from "@/components/PropertyCardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import PropertyCard from "@/components/PropertyCard";
@@ -71,6 +72,7 @@ const Search = () => {
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [groupInfo, setGroupInfo] = useState<Map<string, GroupInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -88,6 +90,7 @@ const Search = () => {
     async (f: SearchFiltersState, pageLimit: number, bounds: MapBounds | null) => {
       if (pageLimit > PAGE_SIZE) setLoadingMore(true);
       else setLoading(true);
+      setError(false);
 
       // Build sorting
       let orderCol = "created_at";
@@ -137,17 +140,29 @@ const Search = () => {
           .lte("longitude", bounds.east);
       }
 
-      const { data } = await q.range(0, pageLimit - 1);
-      const rows = (data as PropertyWithImages[]) ?? [];
-      const { items, groupInfo } = await dedupeByGroup(rows);
-      setProperties(items);
-      setGroupInfo(groupInfo);
-      setHasMore(rows.length >= pageLimit);
+      const { data, error: fetchError } = await q.range(0, pageLimit - 1);
+      if (fetchError) {
+        console.warn("Search error:", fetchError.message);
+        setError(true);
+        setProperties([]);
+        setGroupInfo(new Map());
+        setHasMore(false);
+      } else {
+        const rows = (data as PropertyWithImages[]) ?? [];
+        const { items, groupInfo } = await dedupeByGroup(rows);
+        setProperties(items);
+        setGroupInfo(groupInfo);
+        setHasMore(rows.length >= pageLimit);
+      }
       setLoading(false);
       setLoadingMore(false);
     },
     []
   );
+
+  const retrySearch = useCallback(() => {
+    fetchProperties(filters, limit, areaBounds);
+  }, [fetchProperties, filters, limit, areaBounds]);
 
   // Auto-apply filters with debounce (also handles initial fetch)
   useEffect(() => {
@@ -271,6 +286,32 @@ const Search = () => {
     </div>
   );
 
+  const errorState = (
+    <div className="py-20 text-center">
+      <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
+      <p className="mt-4 text-lg font-medium text-foreground">
+        {pt ? "Não foi possível carregar os imóveis" : "Could not load properties"}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {pt ? "Verifique sua conexão e tente novamente." : "Check your connection and try again."}
+      </p>
+      <Button className="mt-4" onClick={retrySearch}>
+        {pt ? "Tentar novamente" : "Try again"}
+      </Button>
+    </div>
+  );
+
+  const emptyState = (
+    <div className="py-20 text-center">
+      <SearchX className="mx-auto h-10 w-10 text-muted-foreground" />
+      <p className="mt-4 text-lg font-medium text-foreground">{t.filters.noResults}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
+      <Button variant="outline" className="mt-4" onClick={() => setFilters(defaultFilters)}>
+        {pt ? "Limpar filtros" : "Clear filters"}
+      </Button>
+    </div>
+  );
+
   const loadMoreButton = hasMore && (
     <div className="mt-6 flex justify-center">
       <Button variant="outline" onClick={() => setLimit((l) => l + PAGE_SIZE)} disabled={loadingMore}>
@@ -299,14 +340,11 @@ const Search = () => {
             <div className="p-4">
               {resultsHeader}
               {loading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <PropertyCardSkeletonGrid count={4} className="space-y-4" />
+              ) : error ? (
+                errorState
               ) : properties.length === 0 ? (
-                <div className="py-20 text-center">
-                  <p className="text-lg font-medium text-foreground">{t.filters.noResults}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
-                </div>
+                emptyState
               ) : (
                 <>
                   <div className="space-y-4">
@@ -360,14 +398,11 @@ const Search = () => {
         <div className="mt-6">
           {resultsHeader}
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <PropertyCardSkeletonGrid count={6} />
+          ) : error ? (
+            errorState
           ) : properties.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-lg font-medium text-foreground">{t.filters.noResults}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{t.filters.noResultsHint}</p>
-            </div>
+            emptyState
           ) : (
             <>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

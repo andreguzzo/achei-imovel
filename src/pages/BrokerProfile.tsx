@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera } from "lucide-react";
+import { Phone, MapPin, Handshake, Building2, MessageCircle, Mail, Shield, ChevronLeft, ChevronRight, Instagram, Facebook, Youtube, Linkedin, Camera, AlertCircle } from "lucide-react";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { motion, AnimatePresence } from "framer-motion";
 import Seo from "@/components/Seo";
 
@@ -74,6 +75,7 @@ const BrokerProfile = () => {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
@@ -85,14 +87,22 @@ const BrokerProfile = () => {
     if (!username) return;
     const fetchBroker = async () => {
       setLoading(true);
-      const { data: profileData } = await supabase
+      setError(false);
+      setNotFound(false);
+      const { data: profileData, error: profileError } = await supabase
         .from("brokers_public")
         .select("user_id, full_name, avatar_url, bio, creci, commercial_name, username, instagram, facebook, youtube, tiktok, linkedin")
         .eq("username", username.toLowerCase())
         .single();
 
       if (!profileData) {
-        setNotFound(true);
+        // PGRST116 = no rows found; anything else is a real failure
+        if (profileError && profileError.code !== "PGRST116") {
+          console.warn("Broker profile error:", profileError.message);
+          setError(true);
+        } else {
+          setNotFound(true);
+        }
         setLoading(false);
         return;
       }
@@ -147,6 +157,23 @@ const BrokerProfile = () => {
     return <BrokerProfileSkeleton />;
   }
 
+  if (error) {
+    return (
+      <div className="container py-20 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h1 className="mt-4 text-2xl font-bold text-foreground">
+          {pt ? "Não foi possível carregar o perfil" : "Could not load the profile"}
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {pt ? "Verifique sua conexão e tente novamente." : "Check your connection and try again."}
+        </p>
+        <Button className="mt-6" onClick={() => window.location.reload()}>
+          {pt ? "Tentar novamente" : "Try again"}
+        </Button>
+      </div>
+    );
+  }
+
   if (notFound || !broker) {
     return (
       <div className="container py-20 text-center">
@@ -178,7 +205,7 @@ const BrokerProfile = () => {
       {/* Hero Cover - uses banner photo */}
       <div className="relative h-48 sm:h-64 md:h-72 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 overflow-hidden">
         {bannerPhoto && (
-          <img src={bannerPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+          <ImageWithFallback src={bannerPhoto.url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" width={1600} height={400} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
@@ -408,7 +435,7 @@ const BrokerProfile = () => {
                     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-transparent hover:border-primary/20">
                       <div className="aspect-video overflow-hidden bg-muted relative">
                         {p.property_images?.[0]?.url ? (
-                          <img src={p.property_images[0].url} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <ImageWithFallback src={p.property_images[0].url} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" width={640} height={360} />
                         ) : (
                           <div className="flex h-full items-center justify-center text-muted-foreground">
                             <Building2 className="h-8 w-8" />

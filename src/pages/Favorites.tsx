@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
-import { Loader2, Heart } from "lucide-react";
+import { Heart, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PropertyCard from "@/components/PropertyCard";
+import { PropertyCardSkeletonGrid } from "@/components/PropertyCardSkeleton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PropertyWithImages = Tables<"properties"> & {
@@ -19,6 +20,7 @@ const Favorites = () => {
   const { favoriteIds, isFavorited, toggle, loading: favLoading } = useFavorites();
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const pt = locale === "pt-BR";
 
   useEffect(() => {
@@ -32,11 +34,18 @@ const Favorites = () => {
 
     const fetchProps = async () => {
       setLoading(true);
-      const { data } = await supabase
+      setError(false);
+      const { data, error: fetchError } = await supabase
         .from("properties")
         .select("*, property_images(*)")
         .in("id", ids);
-      setProperties((data as PropertyWithImages[]) ?? []);
+      if (fetchError) {
+        console.warn("Favorites error:", fetchError.message);
+        setError(true);
+        setProperties([]);
+      } else {
+        setProperties((data as PropertyWithImages[]) ?? []);
+      }
       setLoading(false);
     };
     fetchProps();
@@ -44,8 +53,22 @@ const Favorites = () => {
 
   if (favLoading || loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container py-8">
+        <PropertyCardSkeletonGrid count={3} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-20 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+        <p className="mt-4 text-lg font-medium">
+          {pt ? "Não foi possível carregar seus favoritos" : "Could not load your favorites"}
+        </p>
+        <Button className="mt-4" onClick={() => window.location.reload()}>
+          {pt ? "Tentar novamente" : "Try again"}
+        </Button>
       </div>
     );
   }
