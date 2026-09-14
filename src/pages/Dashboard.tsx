@@ -15,7 +15,7 @@ const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"))
 import SalesContacts from "@/components/dashboard/SalesContacts";
 import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
-import BrokerProposals from "@/components/dashboard/BrokerProposals";
+
 const BrokerAnalytics = lazy(() => import("@/components/dashboard/BrokerAnalytics"));
 import PropertyPartnerships from "@/components/dashboard/PropertyPartnerships";
 import SubscriptionCard from "@/components/dashboard/SubscriptionCard";
