@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Edit, Trash2, ArrowUp, ArrowDown, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 
 type Draft = {
   slug: string;

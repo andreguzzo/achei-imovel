@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MessageCircle, Reply, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 
 interface SupportMessage {
   id: string;
