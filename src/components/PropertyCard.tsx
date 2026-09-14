@@ -154,6 +154,11 @@ const PropertyCard = ({
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
+        {property.reference_code && (
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground">
+            {pt ? "Cód." : "Ref."} {property.reference_code}
+          </p>
+        )}
         <p className="line-clamp-2 text-xs text-muted-foreground">{summary}</p>
         <h3 className="line-clamp-1 text-sm font-semibold text-foreground">
           {property.neighborhood ? `${property.neighborhood}, ` : ""}{property.city} - {property.state}

@@ -181,7 +181,9 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                           {statusLabels[p.status] ?? p.status}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{p.city} - {p.state}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {p.reference_code ? `${pt ? "Cód." : "Ref."} ${p.reference_code} • ` : ""}{p.city} - {p.state}
+                      </p>
                       <p className="text-sm font-semibold text-primary">{brl(p.price)}</p>
                     </div>
                   </button>

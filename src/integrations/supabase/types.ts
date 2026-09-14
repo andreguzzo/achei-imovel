@@ -664,6 +664,7 @@ export type Database = {
           parking_spots: number | null
           price: number
           property_type: Database["public"]["Enums"]["property_type"]
+          reference_code: string | null
           sold_by_other_price: number | null
           sold_commission: number | null
           sold_price: number | null
@@ -698,6 +699,7 @@ export type Database = {
           parking_spots?: number | null
           price: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          reference_code?: string | null
           sold_by_other_price?: number | null
           sold_commission?: number | null
           sold_price?: number | null
@@ -732,6 +734,7 @@ export type Database = {
           parking_spots?: number | null
           price?: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          reference_code?: string | null
           sold_by_other_price?: number | null
           sold_commission?: number | null
           sold_price?: number | null

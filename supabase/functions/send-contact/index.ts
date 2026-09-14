@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       const { data: property } = await supabase
         .from("properties")
-        .select("id, title, city, state, user_id")
+        .select("id, title, city, state, user_id, reference_code")
         .eq("id", property_id)
         .maybeSingle();
 
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       const brokerEmail = adminUser?.user?.email;
       if (!brokerEmail) throw new Error("broker email not found");
 
-      const propertyCode = String(property.id).slice(0, 8).toUpperCase();
+      const propertyCode = property.reference_code ?? String(property.id).slice(0, 8).toUpperCase();
       const origin = req.headers.get("origin") || "https://abitzo.lovable.app";
       const panelUrl = `${origin}/painel?secao=contatos`;
       const leadPhone = (phone ?? "").replace(/\D/g, "");

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -85,12 +85,30 @@ const Search = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const initialFetchDone = useRef(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const navigate = useNavigate();
 
   const fetchProperties = useCallback(
     async (f: SearchFiltersState, pageLimit: number, bounds: MapBounds | null) => {
       if (pageLimit > PAGE_SIZE) setLoadingMore(true);
       else setLoading(true);
       setError(false);
+
+      // Reference code shortcut: "AB-00001" (also accepts "ab 1" / "ab00001")
+      const refMatch = f.query.trim().match(/^ab[-\s]?(\d{1,5})$/i);
+      if (refMatch) {
+        const code = `AB-${refMatch[1].padStart(5, "0")}`;
+        const { data: byCode } = await supabase
+          .from("properties")
+          .select("id")
+          .eq("reference_code", code)
+          .maybeSingle();
+        if (byCode?.id) {
+          setLoading(false);
+          setLoadingMore(false);
+          navigate(`/imovel/${byCode.id}`);
+          return;
+        }
+      }
 
       // Build sorting
       let orderCol = "created_at";
@@ -157,7 +175,7 @@ const Search = () => {
       setLoading(false);
       setLoadingMore(false);
     },
-    []
+    [navigate]
   );
 
   const retrySearch = useCallback(() => {
