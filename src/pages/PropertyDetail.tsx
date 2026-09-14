@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check } from "lucide-react";
+import { Bed, Bath, Car, Maximize, MapPin, ArrowLeft, Users, Video, MessageCircle, Phone as PhoneIcon, Share2, Heart, Copy, Check, Home } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import ContactForm from "@/components/ContactForm";
 import PropertyMap, { type MapProperty } from "@/components/PropertyMap";
 import { asBoundary, boundaryCenter } from "@/lib/kmlParser";
@@ -319,18 +321,24 @@ const PropertyDetail = () => {
 
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PropertyDetailSkeleton />;
   }
 
   if (!property) {
     return (
       <div className="container py-20 text-center">
-        <p className="text-lg font-medium">{pt ? "Imóvel não encontrado" : "Property not found"}</p>
-        <Link to="/busca"><Button variant="link">{t.common.back}</Button></Link>
+        <Home className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h1 className="mt-4 text-xl font-semibold text-foreground">
+          {pt ? "Imóvel não encontrado" : "Property not found"}
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {pt
+            ? "Este imóvel não existe, foi removido ou está desativado no momento."
+            : "This property doesn't exist, was removed or is currently deactivated."}
+        </p>
+        <Link to="/busca">
+          <Button className="mt-6">{pt ? "Ver outros imóveis" : "Browse other properties"}</Button>
+        </Link>
       </div>
     );
   }
