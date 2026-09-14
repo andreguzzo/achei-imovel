@@ -12,6 +12,7 @@ import AdminUsersTab from "@/components/admin/AdminUsersTab";
 import AdminPropertiesTab from "@/components/admin/AdminPropertiesTab";
 import AdminSubscriptionsTab from "@/components/admin/AdminSubscriptionsTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
+import AdminVerificationsTab from "@/components/admin/AdminVerificationsTab";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -22,6 +23,7 @@ const Admin = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openSupport, setOpenSupport] = useState(0);
+  const [pendingVerifications, setPendingVerifications] = useState(0);
 
   const rawSection = searchParams.get("secao") as AdminSection | null;
   const section: AdminSection =
@@ -36,11 +38,15 @@ const Admin = () => {
       if (!data) { navigate("/"); return; }
       setIsAdmin(true);
       setChecking(false);
-      const { count } = await supabase
-        .from("support_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "open");
-      setOpenSupport(count ?? 0);
+      const [support, verifications] = await Promise.all([
+        supabase.from("support_messages").select("id", { count: "exact", head: true }).eq("status", "open"),
+        supabase
+          .from("identity_verifications")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["pending", "manual_review"]),
+      ]);
+      setOpenSupport(support.count ?? 0);
+      setPendingVerifications(verifications.count ?? 0);
     };
     checkAdmin();
   }, [user, authLoading, navigate]);
