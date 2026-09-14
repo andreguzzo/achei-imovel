@@ -14,7 +14,8 @@ import { Loader2, Upload, X, Plus, AlertTriangle, Sparkles } from "lucide-react"
 import LocationPicker from "@/components/LocationPicker";
 import BoundaryEditor from "@/components/BoundaryEditor";
 import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
-import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
+import PrivateInfoCard, { uploadPrivateDocuments, uploadAuthorizationFile, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
+import { emptyAuthorization, type AuthorizationData, type AuthorizationType } from "@/lib/saleAuthorization";
 import { compressImage } from "@/lib/imageCompression";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PROPERTY_FEATURES, matchFeature } from "@/lib/propertyFeatures";
@@ -330,6 +331,8 @@ const CreateProperty = () => {
   const [owners, setOwners] = useState<OwnerEntry[]>([emptyOwner()]);
   const [privateNotes, setPrivateNotes] = useState("");
   const [pendingDocs, setPendingDocs] = useState<File[]>([]);
+  const [authorization, setAuthorization] = useState<AuthorizationData>(emptyAuthorization());
+  const [authFile, setAuthFile] = useState<File | null>(null);
 
   // Status dialog
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -444,6 +447,15 @@ const CreateProperty = () => {
       
       if (privateData) {
         setPrivateNotes(privateData.notes ?? "");
+        setAuthorization({
+          authorization_type: (privateData.authorization_type as AuthorizationType | null) ?? "",
+          authorization_start: privateData.authorization_start ?? "",
+          authorization_end: privateData.authorization_end ?? "",
+          commission_percent: privateData.commission_percent?.toString() ?? "",
+          authorization_file_path: privateData.authorization_file_path ?? "",
+          owner_email: privateData.owner_email ?? "",
+          owner_notes: privateData.owner_notes ?? "",
+        });
         const ownersData = privateData.owners as unknown as OwnerEntry[];
         if (ownersData && ownersData.length > 0) {
           setOwners(ownersData);
@@ -702,9 +714,22 @@ const CreateProperty = () => {
     }
 
     // Save private data (upsert)
+    const hasAuthData = Boolean(
+      authorization.authorization_type ||
+        authorization.authorization_start ||
+        authorization.authorization_end ||
+        authorization.commission_percent ||
+        authorization.owner_email ||
+        authorization.owner_notes ||
+        authFile,
+    );
     const hasOwnerData = owners.some(o => o.name || o.cpf);
-    const hasPrivateData = hasOwnerData || privateNotes;
+    const hasPrivateData = hasOwnerData || privateNotes || hasAuthData;
     if (hasPrivateData) {
+      let authPath = authorization.authorization_file_path || null;
+      if (authFile) {
+        authPath = (await uploadAuthorizationFile(user.id, propId, authFile)) ?? authPath;
+      }
       const firstOwner = owners[0] || emptyOwner();
       const privatePayload = {
         property_id: propId,
@@ -714,6 +739,15 @@ const CreateProperty = () => {
         owner_address: firstOwner.address || null,
         notes: privateNotes || null,
         owners: JSON.parse(JSON.stringify(owners)),
+        authorization_type: authorization.authorization_type || null,
+        authorization_start: authorization.authorization_start || null,
+        authorization_end: authorization.authorization_end || null,
+        commission_percent: authorization.commission_percent
+          ? Number(authorization.commission_percent)
+          : null,
+        authorization_file_path: authPath,
+        owner_email: authorization.owner_email || null,
+        owner_notes: authorization.owner_notes || null,
       };
       
       if (isEditMode) {
@@ -893,6 +927,10 @@ const CreateProperty = () => {
           setPrivateNotes={setPrivateNotes}
           pendingFiles={pendingDocs}
           setPendingFiles={setPendingDocs}
+          authorization={authorization}
+          setAuthorization={setAuthorization}
+          authFile={authFile}
+          setAuthFile={setAuthFile}
         />
 
         {/* Title & Description with AI - placed last so all info is filled */}

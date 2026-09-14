@@ -1003,36 +1003,57 @@ export type Database = {
       }
       property_private_data: {
         Row: {
+          authorization_end: string | null
+          authorization_file_path: string | null
+          authorization_start: string | null
+          authorization_type: string | null
+          commission_percent: number | null
           created_at: string
           id: string
           notes: string | null
           owner_address: string | null
           owner_cpf: string | null
+          owner_email: string | null
           owner_name: string | null
+          owner_notes: string | null
           owner_phone: string | null
           owners: Json | null
           property_id: string
           updated_at: string
         }
         Insert: {
+          authorization_end?: string | null
+          authorization_file_path?: string | null
+          authorization_start?: string | null
+          authorization_type?: string | null
+          commission_percent?: number | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_address?: string | null
           owner_cpf?: string | null
+          owner_email?: string | null
           owner_name?: string | null
+          owner_notes?: string | null
           owner_phone?: string | null
           owners?: Json | null
           property_id: string
           updated_at?: string
         }
         Update: {
+          authorization_end?: string | null
+          authorization_file_path?: string | null
+          authorization_start?: string | null
+          authorization_type?: string | null
+          commission_percent?: number | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_address?: string | null
           owner_cpf?: string | null
+          owner_email?: string | null
           owner_name?: string | null
+          owner_notes?: string | null
           owner_phone?: string | null
           owners?: Json | null
           property_id?: string

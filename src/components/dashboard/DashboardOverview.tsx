@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, Users, CalendarDays, FileText, Handshake, Building2, DollarSign, Plus, ArrowRight, Clock, Mail,
-  KeyRound, Receipt, TrendingUp,
+  KeyRound, Receipt, TrendingUp, ShieldAlert,
 } from "lucide-react";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
+import {
+  authorizationLabel,
+  authorizationStatus,
+  authorizationBadgeText,
+  formatDateBr,
+} from "@/lib/saleAuthorization";
 import type { DashboardSection } from "@/components/dashboard/DashboardSidebar";
 
 interface Props {
@@ -59,6 +65,14 @@ interface RentalChargeRow {
   total_amount: number;
 }
 
+interface ExpiringAuth {
+  property_id: string;
+  title: string;
+  reference_code: string | null;
+  authorization_type: string | null;
+  authorization_end: string;
+}
+
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
@@ -73,6 +87,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   });
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
+  const [expiringAuths, setExpiringAuths] = useState<ExpiringAuth[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -166,6 +181,29 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
         (c) => c.next_adjustment_date && c.next_adjustment_date <= in30,
       ).length,
     });
+    // Private sale authorizations expiring soon (broker-only data)
+    const { data: authRows } = await supabase
+      .from("property_private_data")
+      .select("property_id, authorization_type, authorization_end, properties:property_id!inner(title, reference_code, user_id)")
+      .eq("properties.user_id", userId)
+      .not("authorization_end", "is", null)
+      .lte("authorization_end", in30)
+      .order("authorization_end", { ascending: true })
+      .limit(10);
+
+    setExpiringAuths(
+      (authRows ?? []).map((r) => {
+        const prop = r.properties as unknown as { title: string; reference_code: string | null };
+        return {
+          property_id: r.property_id,
+          title: prop?.title ?? "",
+          reference_code: prop?.reference_code ?? null,
+          authorization_type: r.authorization_type,
+          authorization_end: r.authorization_end as string,
+        };
+      }),
+    );
+
     setStaleContacts(contacts.filter((c) => c.created_at >= weekAgo).length);
     setTodayAppointments((apptRes.data as Appointment[]) ?? []);
     setLoading(false);
@@ -359,6 +397,56 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {isBroker && expiringAuths.length > 0 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldAlert className="h-4 w-4 text-amber-600" />
+              {pt ? "Autorizações a vencer" : "Authorizations expiring"}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate("imoveis")}>
+              {pt ? "Ver anúncios" : "View listings"}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border">
+              {expiringAuths.map((a) => {
+                const { status, days } = authorizationStatus(a.authorization_end);
+                const badge = authorizationBadgeText(status, days, pt);
+                return (
+                  <div key={a.property_id} className="flex items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[
+                          a.reference_code ? `${pt ? "Cód." : "Ref."} ${a.reference_code}` : null,
+                          a.authorization_type ? authorizationLabel(a.authorization_type, pt) : null,
+                          `${pt ? "até" : "until"} ${formatDateBr(a.authorization_end)}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        status === "expired"
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                      }`}
+                    >
+                      {badge}
+                    </span>
+                    <Link to={`/editar/${a.property_id}`}>
+                      <Button size="sm" variant="outline">{pt ? "Abrir" : "Open"}</Button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users, AlertTriangle } from "lucide-react";
+import { authorizationStatus, authorizationBadgeText } from "@/lib/saleAuthorization";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
 import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
@@ -34,6 +35,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [loading, setLoading] = useState(true);
   const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
   const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
+  const [authEnds, setAuthEnds] = useState<Record<string, string>>({});
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
@@ -49,9 +51,46 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
       .select("*, property_images(*)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-    setProperties((data as PropertyWithImages[]) ?? []);
+    const list = (data as PropertyWithImages[]) ?? [];
+    setProperties(list);
+
+    // Private authorization terms — broker only, never rendered publicly
+    if (list.length > 0) {
+      const { data: privateRows } = await supabase
+        .from("property_private_data")
+        .select("property_id, authorization_end")
+        .in("property_id", list.map((p) => p.id));
+      const map: Record<string, string> = {};
+      for (const row of privateRows ?? []) {
+        if (row.authorization_end) map[row.property_id] = row.authorization_end;
+      }
+      setAuthEnds(map);
+    } else {
+      setAuthEnds({});
+    }
     setLoading(false);
   }, [userId]);
+
+  const renderAuthBadge = (propId: string) => {
+    const end = authEnds[propId];
+    if (!end) return null;
+    const { status, days } = authorizationStatus(end);
+    const text = authorizationBadgeText(status, days, pt);
+    if (!text) return null;
+    return (
+      <Badge
+        variant={status === "expired" ? "destructive" : "outline"}
+        className={`shrink-0 gap-1 text-[10px] ${
+          status === "expiring"
+            ? "border-amber-400 text-amber-700 dark:border-amber-700 dark:text-amber-300"
+            : ""
+        }`}
+      >
+        <AlertTriangle className="h-3 w-3" />
+        {text}
+      </Badge>
+    );
+  };
 
   useEffect(() => { fetchProperties(); }, [fetchProperties]);
 
@@ -177,11 +216,12 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-medium text-foreground">{p.title}</p>
                         <Badge variant={p.status === "active" ? "default" : "secondary"} className="shrink-0 text-[10px]">
                           {statusLabels[p.status] ?? p.status}
                         </Badge>
+                        {renderAuthBadge(p.id)}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {p.reference_code ? `${pt ? "Cód." : "Ref."} ${p.reference_code} • ` : ""}{p.city} - {p.state}
