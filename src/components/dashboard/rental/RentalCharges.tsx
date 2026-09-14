@@ -12,7 +12,7 @@ import { CheckCircle2, Copy, Link2, Loader2, QrCode, Receipt, Undo2, MessageCirc
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import {
   brl, chargeMessage, chargeStatusClass, chargeStatusLabel, effectiveChargeStatus,
-  formatCompetence, formatDate, monthKey, whatsappUrl,
+  formatCompetence, formatDate, monthKey,
   type ChargeStatus, type RentalCharge,
 } from "@/lib/rentals";
 import { buildPixPayload } from "@/lib/pix";
