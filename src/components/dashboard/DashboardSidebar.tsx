@@ -124,7 +124,12 @@ const DashboardSidebar = ({
       </div>
 
       {groups.map((group) => {
-        const items = group.items.filter((i) => !i.brokerOnly || isBroker);
+        const items = group.items.filter(
+          (i) =>
+            (!i.brokerOnly || isBroker) &&
+            (!i.professionalOnly || isProfessional) &&
+            (!i.agencyOnly || isAgency),
+        );
         if (items.length === 0) return null;
         return (
           <div key={group.label} className="mb-2">
