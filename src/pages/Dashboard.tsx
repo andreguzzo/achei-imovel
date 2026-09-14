@@ -23,12 +23,13 @@ import RentalContracts from "@/components/dashboard/rental/RentalContracts";
 import RentalCharges from "@/components/dashboard/rental/RentalCharges";
 import RentalInspections from "@/components/dashboard/rental/RentalInspections";
 import RentalReports from "@/components/dashboard/rental/RentalReports";
+import RentalBilling from "@/components/dashboard/rental/RentalBilling";
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
   "inicio", "negociacoes", "contatos", "propostas", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
-  "contratos", "alugueis", "vistorias", "relatorios_locacao",
+  "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
 ];
 
 const Dashboard = () => {
@@ -100,7 +101,7 @@ const Dashboard = () => {
   const effectiveSection: DashboardSection =
     !isBroker && [
       "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
-      "contratos", "alugueis", "vistorias", "relatorios_locacao",
+      "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
     ].includes(section)
       ? "imoveis"
       : section;
@@ -166,6 +167,8 @@ const Dashboard = () => {
         return <RentalInspections userId={user.id} />;
       case "relatorios_locacao":
         return <RentalReports userId={user.id} />;
+      case "cobranca_locacao":
+        return <RentalBilling userId={user.id} />;
       case "relatorios":
         return (
           <div className="space-y-6">
