@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { PROPERTY_FEATURES, featureLabel } from "@/lib/propertyFeatures";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,12 +48,7 @@ export const defaultFilters: SearchFiltersState = {
   sortBy: "newest",
 };
 
-const KEYWORD_SUGGESTIONS = [
-  "elevador", "piscina", "academia", "churrasqueira", "portaria 24h",
-  "playground", "salão de festas", "sauna", "varanda", "suíte",
-  "ar condicionado", "jardim", "quadra", "coworking", "pet friendly",
-  "vista mar", "mobiliado", "lavabo", "closet", "depósito",
-];
+const KEYWORD_SUGGESTIONS = PROPERTY_FEATURES.map((f) => f.slug);
 
 interface SearchFiltersProps {
   filters: SearchFiltersState;
@@ -246,7 +242,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
   if (filters.keywords.length > 0) {
     filters.keywords.forEach((kw) =>
       chips.push({
-        label: kw,
+        label: featureLabel(kw, pt),
         clear: () => update({ keywords: filters.keywords.filter((x) => x !== kw) }),
       })
     );
@@ -485,7 +481,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
                         : "border-input bg-background text-foreground hover:bg-accent"
                     }`}
                   >
-                    {kw}
+                    {featureLabel(kw, pt)}
                   </button>
                 ))}
               </div>

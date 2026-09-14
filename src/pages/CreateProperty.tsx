@@ -16,6 +16,8 @@ import BoundaryEditor from "@/components/BoundaryEditor";
 import { asBoundary, boundaryCenter, type BoundaryGeometry } from "@/lib/kmlParser";
 import PrivateInfoCard, { uploadPrivateDocuments, emptyOwner, type OwnerEntry } from "@/components/PrivateInfoCard";
 import { compressImage } from "@/lib/imageCompression";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PROPERTY_FEATURES, matchFeature } from "@/lib/propertyFeatures";
 import { z } from "zod";
 import type { Enums, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
@@ -133,10 +135,11 @@ interface DetailsProps {
   parkingSpots: string; setParkingSpots: (v: string) => void;
   condoFee: string; setCondoFee: (v: string) => void;
   iptu: string; setIptu: (v: string) => void;
-  features: string; setFeatures: (v: string) => void;
+  features: string[]; setFeatures: (v: string[]) => void;
+  legacyFeatures: string[];
 }
 
-const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuites, bathrooms, setBathrooms, parkingSpots, setParkingSpots, condoFee, setCondoFee, iptu, setIptu, features, setFeatures }: DetailsProps) => (
+const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuites, bathrooms, setBathrooms, parkingSpots, setParkingSpots, condoFee, setCondoFee, iptu, setIptu, features, setFeatures, legacyFeatures }: DetailsProps) => (
   <Card>
     <CardHeader><CardTitle className="text-base">{pt ? "Detalhes" : "Details"}</CardTitle></CardHeader>
     <CardContent className="grid gap-4 sm:grid-cols-5">
@@ -169,8 +172,30 @@ const DetailsCard = ({ pt, area, setArea, bedrooms, setBedrooms, suites, setSuit
         <Input type="number" value={iptu} onChange={(e) => setIptu(e.target.value)} min="0" />
       </div>
       <div className="sm:col-span-5">
-        <label className="mb-1 block text-sm font-medium">{pt ? "Características (separadas por vírgula)" : "Features (comma-separated)"}</label>
-        <Input value={features} onChange={(e) => setFeatures(e.target.value)} placeholder={pt ? "Piscina, churrasqueira, academia..." : "Pool, BBQ, gym..."} />
+        <label className="mb-2 block text-sm font-medium">{pt ? "Características" : "Features"}</label>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {PROPERTY_FEATURES.map((f) => {
+            const checked = features.includes(f.slug);
+            return (
+              <label key={f.slug} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) =>
+                    setFeatures(v ? [...features, f.slug] : features.filter((s) => s !== f.slug))
+                  }
+                />
+                <span>{pt ? f.pt : f.en}</span>
+              </label>
+            );
+          })}
+        </div>
+        {legacyFeatures.length > 0 && (
+          <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+            {pt
+              ? `Características antigas que não existem mais na lista: ${legacyFeatures.join(", ")}. Selecione as equivalentes acima; elas não serão salvas novamente.`
+              : `Legacy features no longer in the list: ${legacyFeatures.join(", ")}. Pick the equivalents above; they will not be saved again.`}
+          </p>
+        )}
       </div>
     </CardContent>
   </Card>
@@ -290,7 +315,8 @@ const CreateProperty = () => {
   const [zipCode, setZipCode] = useState("");
   const [condoFee, setCondoFee] = useState("");
   const [iptu, setIptu] = useState("");
-  const [features, setFeatures] = useState("");
+  const [features, setFeatures] = useState<string[]>([]);
+  const [legacyFeatures, setLegacyFeatures] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
@@ -330,7 +356,7 @@ const CreateProperty = () => {
       const { data, error } = await supabase.functions.invoke("generate-property-description", {
         body: {
           propertyType, listingType, price, area, bedrooms, suites, bathrooms,
-          parkingSpots, neighborhood, city, state, features, condoFee, iptu, address,
+          parkingSpots, neighborhood, city, state, features: features.join(", "), condoFee, iptu, address,
         },
       });
       if (error) throw error;
@@ -382,7 +408,15 @@ const CreateProperty = () => {
       setZipCode(prop.zip_code ?? "");
       setCondoFee(prop.condo_fee?.toString() ?? "");
       setIptu(prop.iptu?.toString() ?? "");
-      setFeatures(prop.features?.join(", ") ?? "");
+      const matched: string[] = [];
+      const unmatched: string[] = [];
+      (prop.features ?? []).forEach((raw) => {
+        const slug = matchFeature(raw);
+        if (slug) { if (!matched.includes(slug)) matched.push(slug); }
+        else if (raw.trim()) unmatched.push(raw.trim());
+      });
+      setFeatures(matched);
+      setLegacyFeatures(unmatched);
       setVideoUrl(prop.video_url ?? "");
       setLatitude(prop.latitude?.toString() ?? "");
       setLongitude(prop.longitude?.toString() ?? "");
@@ -561,7 +595,7 @@ const CreateProperty = () => {
       zip_code: zipCode || null,
       condo_fee: condoFee ? Number(condoFee) : null,
       iptu: iptu ? Number(iptu) : null,
-      features: features ? features.split(",").map((f) => f.trim()).filter(Boolean) : [],
+      features,
       video_url: videoUrl || null,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
@@ -722,7 +756,7 @@ const CreateProperty = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <BasicInfoCard pt={pt} propertyType={propertyType} setPropertyType={setPropertyType} listingType={listingType} setListingType={setListingType} price={price} setPrice={setPrice} />
 
-        <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} />
+        <DetailsCard pt={pt} area={area} setArea={setArea} bedrooms={bedrooms} setBedrooms={setBedrooms} suites={suites} setSuites={setSuites} bathrooms={bathrooms} setBathrooms={setBathrooms} parkingSpots={parkingSpots} setParkingSpots={setParkingSpots} condoFee={condoFee} setCondoFee={setCondoFee} iptu={iptu} setIptu={setIptu} features={features} setFeatures={setFeatures} legacyFeatures={legacyFeatures} />
 
         {/* Address */}
         <Card>
