@@ -60,6 +60,8 @@ interface AuthContextType {
   tier: TierKey;
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
+  planSlug: string | null;
+  subscribed: boolean;
   accountType: AccountType;
   verificationStatus: VerificationStatus;
   verified: boolean;
