@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,11 @@ const BrokerTab = ({ userId }: BrokerTabProps) => {
     }
 
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const totalViews = properties.reduce((sum, p) => sum + (p.view_count ?? 0), 0);
 
