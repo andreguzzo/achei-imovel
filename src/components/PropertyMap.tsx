@@ -9,7 +9,7 @@ export type MapProperty = Tables<"properties"> & {
 };
 
 interface PropertyMapProps {
-  properties: Property[];
+  properties: MapProperty[];
   center?: [number, number];
   zoom?: number;
   onBoundsChange?: (bounds: { north: number; south: number; east: number; west: number }) => void;
