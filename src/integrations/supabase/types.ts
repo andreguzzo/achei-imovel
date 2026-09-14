@@ -427,6 +427,8 @@ export type Database = {
       }
       contact_requests: {
         Row: {
+          broker_id: string | null
+          broker_notes: string | null
           created_at: string
           email: string
           id: string
@@ -435,9 +437,13 @@ export type Database = {
           phone: string | null
           property_id: string
           request_type: string | null
+          responded_at: string | null
           sender_id: string
+          status: string
         }
         Insert: {
+          broker_id?: string | null
+          broker_notes?: string | null
           created_at?: string
           email: string
           id?: string
@@ -446,9 +452,13 @@ export type Database = {
           phone?: string | null
           property_id: string
           request_type?: string | null
+          responded_at?: string | null
           sender_id: string
+          status?: string
         }
         Update: {
+          broker_id?: string | null
+          broker_notes?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -457,7 +467,9 @@ export type Database = {
           phone?: string | null
           property_id?: string
           request_type?: string | null
+          responded_at?: string | null
           sender_id?: string
+          status?: string
         }
         Relationships: [
           {
