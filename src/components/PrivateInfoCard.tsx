@@ -97,8 +97,7 @@ const PrivateInfoCard = ({
   };
 
   /* ── File helpers ── */
-  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  const addFiles = (files: File[]) => {
     const valid = files.filter((f) => {
       const ext = f.name.split(".").pop()?.toLowerCase();
       const ok =
