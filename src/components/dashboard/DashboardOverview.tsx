@@ -43,6 +43,22 @@ interface Counts {
   adjustmentsDue: number;
 }
 
+interface RentalContractRow {
+  id: string;
+  status: string;
+  end_date: string;
+  next_adjustment_date: string | null;
+  rent_amount: number;
+  admin_fee_percent: number;
+}
+
+interface RentalChargeRow {
+  id: string;
+  status: string;
+  due_date: string;
+  total_amount: number;
+}
+
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
@@ -91,14 +107,14 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
             .from("rental_contracts")
             .select("id, status, end_date, next_adjustment_date, rent_amount, admin_fee_percent")
             .eq("broker_id", userId)
-        : Promise.resolve({ data: [] as null }),
+        : Promise.resolve({ data: [] as RentalContractRow[] }),
       isBroker
         ? supabase
             .from("rental_charges")
             .select("id, status, due_date, total_amount")
             .eq("broker_id", userId)
             .eq("status", "pending")
-        : Promise.resolve({ data: [] as null }),
+        : Promise.resolve({ data: [] as RentalChargeRow[] }),
     ]);
 
     const pipeline = pipelineRes.data ?? [];
