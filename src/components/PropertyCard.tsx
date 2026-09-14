@@ -142,6 +142,25 @@ const PropertyCard = ({
             <Heart className={`h-4 w-4 transition-colors ${favorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
           </button>
         )}
+        <span
+          className={`absolute top-12 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm [&>button]:h-8 [&>button]:w-8`}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <ShareMenu
+            url={`${window.location.origin}/imovel/${property.id}`}
+            title={property.title}
+            whatsappMessage={buildPropertyShareText({
+              title: property.title,
+              referenceCode: property.reference_code,
+              priceText: formatPrice(property.price, property.listing_type),
+              url: `${window.location.origin}/imovel/${property.id}`,
+              pt,
+            })}
+            pt={pt}
+            className="h-8 w-8"
+            iconClassName="h-4 w-4"
+          />
+        </span>
         {brokerCount != null && brokerCount > 1 && (
           <Badge
             variant="secondary"

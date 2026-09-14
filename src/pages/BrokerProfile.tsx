@@ -454,6 +454,25 @@ const BrokerProfile = () => {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <span
+                          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        >
+                          <ShareMenu
+                            url={`${window.location.origin}/imovel/${p.id}`}
+                            title={p.title}
+                            whatsappMessage={buildPropertyShareText({
+                              title: p.title,
+                              referenceCode: p.reference_code,
+                              priceText: fmt.format(p.price),
+                              url: `${window.location.origin}/imovel/${p.id}`,
+                              pt,
+                            })}
+                            pt={pt}
+                            className="h-8 w-8"
+                            iconClassName="h-4 w-4"
+                          />
+                        </span>
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium text-foreground truncate text-sm">{p.title}</h3>
