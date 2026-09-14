@@ -145,11 +145,32 @@ const Dashboard = () => {
       ]);
       if (!cancelled) setNewLeads((inbox.count ?? 0) + (followups.count ?? 0));
     };
+    const loadRentals = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [openCharges, overdue] = await Promise.all([
+        supabase
+          .from("rental_charges")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .eq("status", "pending")
+          .lte("due_date", today),
+        supabase
+          .from("rental_charges")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .eq("status", "overdue"),
+      ]);
+      if (!cancelled) setRentalAlerts((openCharges.count ?? 0) + (overdue.count ?? 0));
+    };
     loadLeads();
+    loadRentals();
     return () => { cancelled = true; };
   }, [user, section]);
 
-  const badges = useMemo(() => ({ atendimentos: newLeads }), [newLeads]);
+  const badges = useMemo(
+    () => ({ atendimentos: newLeads, locacao: rentalAlerts }),
+    [newLeads, rentalAlerts],
+  );
   const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
