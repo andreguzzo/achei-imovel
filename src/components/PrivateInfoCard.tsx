@@ -681,3 +681,20 @@ function guessDocType(filename: string): string {
     return "documento_proprietario";
   return "other";
 }
+
+/** Uploads the signed sale authorization to the private bucket, returning its path. */
+export async function uploadAuthorizationFile(
+  userId: string,
+  propertyId: string,
+  file: File
+): Promise<string | null> {
+  const path = `${userId}/${propertyId}/autorizacao_${Date.now()}_${file.name}`;
+  const { error } = await supabase.storage
+    .from("property-documents")
+    .upload(path, file, { upsert: false });
+  if (error) {
+    console.error("Authorization upload error:", error.message);
+    return null;
+  }
+  return path;
+}
