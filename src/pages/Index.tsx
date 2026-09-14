@@ -68,6 +68,7 @@ const fadeUp = {
 
 const Index = () => {
   const { t, locale } = useLanguage();
+  const pt = locale === "pt-BR";
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [featured, setFeatured] = useState<PropertyWithImages[]>([]);

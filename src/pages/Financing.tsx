@@ -41,6 +41,7 @@ function calcPrice(principal: number, monthlyRate: number, months: number): Row[
 
 const Financing = () => {
   const { t, locale } = useLanguage();
+  const pt = locale === "pt-BR";
   const [propertyValue, setPropertyValue] = useState("500000");
   const [downPayment, setDownPayment] = useState("100000");
   const [termYears, setTermYears] = useState("30");
