@@ -341,6 +341,18 @@ const PropertyDetail = () => {
     en: { apartment: "Apartment", house: "House", land: "Land", commercial: "Commercial" },
   };
 
+  const typeLabel = typeLabels[locale]?.[property.property_type] ?? property.property_type;
+  const seoDescription = `${typeLabel} ${property.listing_type === "rent" ? (pt ? "para alugar" : "for rent") : (pt ? "à venda" : "for sale")}${property.bedrooms ? `, ${property.bedrooms} ${t.property.bedrooms}` : ""}${property.area ? `, ${property.area}m²` : ""}, por ${formatPrice(property.price, property.listing_type)} em ${property.city}/${property.state}.`;
+
+  return (
+    <>
+      <Seo
+        title={`${property.title} — ${property.city}/${property.state} | Abitzo`}
+        description={seoDescription}
+        canonical={`/imovel/${property.id}`}
+        image={images[0]?.url}
+      />
+
   const propertyBoundary = asBoundary((property as { boundary?: unknown }).boundary);
   const mapCenter =
     property.latitude != null && property.longitude != null
