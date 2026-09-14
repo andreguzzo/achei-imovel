@@ -109,18 +109,28 @@ const Dashboard = () => {
     if (!user) return;
     let cancelled = false;
     const loadLeads = async () => {
-      const { count } = await supabase
-        .from("contact_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("broker_id", user.id)
-        .eq("status", "new");
-      if (!cancelled) setNewLeads(count ?? 0);
+      const today = new Date().toISOString().slice(0, 10);
+      const [inbox, followups] = await Promise.all([
+        supabase
+          .from("contact_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .in("status", ["new", "contacted"]),
+        supabase
+          .from("sales_pipeline")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", user.id)
+          .not("next_action_date", "is", null)
+          .lt("next_action_date", today)
+          .not("stage", "in", "(closed_won,closed_lost)"),
+      ]);
+      if (!cancelled) setNewLeads((inbox.count ?? 0) + (followups.count ?? 0));
     };
     loadLeads();
     return () => { cancelled = true; };
   }, [user, section]);
 
-  const badges = useMemo(() => ({ contatos: newLeads }), [newLeads]);
+  const badges = useMemo(() => ({ atendimentos: newLeads }), [newLeads]);
   const groups = useDashboardNav(badges);
 
   const activeLabel = useMemo(() => {
