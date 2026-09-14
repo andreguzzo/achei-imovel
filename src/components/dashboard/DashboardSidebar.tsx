@@ -44,7 +44,7 @@ export const useDashboardNav = (badges?: Partial<Record<DashboardSection, number
         { key: "clientes", label: pt ? "Carteira de clientes" : "Buyer book", icon: Users, brokerOnly: true },
         { key: "negociacoes", label: pt ? "Negociações" : "Deals", icon: TrendingUp, brokerOnly: true, badge: badges?.negociacoes },
         { key: "contatos", label: pt ? "Contatos recebidos" : "Incoming contacts", icon: Mail, brokerOnly: true, badge: badges?.contatos },
-        { key: "propostas", label: pt ? "Propostas" : "Proposals", icon: FileText, brokerOnly: true },
+        
       ],
     },
     {
