@@ -145,9 +145,9 @@ const SalesInbox = ({ userId, onConverted }: Props) => {
               )}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {c.phone && (buildWhatsAppUrl(c.phone) ? (
+              {c.phone && (buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt)) ? (
                 <Button asChild size="sm" variant="secondary" className="gap-1">
-                  <a href={buildWhatsAppUrl(c.phone)!} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWhatsAppUrl(c.phone, inboxGreeting(c.name, pt))!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-3.5 w-3.5" /> WhatsApp
                   </a>
                 </Button>

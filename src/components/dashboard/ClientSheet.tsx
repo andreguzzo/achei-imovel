@@ -203,9 +203,9 @@ const ClientSheetDialog = ({
                   </p>
                 )}
               </div>
-              {phone && (buildWhatsAppUrl(phone) ? (
+              {phone && (buildWhatsAppUrl(phone, greeting) ? (
                 <Button asChild className="gap-1">
-                  <a href={buildWhatsAppUrl(phone)!} target="_blank" rel="noopener noreferrer">
+                  <a href={buildWhatsAppUrl(phone, greeting)!} target="_blank" rel="noopener noreferrer">
                     <Phone className="h-4 w-4" /> WhatsApp
                   </a>
                 </Button>
