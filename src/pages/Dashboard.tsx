@@ -238,27 +238,17 @@ const Dashboard = () => {
             <PropertyPartnerships userId={user.id} />
           </div>
         );
-      case "contratos":
-        return <RentalContracts userId={user.id} />;
-      case "alugueis":
-        return <RentalCharges userId={user.id} />;
-      case "vistorias":
-        return <RentalInspections userId={user.id} />;
-      case "relatorios_locacao":
-        return <RentalReports userId={user.id} />;
-      case "cobranca_locacao":
-        return <RentalBilling userId={user.id} />;
-      case "relatorios":
+      case "locacao":
         return (
-          <div className="space-y-6">
-            <SectionHeader
-              title={pt ? "Relatórios" : "Reports"}
-              description={pt ? "VGV ativo, VGV realizado, comissões e desempenho dos anúncios." : "Active and closed sales volume, commissions and listing performance."}
-            />
-            <Suspense fallback={<ChartSkeleton />}>
-              <BrokerAnalytics userId={user.id} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<ChartSkeleton />}>
+            <RentalHub userId={user.id} initialTab={rentalTab} />
+          </Suspense>
+        );
+      case "desempenho":
+        return (
+          <Suspense fallback={<ChartSkeleton />}>
+            <PerformanceHub userId={user.id} initialTab={performanceTab} />
+          </Suspense>
         );
       case "perfil":
         return (
