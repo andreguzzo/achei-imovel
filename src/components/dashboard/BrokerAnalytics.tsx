@@ -1,28 +1,28 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
+import {
+  format,
+  subDays,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  differenceInDays,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Loader2,
-  CalendarIcon,
   DollarSign,
   TrendingUp,
   BarChart3,
@@ -33,6 +33,10 @@ import {
   ArrowUpRight,
   Building2,
   ExternalLink,
+  Eye,
+  Users,
+  Percent,
+  KeyRound,
 } from "lucide-react";
 import {
   BarChart,
@@ -45,6 +49,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  Line,
+  ComposedChart,
 } from "recharts";
 
 interface BrokerAnalyticsProps {
@@ -70,7 +76,21 @@ interface PropertyRecord {
   title: string;
   sold_price: number | null;
   sold_commission: number | null;
+  created_at: string;
+  sold_at: string | null;
+  closed_price: number | null;
+  view_count: number | null;
 }
+
+interface LeadRecord {
+  id: string;
+  created_at: string;
+  request_type: string | null;
+  status: string;
+  property_id: string | null;
+}
+
+type PeriodKey = "30d" | "90d" | "12m" | "ytd";
 
 const STAGE_ORDER = [
   "lead",
@@ -103,62 +123,185 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
 
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [properties, setProperties] = useState<PropertyRecord[]>([]);
+  const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailView, setDetailView] = useState<"vgv_ativo" | "vgv_realizado" | "commissions" | null>(null);
+  const [period, setPeriod] = useState<PeriodKey>("12m");
 
-  const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(subMonths(new Date(), 11)));
-  const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
+  const { dateFrom, dateTo } = useMemo(() => {
+    const now = new Date();
+    if (period === "30d") return { dateFrom: subDays(now, 30), dateTo: now };
+    if (period === "90d") return { dateFrom: subDays(now, 90), dateTo: now };
+    if (period === "ytd") return { dateFrom: startOfYear(now), dateTo: now };
+    return { dateFrom: startOfMonth(subMonths(now, 11)), dateTo: endOfMonth(now) };
+  }, [period]);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      const [salesRes, propsRes] = await Promise.all([
+      const [salesRes, propsRes, leadsRes] = await Promise.all([
         supabase
           .from("sales_pipeline")
           .select("id, client_name, stage, commission_value, created_at, actual_close_date, expected_close_date, property_id")
           .eq("broker_id", userId),
         supabase
           .from("properties")
-          .select("id, price, status, listing_type, title, sold_price, sold_commission")
+          .select("id, price, status, listing_type, title, sold_price, sold_commission, created_at, sold_at, closed_price, view_count")
           .eq("user_id", userId),
+        supabase
+          .from("contact_requests")
+          .select("id, created_at, request_type, status, property_id")
+          .eq("broker_id", userId),
       ]);
       setSales((salesRes.data as SaleRecord[]) ?? []);
       setProperties((propsRes.data as PropertyRecord[]) ?? []);
+      setLeads((leadsRes.data as LeadRecord[]) ?? []);
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, [userId]);
 
-  const filteredSales = useMemo(() => {
-    return sales.filter((s) => {
-      const d = new Date(s.created_at);
+  const inPeriod = useCallback(
+    (value: string | null) => {
+      if (!value) return false;
+      const d = new Date(value);
       return d >= dateFrom && d <= dateTo;
+    },
+    [dateFrom, dateTo]
+  );
+
+  const filteredSales = useMemo(() => sales.filter((s) => inPeriod(s.created_at)), [sales, inPeriod]);
+  const filteredLeads = useMemo(() => leads.filter((l) => inPeriod(l.created_at)), [leads, inPeriod]);
+
+  // Closings registered in the period
+  const closedInPeriod = useMemo(
+    () => properties.filter((p) => (p.status === "sold" || p.status === "rented") && inPeriod(p.sold_at)),
+    [properties, inPeriod]
+  );
+  const closedValue = (p: PropertyRecord) => p.closed_price ?? p.sold_price ?? p.price;
+
+  const vgvFechado = useMemo(() => closedInPeriod.reduce((sum, p) => sum + closedValue(p), 0), [closedInPeriod]);
+  const soldCount = useMemo(() => closedInPeriod.filter((p) => p.status === "sold").length, [closedInPeriod]);
+  const rentedCount = useMemo(() => closedInPeriod.filter((p) => p.status === "rented").length, [closedInPeriod]);
+
+  const avgDaysToClosing = useMemo(() => {
+    const withDates = closedInPeriod.filter((p) => p.sold_at);
+    if (withDates.length === 0) return null;
+    const total = withDates.reduce(
+      (sum, p) => sum + Math.max(differenceInDays(new Date(p.sold_at!), new Date(p.created_at)), 0),
+      0
+    );
+    return Math.round(total / withDates.length);
+  }, [closedInPeriod]);
+
+  const avgPriceGap = useMemo(() => {
+    const valid = closedInPeriod.filter((p) => p.price > 0);
+    if (valid.length === 0) return null;
+    const total = valid.reduce((sum, p) => sum + ((closedValue(p) - p.price) / p.price) * 100, 0);
+    return total / valid.length;
+  }, [closedInPeriod]);
+
+  // Conversion: lead -> deal, deal -> closing
+  const leadToDeal = useMemo(() => {
+    if (filteredLeads.length === 0) return null;
+    const converted = filteredLeads.filter((l) => l.status === "converted").length;
+    return Math.round((converted / filteredLeads.length) * 100);
+  }, [filteredLeads]);
+
+  const dealToClosing = useMemo(() => {
+    if (filteredSales.length === 0) return null;
+    const won = filteredSales.filter((s) => s.stage === "closed_won").length;
+    return Math.round((won / filteredSales.length) * 100);
+  }, [filteredSales]);
+
+  const leadOrigin = useMemo(() => {
+    const labels: Record<string, string> = pt
+      ? { whatsapp: "WhatsApp", visit: "Pedido de visita", info: "Pedido de informação", form: "Formulário", other: "Outros" }
+      : { whatsapp: "WhatsApp", visit: "Visit request", info: "Info request", form: "Form", other: "Other" };
+    const counts: Record<string, number> = {};
+    filteredLeads.forEach((l) => {
+      const key = l.request_type || "form";
+      counts[key] = (counts[key] ?? 0) + 1;
     });
-  }, [sales, dateFrom, dateTo]);
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([k, v]) => ({ name: labels[k] ?? k, value: v }));
+  }, [filteredLeads, pt]);
+
+  // Monthly evolution: closings count + closed value + leads
+  const monthlyEvolution = useMemo(() => {
+    const months: Record<string, { closings: number; vgv: number; leads: number }> = {};
+    const ensure = (key: string) => {
+      if (!months[key]) months[key] = { closings: 0, vgv: 0, leads: 0 };
+      return months[key];
+    };
+    closedInPeriod.forEach((p) => {
+      const bucket = ensure(format(new Date(p.sold_at!), "yyyy-MM"));
+      bucket.closings++;
+      bucket.vgv += closedValue(p);
+    });
+    filteredLeads.forEach((l) => {
+      ensure(format(new Date(l.created_at), "yyyy-MM")).leads++;
+    });
+    return Object.entries(months)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, val]) => ({
+        month: format(new Date(key + "-01"), "MMM yy", { locale: dateLocale }),
+        ...val,
+      }));
+  }, [closedInPeriod, filteredLeads, dateLocale]);
+
+  // Ranking (last 30 days for leads, total views)
+  const ranking = useMemo(() => {
+    const since = subDays(new Date(), 30);
+    const leadsByProperty: Record<string, number> = {};
+    leads.forEach((l) => {
+      if (!l.property_id) return;
+      if (new Date(l.created_at) < since) return;
+      leadsByProperty[l.property_id] = (leadsByProperty[l.property_id] ?? 0) + 1;
+    });
+    return properties
+      .filter((p) => p.status === "active")
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        views: p.view_count ?? 0,
+        leads: leadsByProperty[p.id] ?? 0,
+      }));
+  }, [properties, leads]);
+
+  const rankingByViews = useMemo(() => [...ranking].sort((a, b) => b.views - a.views).slice(0, 5), [ranking]);
+  const rankingByLeads = useMemo(
+    () => [...ranking].sort((a, b) => b.leads - a.leads || b.views - a.views).slice(0, 5),
+    [ranking]
+  );
+  const stalledProperties = useMemo(
+    () => ranking.filter((r) => r.leads === 0).sort((a, b) => a.views - b.views).slice(0, 5),
+    [ranking]
+  );
 
   // VGV Ativo: active properties for sale
-  const activeForSale = useMemo(() => {
-    return properties.filter((p) => p.status === "active" && p.listing_type === "sale");
-  }, [properties]);
+  const activeForSale = useMemo(
+    () => properties.filter((p) => p.status === "active" && p.listing_type === "sale"),
+    [properties]
+  );
   const vgvAtivo = useMemo(() => activeForSale.reduce((sum, p) => sum + p.price, 0), [activeForSale]);
 
-  // VGV Realizado: sold properties
   const soldProperties = useMemo(() => {
     const soldIds = new Set(
       sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
     );
     return properties.filter((p) => soldIds.has(p.id) || p.status === "sold");
   }, [properties, sales]);
-  const vgvRealizado = useMemo(() => {
-    return soldProperties.reduce((sum, p) => sum + (p.sold_price ?? p.price), 0);
-  }, [soldProperties]);
+  const vgvRealizado = useMemo(
+    () => soldProperties.reduce((sum, p) => sum + closedValue(p), 0),
+    [soldProperties]
+  );
 
-  // Commission totals: from sales pipeline + from properties marked as sold directly
   const totalCommission = useMemo(() => {
     const pipelineCommission = filteredSales
       .filter((s) => s.stage === "closed_won")
       .reduce((sum, s) => sum + (s.commission_value ?? 0), 0);
-    // Add commissions from properties marked sold that aren't in the pipeline
     const pipelinePropIds = new Set(
       sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)
     );
@@ -168,7 +311,6 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
     return pipelineCommission + directSoldCommission;
   }, [filteredSales, properties, sales]);
 
-  // Pipeline funnel
   const funnelData = useMemo(() => {
     const counts: Record<string, number> = {};
     STAGE_ORDER.forEach((s) => (counts[s] = 0));
@@ -199,45 +341,6 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
     return STAGE_ORDER.map((s) => ({ stage: stageLabels[s], count: counts[s] }));
   }, [filteredSales, pt]);
 
-  // Conversion rate
-  const conversionRate = useMemo(() => {
-    const total = filteredSales.length;
-    if (total === 0) return 0;
-    const won = filteredSales.filter((s) => s.stage === "closed_won").length;
-    return Math.round((won / total) * 100);
-  }, [filteredSales]);
-
-  // Average days to close
-  const avgDaysToClose = useMemo(() => {
-    const closed = filteredSales.filter((s) => s.stage === "closed_won" && s.actual_close_date);
-    if (closed.length === 0) return null;
-    const total = closed.reduce((sum, s) => {
-      return sum + differenceInDays(new Date(s.actual_close_date!), new Date(s.created_at));
-    }, 0);
-    return Math.round(total / closed.length);
-  }, [filteredSales]);
-
-  // Monthly sales chart
-  const monthlySales = useMemo(() => {
-    const months: Record<string, { won: number; lost: number; revenue: number }> = {};
-    filteredSales.forEach((s) => {
-      const key = format(new Date(s.created_at), "yyyy-MM");
-      if (!months[key]) months[key] = { won: 0, lost: 0, revenue: 0 };
-      if (s.stage === "closed_won") {
-        months[key].won++;
-        months[key].revenue += s.commission_value ?? 0;
-      }
-      if (s.stage === "closed_lost") months[key].lost++;
-    });
-    return Object.entries(months)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, val]) => ({
-        month: format(new Date(key + "-01"), "MMM yy", { locale: dateLocale }),
-        ...val,
-      }));
-  }, [filteredSales, dateLocale]);
-
-  // Property status distribution
   const propertyStatusData = useMemo(() => {
     const counts: Record<string, number> = { active: 0, sold: 0, rented: 0, inactive: 0 };
     properties.forEach((p) => {
@@ -254,6 +357,13 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
+  const periodOptions: { key: PeriodKey; label: string }[] = [
+    { key: "30d", label: pt ? "30 dias" : "30 days" },
+    { key: "90d", label: pt ? "90 dias" : "90 days" },
+    { key: "12m", label: pt ? "12 meses" : "12 months" },
+    { key: "ytd", label: pt ? "Ano corrente" : "Year to date" },
+  ];
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -264,73 +374,314 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Period Filter */}
+      {/* Period selector */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">{pt ? "Período:" : "Period:"}</span>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("gap-1.5", !dateFrom && "text-muted-foreground")}>
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {format(dateFrom, "dd/MM/yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dateFrom}
-                onSelect={(d) => d && setDateFrom(d)}
-                initialFocus
-                className="p-3 pointer-events-auto"
-                locale={dateLocale}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <span className="text-sm text-muted-foreground">{pt ? "até" : "to"}</span>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("gap-1.5", !dateTo && "text-muted-foreground")}>
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {format(dateTo, "dd/MM/yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dateTo}
-                onSelect={(d) => d && setDateTo(d)}
-                initialFocus
-                className="p-3 pointer-events-auto"
-                locale={dateLocale}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <div className="flex gap-1 ml-auto">
-            {[3, 6, 12].map((m) => (
+          <div className="flex flex-wrap gap-1">
+            {periodOptions.map((opt) => (
               <Button
-                key={m}
+                key={opt.key}
                 size="sm"
-                variant="ghost"
+                variant={period === opt.key ? "default" : "outline"}
                 className="text-xs"
-                onClick={() => {
-                  setDateFrom(startOfMonth(subMonths(new Date(), m - 1)));
-                  setDateTo(endOfMonth(new Date()));
-                }}
+                onClick={() => setPeriod(opt.key)}
               >
-                {m}m
+                {opt.label}
               </Button>
             ))}
           </div>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {format(dateFrom, "dd/MM/yyyy")} — {format(dateTo, "dd/MM/yyyy")}
+          </span>
         </CardContent>
       </Card>
 
-      {/* KPI Cards */}
+      {/* Closing KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "VGV Fechado" : "Closed GDV"}
+              </span>
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">{formatCurrency(vgvFechado)}</p>
+            <p className="text-xs text-muted-foreground">
+              {closedInPeriod.length} {pt ? "fechamentos no período" : "closings in period"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "Vendidos / Alugados" : "Sold / Rented"}
+              </span>
+              <KeyRound className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">
+              {soldCount} / {rentedCount}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {pt ? "imóveis fechados no período" : "properties closed in period"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "Tempo médio de fechamento" : "Avg. time to close"}
+              </span>
+              <Clock className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">
+              {avgDaysToClosing !== null ? `${avgDaysToClosing} ${pt ? "dias" : "days"}` : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {pt ? "da publicação ao fechamento" : "from listing to closing"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "Anunciado vs. fechado" : "Listed vs. closed"}
+              </span>
+              <Percent className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">
+              {avgPriceGap !== null ? `${avgPriceGap > 0 ? "+" : ""}${avgPriceGap.toFixed(1)}%` : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {pt ? "diferença média de preço" : "average price difference"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Conversion + origin */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "Lead → Negociação" : "Lead → Deal"}
+              </span>
+              <Target className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">{leadToDeal !== null ? `${leadToDeal}%` : "—"}</p>
+            <p className="text-xs text-muted-foreground">
+              {filteredLeads.length} {pt ? "leads no período" : "leads in period"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {pt ? "Negociação → Fechamento" : "Deal → Closing"}
+              </span>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <p className="mt-2 text-xl font-bold text-foreground">{dealToClosing !== null ? `${dealToClosing}%` : "—"}</p>
+            <p className="text-xs text-muted-foreground">
+              {filteredSales.length} {pt ? "negociações no período" : "deals in period"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4" />
+              {pt ? "Origem dos Leads" : "Lead Sources"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leadOrigin.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                {pt ? "Nenhum lead no período" : "No leads in period"}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {leadOrigin.map((o, i) => (
+                  <div key={o.name} className="flex items-center gap-2 text-sm">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="flex-1 truncate">{o.name}</span>
+                    <span className="font-semibold">{o.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly evolution */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-4 w-4" />
+            {pt ? "Evolução Mensal" : "Monthly Evolution"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {monthlyEvolution.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {pt ? "Nenhum dado no período" : "No data in period"}
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={monthlyEvolution} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+                <YAxis yAxisId="left" allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 11 }}
+                  className="fill-muted-foreground"
+                  tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number, name: string) =>
+                    name === (pt ? "VGV fechado" : "Closed GDV") ? formatCurrency(value) : value
+                  }
+                />
+                <Bar
+                  yAxisId="left"
+                  dataKey="closings"
+                  name={pt ? "Fechamentos" : "Closings"}
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  yAxisId="left"
+                  dataKey="leads"
+                  name={pt ? "Leads" : "Leads"}
+                  fill="hsl(var(--chart-3))"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="vgv"
+                  name={pt ? "VGV fechado" : "Closed GDV"}
+                  stroke="hsl(var(--chart-2))"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ranking */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Eye className="h-4 w-4" />
+              {pt ? "Mais visualizados" : "Most viewed"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {rankingByViews.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                {pt ? "Nenhum imóvel ativo" : "No active properties"}
+              </p>
+            ) : (
+              rankingByViews.map((r, i) => (
+                <button
+                  key={r.id}
+                  onClick={() => navigate(`/imovel/${r.id}`)}
+                  className="flex w-full items-center gap-2 rounded px-1 py-1.5 text-left text-sm hover:bg-muted/50 transition-colors"
+                >
+                  <span className="w-4 text-xs text-muted-foreground">{i + 1}</span>
+                  <span className="flex-1 truncate">{r.title}</span>
+                  <Badge variant="secondary" className="text-[10px]">{r.views}</Badge>
+                </button>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4" />
+              {pt ? "Mais leads (30 dias)" : "Most leads (30 days)"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {rankingByLeads.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                {pt ? "Nenhum imóvel ativo" : "No active properties"}
+              </p>
+            ) : (
+              rankingByLeads.map((r, i) => (
+                <button
+                  key={r.id}
+                  onClick={() => navigate(`/imovel/${r.id}`)}
+                  className="flex w-full items-center gap-2 rounded px-1 py-1.5 text-left text-sm hover:bg-muted/50 transition-colors"
+                >
+                  <span className="w-4 text-xs text-muted-foreground">{i + 1}</span>
+                  <span className="flex-1 truncate">{r.title}</span>
+                  <Badge variant="secondary" className="text-[10px]">{r.leads}</Badge>
+                </button>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <XCircle className="h-4 w-4" />
+              {pt ? "Parados (sem leads)" : "Stalled (no leads)"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {stalledProperties.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                {pt ? "Todos receberam leads" : "All received leads"}
+              </p>
+            ) : (
+              stalledProperties.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => navigate(`/imovel/${r.id}`)}
+                  className="flex w-full items-center gap-2 rounded px-1 py-1.5 text-left text-sm hover:bg-muted/50 transition-colors"
+                >
+                  <span className="flex-1 truncate">{r.title}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {r.views} {pt ? "views" : "views"}
+                  </Badge>
+                </button>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Portfolio KPIs */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setDetailView("vgv_ativo")}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -350,7 +701,7 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {pt ? "VGV Realizado" : "Realized GDV"}
+                {pt ? "VGV Realizado (total)" : "Realized GDV (total)"}
               </span>
               <CheckCircle2 className="h-4 w-4 text-primary" />
             </div>
@@ -373,76 +724,49 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
             <p className="text-xs text-muted-foreground">{pt ? "clique para detalhes" : "click for details"}</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {pt ? "Taxa de Conversão" : "Conversion Rate"}
-              </span>
-              <Target className="h-4 w-4 text-primary" />
-            </div>
-            <p className="mt-2 text-xl font-bold text-foreground">{conversionRate}%</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {avgDaysToClose !== null && (
-                <>
-                  <Clock className="h-3 w-3" />
-                  {avgDaysToClose} {pt ? "dias p/ fechar" : "days to close"}
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Monthly Sales Bar Chart */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4" />
-              {pt ? "Vendas por Mês" : "Monthly Sales"}
+              <ArrowUpRight className="h-4 w-4" />
+              {pt ? "Funil de Vendas" : "Sales Funnel"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {monthlySales.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {pt ? "Nenhum dado no período" : "No data in period"}
+            {filteredSales.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {pt ? "Nenhum negócio no período" : "No deals in period"}
               </p>
             ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={monthlySales} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar
-                    dataKey="won"
-                    name={pt ? "Fechadas" : "Won"}
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="lost"
-                    name={pt ? "Perdidas" : "Lost"}
-                    fill="hsl(var(--destructive))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-2">
+                {funnelData.map((item, i) => {
+                  const max = Math.max(...funnelData.map((d) => d.count), 1);
+                  const pct = (item.count / max) * 100;
+                  return (
+                    <div key={item.stage} className="flex items-center gap-3">
+                      <span className="w-32 text-xs font-medium text-right shrink-0">{item.stage}</span>
+                      <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
+                        <div
+                          className="h-full rounded transition-all"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: COLORS[i % COLORS.length],
+                            minWidth: item.count > 0 ? "24px" : "0",
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-8 text-right">{item.count}</span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Property Status Pie */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -499,97 +823,48 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
         </Card>
       </div>
 
-      {/* Pipeline Funnel */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ArrowUpRight className="h-4 w-4" />
-            {pt ? "Funil de Vendas" : "Sales Funnel"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredSales.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              {pt ? "Nenhum negócio no período" : "No deals in period"}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {funnelData.map((item, i) => {
-                const max = Math.max(...funnelData.map((d) => d.count), 1);
-                const pct = (item.count / max) * 100;
-                return (
-                  <div key={item.stage} className="flex items-center gap-3">
-                    <span className="w-32 text-xs font-medium text-right shrink-0">{item.stage}</span>
-                    <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
-                      <div
-                        className="h-full rounded transition-all"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: COLORS[i % COLORS.length],
-                          minWidth: item.count > 0 ? "24px" : "0",
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-semibold w-8 text-right">{item.count}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Sales History Table */}
+      {/* Closings table */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <DollarSign className="h-4 w-4" />
-            {pt ? "Histórico de Vendas" : "Sales History"}
+            {pt ? "Fechamentos no Período" : "Closings in Period"}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredSales.filter((s) => s.stage === "closed_won" || s.stage === "closed_lost").length === 0 ? (
+          {closedInPeriod.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              {pt ? "Nenhuma venda concluída no período" : "No completed sales in period"}
+              {pt ? "Nenhum fechamento no período" : "No closings in period"}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
-                    <th className="pb-2 pr-4">{pt ? "Cliente" : "Client"}</th>
-                    <th className="pb-2 pr-4">{pt ? "Status" : "Status"}</th>
-                    <th className="pb-2 pr-4">{pt ? "Comissão" : "Commission"}</th>
-                    <th className="pb-2 pr-4">{pt ? "Data Fech." : "Close Date"}</th>
+                    <th className="pb-2 pr-4">{pt ? "Imóvel" : "Property"}</th>
+                    <th className="pb-2 pr-4">{pt ? "Tipo" : "Type"}</th>
+                    <th className="pb-2 pr-4">{pt ? "Anunciado" : "Listed"}</th>
+                    <th className="pb-2 pr-4">{pt ? "Fechado" : "Closed"}</th>
+                    <th className="pb-2 pr-4">{pt ? "Data" : "Date"}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSales
-                    .filter((s) => s.stage === "closed_won" || s.stage === "closed_lost")
-                    .sort((a, b) => new Date(b.actual_close_date ?? b.created_at).getTime() - new Date(a.actual_close_date ?? a.created_at).getTime())
-                    .map((s) => (
-                      <tr key={s.id} className="border-b last:border-0">
-                        <td className="py-2.5 pr-4 font-medium">{s.client_name}</td>
+                  {[...closedInPeriod]
+                    .sort((a, b) => new Date(b.sold_at!).getTime() - new Date(a.sold_at!).getTime())
+                    .map((p) => (
+                      <tr
+                        key={p.id}
+                        className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => navigate(`/imovel/${p.id}`)}
+                      >
+                        <td className="py-2.5 pr-4 font-medium max-w-[220px] truncate">{p.title}</td>
                         <td className="py-2.5 pr-4">
-                          {s.stage === "closed_won" ? (
-                            <span className="inline-flex items-center gap-1 text-primary">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              {pt ? "Vendido" : "Won"}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-destructive">
-                              <XCircle className="h-3.5 w-3.5" />
-                              {pt ? "Perdido" : "Lost"}
-                            </span>
-                          )}
+                          {p.status === "sold" ? (pt ? "Venda" : "Sale") : pt ? "Locação" : "Rental"}
                         </td>
-                        <td className="py-2.5 pr-4">
-                          {s.commission_value ? formatCurrency(s.commission_value) : "—"}
-                        </td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">{formatCurrency(p.price)}</td>
+                        <td className="py-2.5 pr-4 font-semibold text-primary">{formatCurrency(closedValue(p))}</td>
                         <td className="py-2.5 pr-4 text-muted-foreground">
-                          {s.actual_close_date
-                            ? format(new Date(s.actual_close_date), "dd/MM/yyyy")
-                            : format(new Date(s.created_at), "dd/MM/yyyy")}
+                          {format(new Date(p.sold_at!), "dd/MM/yyyy")}
                         </td>
                       </tr>
                     ))}
@@ -672,8 +947,8 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <p className="text-sm font-bold text-primary">{formatCurrency(p.sold_price ?? p.price)}</p>
-                          {p.sold_price && p.sold_price !== p.price && (
+                          <p className="text-sm font-bold text-primary">{formatCurrency(closedValue(p))}</p>
+                          {closedValue(p) !== p.price && (
                             <p className="text-[10px] text-muted-foreground line-through">{formatCurrency(p.price)}</p>
                           )}
                         </div>
@@ -691,7 +966,6 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
               <p className="text-sm text-muted-foreground">
                 {pt ? "Total:" : "Total:"} <span className="font-bold text-foreground">{formatCurrency(totalCommission)}</span>
               </p>
-              {/* Pipeline commissions */}
               {filteredSales.filter((s) => s.stage === "closed_won" && (s.commission_value ?? 0) > 0).length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{pt ? "Do Pipeline" : "From Pipeline"}</p>
@@ -710,7 +984,6 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
                     ))}
                 </div>
               )}
-              {/* Direct property commissions */}
               {(() => {
                 const pipelinePropIds = new Set(
                   sales.filter((s) => s.stage === "closed_won" && s.property_id).map((s) => s.property_id)

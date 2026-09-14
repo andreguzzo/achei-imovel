@@ -754,6 +754,8 @@ export type Database = {
           bedrooms: number | null
           boundary: Json | null
           city: string
+          closed_pipeline_id: string | null
+          closed_price: number | null
           condo_fee: number | null
           created_at: string
           description: string | null
@@ -768,6 +770,7 @@ export type Database = {
           price: number
           property_type: Database["public"]["Enums"]["property_type"]
           reference_code: string | null
+          sold_at: string | null
           sold_by_other_price: number | null
           sold_commission: number | null
           sold_price: number | null
@@ -789,6 +792,8 @@ export type Database = {
           bedrooms?: number | null
           boundary?: Json | null
           city: string
+          closed_pipeline_id?: string | null
+          closed_price?: number | null
           condo_fee?: number | null
           created_at?: string
           description?: string | null
@@ -803,6 +808,7 @@ export type Database = {
           price: number
           property_type?: Database["public"]["Enums"]["property_type"]
           reference_code?: string | null
+          sold_at?: string | null
           sold_by_other_price?: number | null
           sold_commission?: number | null
           sold_price?: number | null
@@ -824,6 +830,8 @@ export type Database = {
           bedrooms?: number | null
           boundary?: Json | null
           city?: string
+          closed_pipeline_id?: string | null
+          closed_price?: number | null
           condo_fee?: number | null
           created_at?: string
           description?: string | null
@@ -838,6 +846,7 @@ export type Database = {
           price?: number
           property_type?: Database["public"]["Enums"]["property_type"]
           reference_code?: string | null
+          sold_at?: string | null
           sold_by_other_price?: number | null
           sold_commission?: number | null
           sold_price?: number | null
@@ -857,6 +866,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_closed_pipeline_id_fkey"
+            columns: ["closed_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "sales_pipeline"
             referencedColumns: ["id"]
           },
         ]
