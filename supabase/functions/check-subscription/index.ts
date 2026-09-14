@@ -126,15 +126,21 @@ Deno.serve(async (req) => {
     });
 
     const hasStripeSub = subscriptions.data.length > 0;
-    const hasActiveSub = hasStripeSub || !!override;
+    const hasActiveSub = hasStripeSub || !!override || !!localSub;
     let productId: string | null = override?.product_id ?? null;
-    let subscriptionEnd: string | null = override?.subscription_end ?? null;
+    let subscriptionEnd: string | null =
+      override?.subscription_end ?? localSub?.current_period_end ?? null;
+    let planSlug: string | null = override?.plan_slug ?? localSub?.plan_slug ?? null;
 
     if (hasStripeSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product as string;
-      logStep("Active subscription found", { productId });
+      const item = subscription.items.data[0];
+      const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
+        ?? (item as unknown as { current_period_end?: number })?.current_period_end ?? null;
+      subscriptionEnd = periodEnd ? new Date(periodEnd * 1000).toISOString() : subscriptionEnd;
+      productId = item.price.product as string;
+      planSlug = slugForProduct(productId) ?? planSlug;
+      logStep("Active subscription found", { productId, planSlug });
     }
 
     // Fetch recent invoices for payment history
