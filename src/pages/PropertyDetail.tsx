@@ -56,29 +56,23 @@ const formatPrice = (price: number, listingType: string) => {
 
 
 
-const brokerWhatsAppUrl = (phone: string, propertyTitle: string) =>
-  buildWhatsAppUrl(
-    phone,
-    `Olá! Gostaria de informações sobre o imóvel "${propertyTitle}", visto na Abitzo.`,
-  );
-
 const BrokerCard = ({
   profile,
-  propertyTitle,
+  waMessage,
   pt,
   tagline,
   price,
   highlight = false,
 }: {
   profile: BrokerProfile;
-  propertyTitle: string;
+  waMessage: string;
   pt: boolean;
   tagline?: string;
   price?: number;
   highlight?: boolean;
 }) => {
   const whatsappNumber = profile.whatsapp || profile.phone;
-  const waUrl = whatsappNumber ? brokerWhatsAppUrl(whatsappNumber, propertyTitle) : null;
+  const waUrl = whatsappNumber ? buildWhatsAppUrl(whatsappNumber, waMessage) : null;
 
 
   return (
