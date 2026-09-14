@@ -114,7 +114,10 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
     const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 
     const [pipelineRes, apptRes, contactsRes, propsRes, myMembersRes, contractsRes, chargesRes] = await Promise.all([
-      supabase.from("sales_pipeline").select("id, stage, commission_value").eq("broker_id", userId),
+      supabase
+        .from("sales_pipeline")
+        .select("id, stage, commission_value, client_name, next_action, next_action_date, last_activity_at, created_at")
+        .eq("broker_id", userId),
       supabase
         .from("broker_appointments")
         .select("id, title, start_time, client_name, client_phone, location")
