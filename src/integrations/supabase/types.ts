@@ -792,6 +792,44 @@ export type Database = {
           },
         ]
       }
+      rental_documents: {
+        Row: {
+          broker_id: string
+          contract_id: string
+          created_at: string
+          document_type: string | null
+          file_path: string
+          id: string
+          name: string
+        }
+        Insert: {
+          broker_id: string
+          contract_id: string
+          created_at?: string
+          document_type?: string | null
+          file_path: string
+          id?: string
+          name: string
+        }
+        Update: {
+          broker_id?: string
+          contract_id?: string
+          created_at?: string
+          document_type?: string | null
+          file_path?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "rental_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_inspections: {
         Row: {
           broker_id: string
@@ -835,6 +873,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rental_payment_settings: {
+        Row: {
+          auto_charge_enabled: boolean
+          bank_account: string | null
+          bank_agency: string | null
+          bank_name: string | null
+          beneficiary_city: string | null
+          beneficiary_name: string | null
+          broker_id: string
+          created_at: string
+          id: string
+          instructions: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          provider: string
+          provider_account_id: string | null
+          provider_connected_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_charge_enabled?: boolean
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          beneficiary_city?: string | null
+          beneficiary_name?: string | null
+          broker_id: string
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_connected_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_charge_enabled?: boolean
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          beneficiary_city?: string | null
+          beneficiary_name?: string | null
+          broker_id?: string
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          provider?: string
+          provider_account_id?: string | null
+          provider_connected_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       sale_documents: {
         Row: {
