@@ -91,10 +91,36 @@ const PrivateInfoCard = ({
   setPrivateNotes,
   pendingFiles,
   setPendingFiles,
+  authorization,
+  setAuthorization,
+  authFile,
+  setAuthFile,
 }: PrivateInfoCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const authInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const updateAuth = (field: keyof AuthorizationData, value: string) =>
+    setAuthorization((prev) => ({ ...prev, [field]: value }));
+
+  const authStatus = authorizationStatus(authorization.authorization_end || null);
+  const authBadge = authorizationBadgeText(authStatus.status, authStatus.days, pt);
+
+  const handleAuthFile = (file: File | undefined) => {
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext ?? "") || file.size > 20 * 1024 * 1024) {
+      toast({
+        title: pt ? "Arquivo inválido" : "Invalid file",
+        description: pt ? "Somente PDF ou imagens até 20MB" : "Only PDF or images up to 20MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAuthFile(file);
+    if (authInputRef.current) authInputRef.current.value = "";
+  };
 
   /* ── Owner helpers ── */
   const updateOwner = (idx: number, field: keyof OwnerEntry, value: string | boolean) => {
