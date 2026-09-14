@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export type DashboardSection =
-  | "inicio" | "clientes" | "negociacoes" | "contatos" | "propostas" | "agenda"
+  | "inicio" | "clientes" | "negociacoes" | "contatos" | "agenda"
   | "imoveis" | "parcerias" | "relatorios" | "perfil" | "assinatura" | "suporte"
   | "contratos" | "alugueis" | "vistorias" | "relatorios_locacao" | "cobranca_locacao"
   | "verificacao" | "equipe" | "financeiro";
