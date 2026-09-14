@@ -34,7 +34,7 @@ interface UpcomingInvoice {
 }
 
 const SubscriptionCard = () => {
-  const { tier, subscriptionEnd, refreshSubscription, checkingSubscription } = useAuth();
+  const { tier, planSlug, subscribed, subscriptionEnd, refreshSubscription, checkingSubscription } = useAuth();
   const { locale } = useLanguage();
   const pt = locale === "pt-BR";
   const [loadingPortal, setLoadingPortal] = useState(false);
