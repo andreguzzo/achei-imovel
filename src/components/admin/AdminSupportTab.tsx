@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MessageCircle, Reply, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 
 interface SupportMessage {
   id: string;
@@ -87,6 +88,11 @@ const AdminSupportTab = () => {
 
   return (
     <div className="space-y-4">
+      <SectionHeader
+        title="Suporte"
+        description="Chamados abertos pelos corretores e histórico de respostas."
+        count={filtered.length}
+      />
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>

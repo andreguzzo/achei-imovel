@@ -360,7 +360,7 @@ const CreateProperty = () => {
 
       if (!prop) {
         toast({ title: pt ? "Imóvel não encontrado" : "Property not found", variant: "destructive" });
-        navigate(adminMode ? "/admin" : "/painel");
+        navigate(adminMode ? "/admin?secao=imoveis" : "/painel");
         return;
       }
 
@@ -680,7 +680,7 @@ const CreateProperty = () => {
     }
 
     toast({ title: isEditMode ? (pt ? "Anúncio atualizado!" : "Listing updated!") : (pt ? "Anúncio criado com sucesso!" : "Listing created!") });
-    navigate(adminMode ? "/admin" : `/imovel/${propId}`);
+    navigate(adminMode ? "/admin?secao=imoveis" : `/imovel/${propId}`);
     setSubmitting(false);
   };
 

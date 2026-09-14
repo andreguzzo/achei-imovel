@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Edit, Trash2, ArrowUp, ArrowDown, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SectionHeader } from "@/components/dashboard/SectionHeader";
 
 type Draft = {
   slug: string;
@@ -130,10 +131,12 @@ const AdminPlansTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{plans.length} planos cadastrados</p>
-        <Button onClick={openCreate} className="gap-1"><Plus className="h-4 w-4" /> Novo plano</Button>
-      </div>
+      <SectionHeader
+        title="Planos"
+        description="Catálogo de assinaturas: preço, limites, recursos e ordem de exibição."
+        count={plans.length}
+        action={<Button onClick={openCreate} className="gap-1"><Plus className="h-4 w-4" /> Novo plano</Button>}
+      />
 
       <div className="space-y-2">
         {plans.map((plan, i) => (
