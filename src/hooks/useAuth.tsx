@@ -85,6 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accountType, setAccountType] = useState<AccountType>("owner");
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("unverified");
   const [verified, setVerified] = useState(false);
+  const [planSlug, setPlanSlug] = useState<string | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
 
   const refreshSubscription = useCallback(async () => {
     try {
@@ -95,9 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       if (data?.subscribed) {
+        setSubscribed(true);
+        setPlanSlug((data.plan_slug as string) ?? null);
         setTier(getTierByProductId(data.product_id));
         setSubscriptionEnd(data.subscription_end);
       } else {
+        setSubscribed(false);
+        setPlanSlug(null);
         setTier("free");
         setSubscriptionEnd(null);
       }
