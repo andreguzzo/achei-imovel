@@ -632,6 +632,50 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_reports: {
+        Row: {
+          broker_id: string
+          created_at: string
+          id: string
+          metrics: Json
+          period_end: string
+          period_start: string
+          property_id: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          period_end: string
+          period_start: string
+          property_id: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          period_end?: string
+          period_start?: string
+          property_id?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_reports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_activities: {
         Row: {
           activity_type: string
@@ -1969,6 +2013,21 @@ export type Database = {
           _terms?: string
         }
         Returns: undefined
+      }
+      similar_price_stats: {
+        Args: {
+          _area: number
+          _city: string
+          _listing_type: Database["public"]["Enums"]["listing_type"]
+          _property_type: Database["public"]["Enums"]["property_type"]
+          _state: string
+        }
+        Returns: {
+          avg_price: number
+          avg_price_per_area: number
+          median_price: number
+          sample_count: number
+        }[]
       }
     }
     Enums: {
