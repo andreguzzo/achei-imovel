@@ -76,10 +76,10 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     log("ERROR handling event", { message: err instanceof Error ? err.message : String(err) });
-    // 200 so Stripe does not retry forever on a bug of ours; the error is logged.
+    // 500 so Stripe retries the delivery instead of silently dropping the payment.
     return new Response(JSON.stringify({ received: true, handled: false }), {
       headers: { "Content-Type": "application/json" },
-      status: 200,
+      status: 500,
     });
   }
 
