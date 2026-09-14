@@ -20,6 +20,11 @@ interface PropertyMapProps {
 }
 
 
+const MIN_ZOOM = 4;
+const MAX_ZOOM = 18;
+const MIN_FIT_ZOOM = 5;
+const MAX_FIT_ZOOM = 16;
+
 const formatPriceFull = (price: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price);
 
