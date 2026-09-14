@@ -13,6 +13,7 @@ import DashboardProperties from "@/components/dashboard/DashboardProperties";
 import DashboardProfile from "@/components/dashboard/DashboardProfile";
 const SalesPipeline = lazy(() => import("@/components/dashboard/SalesPipeline"));
 import SalesContacts from "@/components/dashboard/SalesContacts";
+import BuyerLeads from "@/components/dashboard/BuyerLeads";
 import BrokerAgenda from "@/components/dashboard/BrokerAgenda";
 import BrokerProposals from "@/components/dashboard/BrokerProposals";
 const BrokerAnalytics = lazy(() => import("@/components/dashboard/BrokerAnalytics"));
@@ -30,7 +31,7 @@ import AgencyTeam from "@/components/dashboard/AgencyTeam";
 import type { Tables } from "@/integrations/supabase/types";
 
 const VALID_SECTIONS: DashboardSection[] = [
-  "inicio", "negociacoes", "contatos", "propostas", "agenda",
+  "inicio", "clientes", "negociacoes", "contatos", "propostas", "agenda",
   "imoveis", "parcerias", "relatorios", "perfil", "assinatura", "suporte",
   "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
   "verificacao", "equipe",
@@ -134,7 +135,7 @@ const Dashboard = () => {
   // Non-brokers only get the general sections
   const effectiveSection: DashboardSection =
     !isBroker && [
-      "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
+      "clientes", "negociacoes", "contatos", "propostas", "agenda", "parcerias", "relatorios",
       "contratos", "alugueis", "vistorias", "relatorios_locacao", "cobranca_locacao",
     ].includes(section)
       ? "imoveis"
@@ -157,6 +158,8 @@ const Dashboard = () => {
             onNavigate={goToSection}
           />
         );
+      case "clientes":
+        return <BuyerLeads userId={user.id} />;
       case "negociacoes":
         return (
           <Suspense fallback={<ChartSkeleton />}>

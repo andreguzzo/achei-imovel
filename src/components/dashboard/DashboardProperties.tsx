@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2 } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Instagram, Building2, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SocialPostExporter from "@/components/social/SocialPostExporter";
+import PropertyMatchingLeads from "@/components/dashboard/PropertyMatchingLeads";
 import { SectionHeader, EmptyState } from "@/components/dashboard/SectionHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -32,6 +33,7 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
   const [properties, setProperties] = useState<PropertyWithImages[]>([]);
   const [loading, setLoading] = useState(true);
   const [socialTarget, setSocialTarget] = useState<PropertyWithImages | null>(null);
+  const [leadsTarget, setLeadsTarget] = useState<PropertyWithImages | null>(null);
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<PropertyWithImages | null>(null);
@@ -202,6 +204,14 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
                     <Button
                       size="icon"
                       variant="ghost"
+                      title={pt ? "Clientes compatíveis" : "Matching buyers"}
+                      onClick={() => setLeadsTarget(p)}
+                    >
+                      <Users className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       title={pt ? "Exportar post para redes sociais" : "Export social post"}
                       onClick={() => setSocialTarget(p)}
                     >
@@ -268,6 +278,13 @@ const DashboardProperties = ({ userId, isBroker, broker }: Props) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PropertyMatchingLeads
+        open={!!leadsTarget}
+        onOpenChange={(o) => !o && setLeadsTarget(null)}
+        brokerId={userId}
+        property={leadsTarget}
+      />
 
       <SocialPostExporter
         open={!!socialTarget}
