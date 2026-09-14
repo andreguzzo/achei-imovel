@@ -161,19 +161,22 @@ const BrokerAnalytics = ({ userId }: BrokerAnalyticsProps) => {
     fetchData();
   }, [userId]);
 
-  const inPeriod = (value: string | null) => {
-    if (!value) return false;
-    const d = new Date(value);
-    return d >= dateFrom && d <= dateTo;
-  };
+  const inPeriod = useCallback(
+    (value: string | null) => {
+      if (!value) return false;
+      const d = new Date(value);
+      return d >= dateFrom && d <= dateTo;
+    },
+    [dateFrom, dateTo]
+  );
 
-  const filteredSales = useMemo(() => sales.filter((s) => inPeriod(s.created_at)), [sales, dateFrom, dateTo]);
-  const filteredLeads = useMemo(() => leads.filter((l) => inPeriod(l.created_at)), [leads, dateFrom, dateTo]);
+  const filteredSales = useMemo(() => sales.filter((s) => inPeriod(s.created_at)), [sales, inPeriod]);
+  const filteredLeads = useMemo(() => leads.filter((l) => inPeriod(l.created_at)), [leads, inPeriod]);
 
   // Closings registered in the period
   const closedInPeriod = useMemo(
     () => properties.filter((p) => (p.status === "sold" || p.status === "rented") && inPeriod(p.sold_at)),
-    [properties, dateFrom, dateTo]
+    [properties, inPeriod]
   );
   const closedValue = (p: PropertyRecord) => p.closed_price ?? p.sold_price ?? p.price;
 
