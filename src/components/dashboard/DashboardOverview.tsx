@@ -104,6 +104,7 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [staleContacts, setStaleContacts] = useState(0);
   const [expiringAuths, setExpiringAuths] = useState<ExpiringAuth[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUps>({ overdue: [], today: [], week: [], stalled: [] });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
