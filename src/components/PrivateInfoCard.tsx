@@ -8,6 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import type { TablesInsert } from "@/integrations/supabase/types";
 import {
+  AUTHORIZATION_OPTIONS,
+  authorizationBadgeText,
+  authorizationStatus,
+  type AuthorizationData,
+  type AuthorizationType,
+} from "@/lib/saleAuthorization";
+import {
   Lock,
   Upload,
   X,
@@ -56,6 +63,10 @@ interface PrivateInfoCardProps {
   setPrivateNotes: (v: string) => void;
   pendingFiles: File[];
   setPendingFiles: (fn: (prev: File[]) => File[]) => void;
+  authorization: AuthorizationData;
+  setAuthorization: (fn: (prev: AuthorizationData) => AuthorizationData) => void;
+  authFile: File | null;
+  setAuthFile: (f: File | null) => void;
 }
 
 const MARITAL_OPTIONS = [
