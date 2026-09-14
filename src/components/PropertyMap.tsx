@@ -114,9 +114,10 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
     mapInstanceRef.current = map;
     infoWindowRef.current = new google.maps.InfoWindow();
 
+    let userMoved = false;
     const reportBounds = () => {
       const b = map.getBounds();
-      if (!b || !boundsCbRef.current) return;
+      if (!b || !boundsCbRef.current || !userMoved) return;
       const ne = b.getNorthEast();
       const sw = b.getSouthWest();
       boundsCbRef.current({
@@ -126,7 +127,11 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         west: sw.lng(),
       });
     };
+    // Only offer "search this area" after the visitor actually moves the map
+    map.addListener("dragend", () => { userMoved = true; });
+    map.addListener("zoom_changed", () => { userMoved = true; });
     map.addListener("idle", reportBounds);
+
 
     return () => {
       clustererRef.current?.clearMarkers();
