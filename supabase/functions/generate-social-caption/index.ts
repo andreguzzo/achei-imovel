@@ -135,6 +135,12 @@ Deno.serve(async (req) => {
     if (!toolCall) return json({ error: "Resposta inesperada da IA" }, 500);
 
     const result = JSON.parse(toolCall.function.arguments);
+
+    const { error: logError } = await serviceClient
+      .from("ai_usage_log")
+      .insert({ user_id: userId, function_name: FUNCTION_NAME });
+    if (logError) console.error("ai_usage_log insert error:", logError);
+
     return json({ caption: String(result.caption ?? "").trim() });
   } catch (e) {
     console.error("generate-social-caption error:", e);
