@@ -398,6 +398,56 @@ const DashboardOverview = ({ userId, isBroker, firstName, onNavigate }: Props) =
           </Card>
         </div>
       )}
+
+      {isBroker && expiringAuths.length > 0 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldAlert className="h-4 w-4 text-amber-600" />
+              {pt ? "Autorizações a vencer" : "Authorizations expiring"}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate("imoveis")}>
+              {pt ? "Ver anúncios" : "View listings"}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border">
+              {expiringAuths.map((a) => {
+                const { status, days } = authorizationStatus(a.authorization_end);
+                const badge = authorizationBadgeText(status, days, pt);
+                return (
+                  <div key={a.property_id} className="flex items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{a.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[
+                          a.reference_code ? `${pt ? "Cód." : "Ref."} ${a.reference_code}` : null,
+                          a.authorization_type ? authorizationLabel(a.authorization_type, pt) : null,
+                          `${pt ? "até" : "until"} ${formatDateBr(a.authorization_end)}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        status === "expired"
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                      }`}
+                    >
+                      {badge}
+                    </span>
+                    <Link to={`/editar/${a.property_id}`}>
+                      <Button size="sm" variant="outline">{pt ? "Abrir" : "Open"}</Button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
