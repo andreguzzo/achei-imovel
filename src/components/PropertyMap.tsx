@@ -20,6 +20,11 @@ interface PropertyMapProps {
 }
 
 
+const MIN_ZOOM = 4;
+const MAX_ZOOM = 18;
+const MIN_FIT_ZOOM = 5;
+const MAX_FIT_ZOOM = 16;
+
 const formatPriceFull = (price: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price);
 
@@ -86,7 +91,7 @@ const clusterRenderer = {
   },
 };
 
-const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
+const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 5, onBoundsChange, selectedId, onSelect, autoFit = true }: PropertyMapProps) => {
   const ready = useGoogleMaps();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -104,7 +109,9 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
 
     const map = new google.maps.Map(mapRef.current, {
       center: { lat: center[0], lng: center[1] },
-      zoom,
+      zoom: Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM),
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       mapTypeControl: false,
       fullscreenControl: false,
       streetViewControl: false,
@@ -275,6 +282,13 @@ const PropertyMap = ({ properties, center = [-14.24, -51.93], zoom = 4, onBounds
         poly.getPaths().forEach((ring) => ring.forEach((pt) => bounds.extend(pt)))
       );
       map.fitBounds(bounds, 40);
+      // Keep the initial fit from zooming too far in (single property) or too far out
+      google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+        const z = map.getZoom();
+        if (z != null) {
+          map.setZoom(Math.min(Math.max(z, MIN_FIT_ZOOM), MAX_FIT_ZOOM));
+        }
+      });
     } else {
       prevPropertyIdsRef.current = currentIds;
     }
