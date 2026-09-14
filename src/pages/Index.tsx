@@ -280,7 +280,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/busca?mapa=true">
-                <Button size="lg" variant="outline" className="rounded-xl border-white/30 text-white hover:bg-white/10 px-8 gap-2">
+                <Button size="lg" className="rounded-xl bg-white text-primary hover:bg-white/90 font-semibold px-8 shadow-lg gap-2">
                   <MapPin className="h-5 w-5" />
                   {locale === "pt-BR" ? "Explorar no mapa" : "Explore on map"}
                 </Button>
