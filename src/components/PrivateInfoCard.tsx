@@ -118,6 +118,16 @@ const PrivateInfoCard = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(e.target.files ?? []));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(Array.from(e.dataTransfer.files ?? []));
+  };
+
   const removePendingFile = (idx: number) => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
   };
